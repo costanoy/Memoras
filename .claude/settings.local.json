@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"/c/Users/Vinicius Costa/Downloads\" -iname \"*memoras*\" 2>&1)",
+      "Bash(unzip -l \"/c/Users/Vinicius Costa/Downloads/Memoras prototype_ Phone and browser sync.zip\")",
+      "Bash(mkdir -p \"/tmp/memoras-proto\")",
+      "Bash(unzip -o \"/c/Users/Vinicius Costa/Downloads/Memoras prototype_ Phone and browser sync.zip\" -d \"/tmp/memoras-proto\")",
+      "Read(//tmp/**)",
+      "Bash(cygpath -w /tmp/memoras-proto)",
+      "Read(//c//**)"
+    ]
+  }
+}
