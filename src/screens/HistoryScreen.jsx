@@ -1,56 +1,105 @@
-import { fmtShort } from '../dateUtils';
+import { useState } from 'react';
+import { EntryCard } from '../components/EntryCard';
+import { ActionSheet } from '../components/ActionSheet';
+import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon } from '../components/Icons';
 
-function snippetOf(paragraphs) {
-  const text = (paragraphs[0] && paragraphs[0].text.trim()) || 'Toque para continuar escrevendo...';
-  return text.length > 80 ? `${text.slice(0, 80)}…` : text;
-}
-
-export function HistoryScreen({ draft, entries, onOpenCurrent, onOpenEntry, onOpenSecurity }) {
-  const currentCard = {
-    key: 'current',
-    dateLabel: 'Hoje',
-    title: draft.title.trim() ? draft.title : 'Sem título',
-    snippet: snippetOf(draft.paragraphs),
-    onOpen: onOpenCurrent,
-  };
-  const entryCards = entries.map((e) => ({
-    key: e.id,
-    dateLabel: fmtShort(e.createdAt),
-    title: e.title && e.title.trim() ? e.title : 'Sem título',
-    snippet: snippetOf(e.paragraphs),
-    onOpen: () => onOpenEntry(e.id),
-  }));
-  const cards = [currentCard, ...entryCards];
+export function HistoryScreen({
+  entries,
+  now,
+  selectedId,
+  onBack,
+  onOpenEntry,
+  onNewEntry,
+  onOpenSecurity,
+  onOpenSearch,
+  onOpenTrash,
+  onOpenArchive,
+  onArchive,
+  onTrash,
+}) {
+  const [sheetEntry, setSheetEntry] = useState(null);
+  const [fabOpen, setFabOpen] = useState(false);
 
   return (
     <div className="screen history-screen">
       <div className="history-topbar">
-        <button type="button" className="icon-button" onClick={onOpenCurrent} aria-label="Voltar">
+        <button type="button" className="icon-button" onClick={onBack} aria-label="Voltar">
           ‹
         </button>
         <span className="topbar-title">Histórico</span>
         <div className="history-topbar__actions">
-          <button type="button" className="icon-button icon-button--settings" onClick={onOpenSecurity} aria-label="Segurança">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="#6b4a2f" strokeWidth="2" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="#6b4a2f" strokeWidth="2" strokeLinecap="round" />
-              <circle cx="12" cy="16" r="1.4" fill="#6b4a2f" />
-            </svg>
+          <button type="button" className="icon-button icon-button--round" onClick={onOpenSecurity} aria-label="Segurança">
+            <LockIcon />
           </button>
-          <button type="button" className="fab fab--inline" onClick={onOpenCurrent} aria-label="Nova anotação">
-            +
+          <button type="button" className="icon-button icon-button--round" onClick={onNewEntry} aria-label="Nova anotação">
+            <NewNoteIcon size={17} />
           </button>
         </div>
       </div>
+
       <div className="history-grid">
-        {cards.map((c) => (
-          <div key={c.key} className="history-card" onClick={c.onOpen}>
-            <span className="history-card__date">{c.dateLabel}</span>
-            <span className="history-card__title">{c.title}</span>
-            <span className="history-card__snippet">{c.snippet}</span>
-          </div>
+        {entries.length === 0 && <div className="empty-state">Nenhuma anotação por aqui ainda.</div>}
+        {entries.map((entry) => (
+          <EntryCard
+            key={entry.id}
+            entry={entry}
+            now={now}
+            isSelected={entry.id === selectedId}
+            onOpen={onOpenEntry}
+            onLongPress={setSheetEntry}
+          />
         ))}
       </div>
+
+      {fabOpen && <div className="fab-scrim" onClick={() => setFabOpen(false)} />}
+      <div className="fab-stack">
+        {fabOpen && (
+          <div className="fab-menu">
+            <button
+              type="button"
+              className="fab-menu__item"
+              onClick={() => { setFabOpen(false); onOpenSearch(); }}
+            >
+              <SearchIcon size={17} />
+              <span>Pesquisar</span>
+            </button>
+            <button
+              type="button"
+              className="fab-menu__item"
+              onClick={() => { setFabOpen(false); onOpenTrash(); }}
+            >
+              <TrashIcon size={17} />
+              <span>Lixeira</span>
+            </button>
+            <button
+              type="button"
+              className="fab-menu__item"
+              onClick={() => { setFabOpen(false); onOpenArchive(); }}
+            >
+              <ArchiveIcon size={17} />
+              <span>Arquivadas</span>
+            </button>
+          </div>
+        )}
+        <button
+          type="button"
+          className={`fab${fabOpen ? ' fab--open' : ''}`}
+          onClick={() => setFabOpen((o) => !o)}
+          aria-label="Mais opções"
+          aria-expanded={fabOpen}
+        >
+          +
+        </button>
+      </div>
+
+      <ActionSheet
+        entry={sheetEntry}
+        onClose={() => setSheetEntry(null)}
+        actions={[
+          { label: 'Arquivar', icon: <ArchiveIcon size={17} />, onSelect: (e) => onArchive(e.id) },
+          { label: 'Mover para lixeira', icon: <TrashIcon size={17} />, onSelect: (e) => onTrash(e.id), danger: true },
+        ]}
+      />
     </div>
   );
 }

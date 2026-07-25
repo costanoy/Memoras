@@ -1,14 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'memoras';
-const DB_VERSION = 1;
-
-const DEFAULT_DRAFT = {
-  title: '',
-  createdAt: null,
-  paragraphs: [{ text: '', time: null }],
-  lastActiveAt: Date.now(),
-};
+const DB_VERSION = 2;
 
 const DEFAULT_SETTINGS = {
   passwordEnabled: false,
@@ -21,10 +14,48 @@ let dbPromise = null;
 function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        db.createObjectStore('entries', { keyPath: 'id' });
-        db.createObjectStore('draft');
-        db.createObjectStore('settings');
+      upgrade(db, oldVersion, _newVersion, tx) {
+        if (!db.objectStoreNames.contains('entries')) {
+          db.createObjectStore('entries', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings');
+        }
+
+        if (oldVersion < 1 || oldVersion >= DB_VERSION) return;
+
+        // v1 -> v2: entries gain a status, and the single "draft" becomes a normal entry.
+        const entries = tx.objectStore('entries');
+        entries.openCursor().then(function addStatus(cursor) {
+          if (!cursor) return undefined;
+          const v = cursor.value;
+          if (!v.status) {
+            cursor.update({
+              ...v,
+              status: 'active',
+              statusChangedAt: null,
+              lastActiveAt: v.lastActiveAt ?? v.createdAt,
+            });
+          }
+          return cursor.continue().then(addStatus);
+        });
+
+        if (db.objectStoreNames.contains('draft')) {
+          tx.objectStore('draft')
+            .get('current')
+            .then((draft) => {
+              if (!draft || !draft.createdAt) return;
+              entries.put({
+                id: `e${draft.createdAt}`,
+                title: draft.title ?? '',
+                createdAt: draft.createdAt,
+                lastActiveAt: draft.lastActiveAt ?? draft.createdAt,
+                paragraphs: draft.paragraphs ?? [{ text: '', time: null }],
+                status: 'active',
+                statusChangedAt: null,
+              });
+            });
+        }
       },
     });
   }
@@ -41,15 +72,9 @@ export async function putEntry(entry) {
   return db.put('entries', entry);
 }
 
-export async function getDraft() {
+export async function deleteEntry(id) {
   const db = await getDB();
-  const draft = await db.get('draft', 'current');
-  return draft ?? DEFAULT_DRAFT;
-}
-
-export async function putDraft(draft) {
-  const db = await getDB();
-  return db.put('draft', draft, 'current');
+  return db.delete('entries', id);
 }
 
 export async function getSettings() {
@@ -63,4 +88,4 @@ export async function putSettings(settings) {
   return db.put('settings', settings, 'current');
 }
 
-export { DEFAULT_DRAFT, DEFAULT_SETTINGS };
+export { DEFAULT_SETTINGS };
