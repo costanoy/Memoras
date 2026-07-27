@@ -1,19 +1,27 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { getEntries, putEntry, deleteEntry } from '../db';
 import { NEW_PARAGRAPH_GAP_MS, LOCK_CHECK_INTERVAL_MS } from '../constants';
 import { newEntry, isEditable, isEmpty, sortByNewest } from '../entryUtils';
+import { makeRepository, syncLocalEntriesOnce } from '../repository';
 
-export function useEntries() {
+export function useEntries(uid = null) {
   const [entries, setEntries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   const saveTimers = useRef({});
+  const pendingSaves = useRef({});
+  const dirty = useRef(false);
+
+  const repo = useMemo(() => makeRepository(uid), [uid]);
+  const repoRef = useRef(repo);
+  repoRef.current = repo;
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
-      const stored = await getEntries();
+      if (uid) await syncLocalEntriesOnce(uid);
+      const stored = await repo.getAll();
       if (cancelled) return;
       const all = sortByNewest(stored);
       const editable = all.find((e) => isEditable(e));
@@ -22,14 +30,14 @@ export function useEntries() {
         setSelectedId(editable.id);
       } else {
         const fresh = newEntry();
-        putEntry(fresh);
+        repo.put(fresh);
         setEntries([fresh, ...all]);
         setSelectedId(fresh.id);
       }
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [repo, uid]);
 
   // Re-evaluates the 24h editability window without touching stored data.
   useEffect(() => {
@@ -38,11 +46,40 @@ export function useEntries() {
   }, []);
 
   const scheduleSave = useCallback((entry) => {
+    pendingSaves.current[entry.id] = entry;
     clearTimeout(saveTimers.current[entry.id]);
-    saveTimers.current[entry.id] = setTimeout(() => putEntry(entry), 400);
+    saveTimers.current[entry.id] = setTimeout(() => {
+      repoRef.current.put(entry);
+      delete pendingSaves.current[entry.id];
+    }, 400);
   }, []);
 
+  /** Grava agora o que estiver pendente — usado ao sair da tela de digitação. */
+  const flushSaves = useCallback(() => {
+    Object.entries(pendingSaves.current).forEach(([id, entry]) => {
+      clearTimeout(saveTimers.current[id]);
+      repoRef.current.put(entry);
+    });
+    pendingSaves.current = {};
+  }, []);
+
+  /** True só se o usuário realmente escreveu algo desde a última checagem. */
+  const consumeDirty = useCallback(() => {
+    const wasDirty = dirty.current;
+    dirty.current = false;
+    return wasDirty;
+  }, []);
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flushSaves();
+    };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  }, [flushSaves]);
+
   const updateEntry = useCallback((id, updater) => {
+    dirty.current = true;
     setEntries((prev) =>
       prev.map((e) => {
         if (e.id !== id) return e;
@@ -61,7 +98,7 @@ export function useEntries() {
       const changed = next.find((e) => e.id === id);
       if (changed) {
         clearTimeout(saveTimers.current[id]);
-        putEntry(changed);
+        repoRef.current.put(changed);
       }
       return next;
     });
@@ -75,7 +112,7 @@ export function useEntries() {
       return blank.id;
     }
     const fresh = newEntry();
-    putEntry(fresh);
+    repoRef.current.put(fresh);
     setEntries((prev) => [fresh, ...prev]);
     setSelectedId(fresh.id);
     return fresh.id;
@@ -83,7 +120,7 @@ export function useEntries() {
 
   const deleteForever = useCallback((id) => {
     clearTimeout(saveTimers.current[id]);
-    deleteEntry(id);
+    repoRef.current.remove(id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
@@ -150,6 +187,8 @@ export function useEntries() {
     selectedId,
     selectEntry: setSelectedId,
     createEntry,
+    flushSaves,
+    consumeDirty,
     setTitle,
     setParagraphText,
     handleParagraphKeyDown,

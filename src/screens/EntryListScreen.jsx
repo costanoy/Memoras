@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fmtFull, fmtTime } from '../dateUtils';
 import { titleOf, snippetOf } from '../entryUtils';
+import { MemorasOutline } from '../components/Logo';
 
 export function EntryListScreen({ title, entries, emptyLabel, onBack, onOpenEntry, actions }) {
   const [confirmingId, setConfirmingId] = useState(null);
@@ -16,7 +17,12 @@ export function EntryListScreen({ title, entries, emptyLabel, onBack, onOpenEntr
       </div>
 
       <div className="list-body">
-        {entries.length === 0 && <div className="empty-state">{emptyLabel}</div>}
+        {entries.length === 0 && (
+          <div className="empty-state">
+            <MemorasOutline height={78} />
+            <span>{emptyLabel}</span>
+          </div>
+        )}
         {entries.map((entry) => (
           <div key={entry.id} className="list-row">
             <div className="list-row__main" onClick={() => onOpenEntry(entry)}>

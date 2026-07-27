@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { Keypad } from '../components/Keypad';
 
-export function SecurityScreen({ passwordEnabled, hasPin, setPasswordEnabled, setPin, clearPin, onBack }) {
+export function SecurityScreen({
+  passwordEnabled,
+  hasPin,
+  setPasswordEnabled,
+  setPin,
+  clearPin,
+  onBack,
+  onOpenAccount,
+  accountEmail,
+}) {
   const [pinInput, setPinInput] = useState('');
 
   const handleDigit = (d) => {
@@ -34,6 +43,15 @@ export function SecurityScreen({ passwordEnabled, hasPin, setPasswordEnabled, se
         <span className="topbar-title">Segurança</span>
       </div>
       <div className="security-body">
+        <div className="security-row security-row--tappable" onClick={onOpenAccount}>
+          <div>
+            <div className="security-row__label">Conta</div>
+            <div className="security-row__hint">
+              {accountEmail ?? 'Entrar ou criar conta para sincronizar na nuvem'}
+            </div>
+          </div>
+          <span className="security-row__chevron">›</span>
+        </div>
         <div className="security-row">
           <div>
             <div className="security-row__label">Senha de acesso</div>

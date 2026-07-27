@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EntryCard } from '../components/EntryCard';
 import { ActionSheet } from '../components/ActionSheet';
 import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon } from '../components/Icons';
+import { MemorasOutline } from '../components/Logo';
 
 export function HistoryScreen({
   entries,
@@ -38,7 +39,12 @@ export function HistoryScreen({
       </div>
 
       <div className="history-grid">
-        {entries.length === 0 && <div className="empty-state">Nenhuma anotação por aqui ainda.</div>}
+        {entries.length === 0 && (
+          <div className="empty-state">
+            <MemorasOutline height={78} />
+            <span>Nenhuma anotação por aqui ainda.</span>
+          </div>
+        )}
         {entries.map((entry) => (
           <EntryCard
             key={entry.id}
@@ -47,6 +53,7 @@ export function HistoryScreen({
             isSelected={entry.id === selectedId}
             onOpen={onOpenEntry}
             onLongPress={setSheetEntry}
+            showMenu
           />
         ))}
       </div>

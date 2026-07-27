@@ -1,8 +1,10 @@
 import { fmtShort } from '../dateUtils';
 import { titleOf } from '../entryUtils';
-import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon } from '../components/Icons';
+import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon, UserIcon } from '../components/Icons';
+import { MemorasLogo, MemorasOutline } from './Logo';
 
 export function Sidebar({
+  className = '',
   entries,
   selectedId,
   onSelect,
@@ -11,18 +13,25 @@ export function Sidebar({
   onOpenTrash,
   onOpenArchive,
   onOpenSecurity,
+  onOpenAccount,
+  accountEmail,
 }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${className}`.trim()}>
       <div className="sidebar__head">
-        <span className="sidebar__title">Meu diário</span>
+        <MemorasLogo height={22} />
         <button type="button" className="icon-button icon-button--round" onClick={onNewEntry} aria-label="Nova anotação">
           <NewNoteIcon size={17} />
         </button>
       </div>
 
       <div className="sidebar__list">
-        {entries.length === 0 && <div className="empty-state empty-state--tight">Nenhuma anotação.</div>}
+        {entries.length === 0 && (
+          <div className="empty-state empty-state--tight">
+            <MemorasOutline height={54} />
+            <span>Nenhuma anotação ainda.</span>
+          </div>
+        )}
         {entries.map((entry) => (
           <button
             key={entry.id}
@@ -52,6 +61,10 @@ export function Sidebar({
         <button type="button" className="sidebar__tool" onClick={onOpenSecurity}>
           <LockIcon size={16} />
           <span>Segurança</span>
+        </button>
+        <button type="button" className="sidebar__tool" onClick={onOpenAccount}>
+          <UserIcon size={16} />
+          <span className="sidebar__tool-text">{accountEmail ?? 'Entrar / criar conta'}</span>
         </button>
       </div>
     </aside>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Keypad } from '../components/Keypad';
-import { NotebookIcon } from '../components/NotebookIcon';
+import { MemorasMark } from '../components/Logo';
 
 export function LockScreen({ verifyPin }) {
   const [pinInput, setPinInput] = useState('');
@@ -24,7 +24,7 @@ export function LockScreen({ verifyPin }) {
 
   return (
     <div className="screen lock-screen">
-      <NotebookIcon size={56} />
+      <MemorasMark height={72} />
       <div className="lock-title">Memoras</div>
       <div className="lock-subtitle">Digite sua senha</div>
       <div className={shake ? 'pin-shake' : ''}>

@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { SAVED_TOAST_MS } from './constants';
 import { useEntries } from './hooks/useEntries';
 import { useLock } from './hooks/useLock';
+import { useAuth } from './hooks/useAuth';
+import { AccountScreen } from './screens/AccountScreen';
 import { Sidebar } from './components/Sidebar';
+import { MemorasMark } from './components/Logo';
 import { RestoreIcon, TrashIcon, ArchiveIcon } from './components/Icons';
 import { WriteScreen } from './screens/WriteScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
@@ -13,13 +17,46 @@ import { LockScreen } from './screens/LockScreen';
 import { isEditable } from './entryUtils';
 
 function App() {
-  const store = useEntries();
+  const authState = useAuth();
+  const store = useEntries(authState.user?.uid ?? null);
   const lockState = useLock();
   const [screen, setScreen] = useState('write');
   const [detailId, setDetailId] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [savedToast, setSavedToast] = useState(false);
+  const toastTimer = useRef(null);
 
-  if (lockState.loading || store.loading) {
-    return <div className="app-shell app-shell--loading" />;
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const { flushSaves, consumeDirty } = store;
+
+  /** Sair da tela de digitação grava o pendente e confirma com "Salvo". */
+  const goTo = useCallback(
+    (next) => {
+      setScreen((current) => {
+        if (current === 'write' && next !== 'write') {
+          flushSaves();
+          if (consumeDirty()) {
+            setSavedToast(true);
+            clearTimeout(toastTimer.current);
+            toastTimer.current = setTimeout(() => setSavedToast(false), SAVED_TOAST_MS);
+          }
+        }
+        return next;
+      });
+    },
+    [flushSaves, consumeDirty]
+  );
+
+  if (authState.loading || lockState.loading || store.loading) {
+    return (
+      <div className="app-shell app-shell--loading">
+        <div className="splash">
+          <MemorasMark height={64} />
+          <span className="splash__name">Memoras</span>
+        </div>
+      </div>
+    );
   }
 
   if (lockState.locked) {
@@ -33,16 +70,16 @@ function App() {
   const openEntry = (entry) => {
     if (isEditable(entry, store.now)) {
       store.selectEntry(entry.id);
-      setScreen('write');
+      goTo('write');
     } else {
       setDetailId(entry.id);
-      setScreen('detail');
+      goTo('detail');
     }
   };
 
   const newEntry = () => {
     store.createEntry();
-    setScreen('write');
+    goTo('write');
   };
 
   let content;
@@ -52,13 +89,13 @@ function App() {
         entries={store.activeEntries}
         now={store.now}
         selectedId={store.selectedId}
-        onBack={() => setScreen('write')}
+        onBack={() => goTo('write')}
         onOpenEntry={openEntry}
         onNewEntry={newEntry}
-        onOpenSecurity={() => setScreen('security')}
-        onOpenSearch={() => setScreen('search')}
-        onOpenTrash={() => setScreen('trash')}
-        onOpenArchive={() => setScreen('archive')}
+        onOpenSecurity={() => goTo('security')}
+        onOpenSearch={() => goTo('search')}
+        onOpenTrash={() => goTo('trash')}
+        onOpenArchive={() => goTo('archive')}
         onArchive={store.archiveEntry}
         onTrash={store.trashEntry}
       />
@@ -67,7 +104,7 @@ function App() {
     content = (
       <DetailScreen
         entry={store.getEntry(detailId)}
-        onBack={() => setScreen('history')}
+        onBack={() => goTo('history')}
       />
     );
   } else if (screen === 'security') {
@@ -78,15 +115,19 @@ function App() {
         setPasswordEnabled={lockState.setPasswordEnabled}
         setPin={lockState.setPin}
         clearPin={lockState.clearPin}
-        onBack={() => setScreen('write')}
+        onBack={() => goTo('write')}
+        onOpenAccount={() => goTo('account')}
+        accountEmail={authState.user?.email ?? null}
       />
     );
+  } else if (screen === 'account') {
+    content = <AccountScreen authState={authState} onBack={() => goTo('write')} />;
   } else if (screen === 'search') {
     content = (
       <SearchScreen
         entries={store.entries}
         now={store.now}
-        onBack={() => setScreen('history')}
+        onBack={() => goTo('history')}
         onOpenEntry={openEntry}
       />
     );
@@ -96,10 +137,10 @@ function App() {
         title="Lixeira"
         entries={store.trashedEntries}
         emptyLabel="A lixeira está vazia."
-        onBack={() => setScreen('history')}
+        onBack={() => goTo('history')}
         onOpenEntry={(entry) => {
           setDetailId(entry.id);
-          setScreen('detail');
+          goTo('detail');
         }}
         actions={[
           { label: 'Restaurar', icon: <RestoreIcon size={16} />, onSelect: (e) => store.restoreEntry(e.id) },
@@ -120,10 +161,10 @@ function App() {
         title="Arquivadas"
         entries={store.archivedEntries}
         emptyLabel="Nenhuma anotação arquivada."
-        onBack={() => setScreen('history')}
+        onBack={() => goTo('history')}
         onOpenEntry={(entry) => {
           setDetailId(entry.id);
-          setScreen('detail');
+          goTo('detail');
         }}
         actions={[
           { label: 'Restaurar', icon: <RestoreIcon size={16} />, onSelect: (e) => store.restoreEntry(e.id) },
@@ -139,7 +180,7 @@ function App() {
         setTitle={store.setTitle}
         setParagraphText={store.setParagraphText}
         handleParagraphKeyDown={store.handleParagraphKeyDown}
-        onOpenHistory={() => setScreen('history')}
+        onOpenHistory={() => goTo('history')}
         onNewEntry={newEntry}
       />
     );
@@ -148,16 +189,29 @@ function App() {
   return (
     <div className="app-shell">
       <Sidebar
+        className={panelOpen ? '' : 'sidebar--closed'}
         entries={store.activeEntries}
         selectedId={store.selectedId}
         onSelect={openEntry}
         onNewEntry={newEntry}
-        onOpenSearch={() => setScreen('search')}
-        onOpenTrash={() => setScreen('trash')}
-        onOpenArchive={() => setScreen('archive')}
-        onOpenSecurity={() => setScreen('security')}
+        onOpenSearch={() => goTo('search')}
+        onOpenTrash={() => goTo('trash')}
+        onOpenArchive={() => goTo('archive')}
+        onOpenSecurity={() => goTo('security')}
+        onOpenAccount={() => goTo('account')}
+        accountEmail={authState.user?.email ?? null}
       />
-      <main className="app-main">{content}</main>
+      <button
+        type="button"
+        className={`panel-toggle${panelOpen ? '' : ' panel-toggle--closed'}`}
+        onClick={() => setPanelOpen((o) => !o)}
+        aria-label={panelOpen ? 'Fechar histórico' : 'Abrir histórico'}
+        aria-expanded={panelOpen}
+      >
+        H
+      </button>
+      <main className={`app-main${panelOpen ? '' : ' app-main--wide'}`}>{content}</main>
+      {savedToast && <div className="toast toast--saved">Salvo</div>}
     </div>
   );
 }

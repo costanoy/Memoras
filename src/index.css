@@ -7,6 +7,8 @@
   --color-surface: #fffdf9;
   --font-ui: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Source Serif 4', serif;
+  /* Altura da pauta. Precisa bater com LINE_HEIGHT em constants.js. */
+  --line-height: 33px;
 }
 
 * {
@@ -47,7 +49,86 @@ button {
 }
 
 .app-shell--loading {
-  background: var(--color-canvas);
+  background: var(--color-page);
+  align-items: center;
+  justify-content: center;
+}
+
+/* Marca */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.brand__name {
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.2px;
+  color: var(--color-ink);
+}
+
+.splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: splash-in 0.35s ease-out;
+}
+
+.splash__name {
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.3px;
+  color: rgba(43, 27, 16, 0.75);
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Anotação bloqueada: papel levemente mais envelhecido. */
+.screen--aged {
+  background-color: rgba(212, 90, 12, 0.045);
+}
+
+/* Troca de tela com uma entrada curta. */
+.screen {
+  animation: screen-in 0.18s ease-out;
+}
+
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .splash,
+  .toast--saved {
+    animation: none;
+  }
+
+  .sidebar,
+  .app-main,
+  .panel-toggle {
+    transition: none;
+  }
 }
 
 .app-main {
@@ -71,37 +152,81 @@ button {
   display: none;
 }
 
+/* The web "H" pill toggles the side panel, like the prototype's browser window. */
+.panel-toggle {
+  display: none;
+}
+
 @media (min-width: 900px) {
   .app-shell {
     max-width: none;
-    width: min(1180px, 100%);
-    flex-direction: row;
-    align-items: stretch;
+    width: 100%;
+    flex-direction: column;
   }
 
   .sidebar {
     display: flex;
     flex-direction: column;
-    width: 250px;
-    flex-shrink: 0;
+    width: 230px;
     background: #fbf7f1;
     border-right: 1px solid rgba(43, 27, 16, 0.1);
     padding: 22px 14px 16px;
     gap: 10px;
-    position: sticky;
+    position: fixed;
     top: 0;
-    height: 100dvh;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    box-shadow: 4px 0 16px rgba(43, 27, 16, 0.08);
+    transition: transform 0.2s;
+  }
+
+  .sidebar--closed {
+    transform: translateX(-100%);
+  }
+
+  .panel-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 50%;
+    left: 246px;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 46px;
+    border: none;
+    border-radius: 23px;
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 800;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(43, 27, 16, 0.25);
+    z-index: 31;
+    transition: left 0.2s;
+  }
+
+  .panel-toggle--closed {
+    left: 16px;
   }
 
   .app-main {
     min-height: 100dvh;
+    padding-left: 280px;
+    transition: padding-left 0.2s;
+  }
+
+  .app-main--wide {
+    padding-left: 50px;
   }
 
   .screen {
     min-height: auto;
   }
 
-  /* On desktop the sidebar replaces the floating buttons. */
+  /* On desktop the side panel replaces the phone's floating buttons. */
   .app-shell .fab,
   .app-shell .fab-stack,
   .app-shell .fab-scrim {
@@ -132,9 +257,8 @@ button {
   padding: 0 6px 4px;
 }
 
-.sidebar__title {
-  font-weight: 800;
-  font-size: 15px;
+.sidebar__head {
+  min-height: 32px;
 }
 
 .sidebar__list {
@@ -249,21 +373,30 @@ button {
   border-radius: 7px;
 }
 
+/*
+ * Pauta: o gradiente começa no topo da CAIXA DE CONTEÚDO (background-origin),
+ * que é exatamente onde a primeira linha de texto começa. Assim o texto cai
+ * sempre em cima da linha, independente do padding.
+ */
 .notebook-lines {
   background-image: repeating-linear-gradient(
     to bottom,
-    transparent,
-    transparent 32px,
-    rgba(212, 90, 12, 0.16) 32px,
-    rgba(212, 90, 12, 0.16) 33px
+    transparent 0,
+    transparent calc(var(--line-height) - 1px),
+    rgba(212, 90, 12, 0.16) calc(var(--line-height) - 1px),
+    rgba(212, 90, 12, 0.16) var(--line-height)
   );
+  background-origin: content-box;
+  background-repeat: repeat;
 }
 
+/* Ocupa exatamente uma linha da pauta para não quebrar o ritmo. */
 .dashed-divider {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 12px 0 8px;
+  height: var(--line-height);
+  margin: 0;
 }
 
 .dashed-divider__line {
@@ -531,16 +664,172 @@ button {
 
 .empty-state {
   grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   text-align: center;
   color: rgba(43, 27, 16, 0.45);
   font-size: 13px;
   font-weight: 600;
-  padding: 40px 10px;
+  padding: 46px 10px;
 }
 
 .empty-state--tight {
-  padding: 16px 6px;
+  padding: 26px 6px;
+  gap: 12px;
   font-size: 12px;
+}
+
+/* Account / auth */
+
+.security-row--tappable {
+  cursor: pointer;
+}
+
+.security-row--tappable:hover {
+  background: rgba(43, 27, 16, 0.03);
+}
+
+.security-row__chevron {
+  font-size: 20px;
+  color: rgba(43, 27, 16, 0.35);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.auth-form__title {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(43, 27, 16, 0.6);
+}
+
+.field__input {
+  border: 1px solid rgba(43, 27, 16, 0.15);
+  background: #fffdf9;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+  outline: none;
+  width: 100%;
+}
+
+.field__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+.primary-button {
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.feedback {
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 11px 13px;
+  line-height: 1.4;
+}
+
+.feedback--error {
+  color: #b23c17;
+  background: rgba(178, 60, 23, 0.1);
+}
+
+.feedback--ok {
+  color: #1f6b3a;
+  background: rgba(31, 107, 58, 0.1);
+}
+
+.auth-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-top: 16px;
+}
+
+.notice {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(43, 27, 16, 0.6);
+  background: rgba(43, 27, 16, 0.05);
+  border-radius: 12px;
+  padding: 13px 15px;
+  margin-top: 20px;
+}
+
+.notice--soft {
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.account-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(43, 27, 16, 0.1);
+  border-radius: 14px;
+  padding: 16px;
+  margin: 20px 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.account-card__label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.account-card__email {
+  font-size: 15px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.account-card__hint {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(43, 27, 16, 0.6);
+  margin-top: 4px;
+}
+
+.sidebar__tool-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ghost-button {
@@ -597,19 +886,28 @@ button {
 .write-lines {
   flex: 1;
   overflow: auto;
-  padding: 4px 20px 100px;
+  padding: 6px 20px 100px;
 }
 
 .paragraph-textarea {
+  display: block;
   width: 100%;
   border: none;
+  padding: 0;
+  margin: 0;
   background: transparent;
   resize: none;
+  overflow: hidden;
   outline: none;
   font-family: var(--font-serif);
   font-size: 17px;
-  line-height: 33px;
+  line-height: var(--line-height);
   color: var(--color-ink);
+}
+
+/* Cabeçalho de leitura fica fora da pauta para o texto começar na linha certa. */
+.read-head {
+  padding: 6px 20px 14px;
 }
 
 /* History screen */
@@ -662,6 +960,47 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  min-height: 20px;
+}
+
+.history-card__head-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -4px -4px -4px 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(43, 27, 16, 0.55);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+}
+
+.history-card:hover .card-menu-button,
+.card-menu-button:focus-visible {
+  opacity: 1;
+}
+
+.card-menu-button:hover {
+  background: rgba(43, 27, 16, 0.1);
+  color: var(--color-ink);
+}
+
+/* Sem hover (celular/tablet) o botão fica sempre visível. */
+@media (hover: none) {
+  .card-menu-button {
+    opacity: 1;
+  }
 }
 
 .history-card__flag {
@@ -711,6 +1050,12 @@ button {
   padding: 6px 20px 40px;
 }
 
+.detail-body .detail-date,
+.detail-body .detail-time,
+.detail-body .detail-title {
+  margin-bottom: 0;
+}
+
 .detail-date {
   font-size: 13px;
   font-weight: 700;
@@ -733,7 +1078,8 @@ button {
 .paragraph-readonly {
   font-family: var(--font-serif);
   font-size: 17px;
-  line-height: 1.7;
+  line-height: var(--line-height);
+  margin: 0;
   white-space: pre-wrap;
   cursor: pointer;
 }
@@ -751,6 +1097,34 @@ button {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Confirmação curta de gravação, no estilo do ColorNote. */
+.toast--saved {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: 86px;
+  transform: translateX(-50%);
+  width: auto;
+  min-width: 96px;
+  padding: 11px 26px;
+  border-radius: 22px;
+  background: rgba(43, 27, 16, 0.92);
+  font-size: 13.5px;
+  z-index: 60;
+  animation: toast-in 0.16s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* Security screen */

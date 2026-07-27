@@ -27,17 +27,19 @@ export function DetailScreen({ entry, onBack }) {
   };
 
   return (
-    <div className="screen detail-screen">
+    <div className="screen detail-screen screen--aged">
       <div className="detail-topbar">
         <button type="button" className="icon-button" onClick={onBack} aria-label="Voltar">
           ‹
         </button>
         <span className="badge">Bloqueada</span>
       </div>
-      <div className="notebook-lines detail-body">
+      <div className="read-head">
         <div className="detail-date">{fmtFull(entry.createdAt)}</div>
         <div className="detail-time">{fmtTime(entry.createdAt)}</div>
         <div className="detail-title">{entry.title && entry.title.trim() ? entry.title : 'Sem título'}</div>
+      </div>
+      <div className="notebook-lines detail-body">
         {entry.paragraphs.map((p, i) => (
           <div key={i}>
             {i > 0 && p.time && (

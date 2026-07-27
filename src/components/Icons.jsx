@@ -62,6 +62,25 @@ export function LockIcon({ size = 14 }) {
   );
 }
 
+export function MoreIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <circle cx="12" cy="5" r="1.9" />
+      <circle cx="12" cy="12" r="1.9" />
+      <circle cx="12" cy="19" r="1.9" />
+    </svg>
+  );
+}
+
+export function UserIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <circle cx="12" cy="8.5" r="3.8" />
+      <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
