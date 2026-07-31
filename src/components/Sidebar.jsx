@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { fmtShort } from '../dateUtils';
 import { titleOf } from '../entryUtils';
 import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon, UserIcon, MoreIcon } from '../components/Icons';
@@ -21,6 +21,8 @@ export function Sidebar({
   onTrash,
 }) {
   const [openMenuId, setOpenMenuId] = useState(null);
+  const listRef = useRef(null);
+  const [scrollMetrics, setScrollMetrics] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
 
   useEffect(() => {
     if (!openMenuId) return undefined;
@@ -28,6 +30,30 @@ export function Sidebar({
     window.addEventListener('click', close);
     return () => window.removeEventListener('click', close);
   }, [openMenuId]);
+
+  const readMetrics = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    setScrollMetrics({ scrollTop: el.scrollTop, scrollHeight: el.scrollHeight, clientHeight: el.clientHeight });
+  }, []);
+
+  // A lista pode crescer/encolher (novas anotações, título quebrando linha) sem
+  // disparar scroll — recalcula sempre que o conteúdo real muda de tamanho.
+  useLayoutEffect(() => {
+    readMetrics();
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(readMetrics);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [entries, readMetrics]);
+
+  const scrollToFraction = useCallback((fraction) => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = fraction * Math.max(0, el.scrollHeight - el.clientHeight);
+    readMetrics();
+  }, [readMetrics]);
 
   return (
     <aside className={`sidebar ${className}`.trim()}>
@@ -39,7 +65,7 @@ export function Sidebar({
       </div>
 
       <div className="sidebar__body">
-        <div className="sidebar__list">
+        <div className="sidebar__list" ref={listRef} onScroll={readMetrics}>
           {entries.length === 0 && (
             <div className="empty-state empty-state--tight">
               <MemorasOutline height={54} />
@@ -89,7 +115,13 @@ export function Sidebar({
           ))}
         </div>
 
-        <Timeline entries={entries} onSelect={onSelect} />
+        <Timeline
+          entries={entries}
+          scrollTop={scrollMetrics.scrollTop}
+          scrollHeight={scrollMetrics.scrollHeight}
+          clientHeight={scrollMetrics.clientHeight}
+          onScrollTo={scrollToFraction}
+        />
       </div>
 
       <div className="sidebar__foot">

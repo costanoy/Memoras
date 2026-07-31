@@ -22,36 +22,50 @@ function indexAtFraction(fraction, count) {
 }
 
 /**
- * Trilha de datas ao estilo da galeria do Android: arraste para percorrer o
- * tempo, com um balão flutuante mostrando a data exata sob o dedo/cursor.
+ * A própria barra de rolagem da lista, ao estilo da galeria do Android:
+ * arraste para percorrer o tempo, com um balão flutuante mostrando a data
+ * exata sob o dedo/cursor. A lista por trás não tem barra nativa — esta
+ * trilha é a única forma de rolar e navegar por data ao mesmo tempo.
  */
-export function Timeline({ entries, onSelect }) {
+export function Timeline({ entries, scrollTop, scrollHeight, clientHeight, onScrollTo }) {
   const trackRef = useRef(null);
   const [dragIndex, setDragIndex] = useState(null);
+  const draggingRef = useRef(false);
 
   if (entries.length === 0) return null;
 
   const marks = buildMonthMarks(entries);
   const posOf = (index) => `${(index / Math.max(entries.length - 1, 1)) * 100}%`;
 
-  const indexFromEvent = (e) => {
+  const canScroll = scrollHeight > clientHeight + 1;
+  const maxScroll = Math.max(1, scrollHeight - clientHeight);
+  const scrollFraction = canScroll ? Math.min(1, scrollTop / maxScroll) : 0;
+  const thumbHeightFraction = canScroll ? Math.min(1, Math.max(0.06, clientHeight / scrollHeight)) : 1;
+  const thumbTopFraction = scrollFraction * (1 - thumbHeightFraction);
+
+  const fractionFromEvent = (e) => {
     const rect = trackRef.current.getBoundingClientRect();
-    const fraction = (e.clientY - rect.top) / rect.height;
-    return indexAtFraction(fraction, entries.length);
+    return Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+  };
+
+  const scrollToFraction = (fraction) => {
+    onScrollTo(fraction);
+    setDragIndex(indexAtFraction(fraction, entries.length));
   };
 
   const handlePointerDown = (e) => {
     trackRef.current.setPointerCapture(e.pointerId);
-    setDragIndex(indexFromEvent(e));
+    draggingRef.current = true;
+    scrollToFraction(fractionFromEvent(e));
   };
 
   const handlePointerMove = (e) => {
-    if (dragIndex === null) return;
-    setDragIndex(indexFromEvent(e));
+    if (!draggingRef.current) return;
+    scrollToFraction(fractionFromEvent(e));
   };
 
   const endDrag = () => {
-    if (dragIndex !== null) onSelect(entries[dragIndex]);
+    draggingRef.current = false;
     setDragIndex(null);
   };
 
@@ -62,9 +76,15 @@ export function Timeline({ entries, onSelect }) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
-      onPointerCancel={() => setDragIndex(null)}
+      onPointerCancel={endDrag}
     >
       <span className="sidebar__timeline-track" />
+      {canScroll && (
+        <span
+          className="sidebar__timeline-thumb"
+          style={{ top: `${thumbTopFraction * 100}%`, height: `${thumbHeightFraction * 100}%` }}
+        />
+      )}
       {marks.map((m) => (
         <span key={m.index} className="sidebar__timeline-label" style={{ top: posOf(m.index) }}>
           {m.label}

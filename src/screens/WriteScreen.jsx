@@ -173,6 +173,11 @@ export function WriteScreen({
             placeholder="Título (opcional)"
             value={entry.title}
             onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              caretToEnd(textareaRefs.current[0]);
+            }}
           />
           <div className="notebook-lines write-lines">
             {entry.paragraphs.map((p, i) => (
