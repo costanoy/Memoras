@@ -13,7 +13,7 @@ export function EntryListScreen({ title, entries, emptyLabel, onBack, onOpenEntr
           ‹
         </button>
         <span className="topbar-title">{title}</span>
-        <div style={{ width: 30 }} />
+        <div />
       </div>
 
       <div className="list-body">

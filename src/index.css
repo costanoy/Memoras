@@ -167,7 +167,7 @@ button {
   .sidebar {
     display: flex;
     flex-direction: column;
-    width: 230px;
+    width: 260px;
     background: #fbf7f1;
     border-right: 1px solid rgba(43, 27, 16, 0.1);
     padding: 22px 14px 16px;
@@ -185,22 +185,23 @@ button {
     transform: translateX(-100%);
   }
 
+  /* Círculo, igual à pílula "H" do protótipo mobile. */
   .panel-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
     position: fixed;
     top: 50%;
-    left: 246px;
+    left: 276px;
     transform: translateY(-50%);
-    width: 26px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: 23px;
+    border-radius: 50%;
     background: var(--color-primary);
     color: #fff;
     font-weight: 800;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     padding: 0;
     box-shadow: 0 4px 12px rgba(43, 27, 16, 0.25);
@@ -212,14 +213,12 @@ button {
     left: 16px;
   }
 
+  /* Espaço do painel é reservado nos dois lados, aberto ou fechado, para o
+     título/texto/pauta central nunca deslocarem quando a pílula "H" alterna. */
   .app-main {
     min-height: 100dvh;
-    padding-left: 280px;
-    transition: padding-left 0.2s;
-  }
-
-  .app-main--wide {
-    padding-left: 50px;
+    padding-left: 320px;
+    padding-right: 320px;
   }
 
   .screen {
@@ -236,12 +235,6 @@ button {
   .history-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-
-  .write-lines,
-  .detail-body {
-    padding-left: 40px;
-    padding-right: 40px;
-  }
 }
 
 @media (min-width: 1200px) {
@@ -255,9 +248,6 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: 0 6px 4px;
-}
-
-.sidebar__head {
   min-height: 32px;
 }
 
@@ -274,6 +264,7 @@ button {
   background: transparent;
   text-align: left;
   padding: 9px 11px;
+  padding-right: 30px;
   border-radius: 10px;
   cursor: pointer;
   display: flex;
@@ -290,19 +281,158 @@ button {
   background: rgba(249, 115, 22, 0.12);
 }
 
+.sidebar__row-wrap {
+  position: relative;
+}
+
+.sidebar__row-wrap .card-menu-button {
+  position: absolute;
+  top: 8px;
+  right: 5px;
+}
+
+.sidebar__row-wrap:hover .card-menu-button,
+.sidebar__row-wrap .card-menu-button:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .sidebar__row-wrap .card-menu-button {
+    opacity: 1;
+  }
+}
+
 .sidebar__row-date {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--color-accent);
 }
 
 .sidebar__row-title {
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 15px;
   color: var(--color-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Menu suspenso: usado pelos 3 pontos de cada linha do painel lateral. */
+.mini-menu {
+  position: absolute;
+  top: 32px;
+  right: 4px;
+  background: #fffdf9;
+  border: 1px solid rgba(43, 27, 16, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(43, 27, 16, 0.22);
+  padding: 6px;
+  min-width: 150px;
+  z-index: 40;
+}
+
+.mini-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mini-menu__item:hover {
+  background: rgba(43, 27, 16, 0.06);
+}
+
+.mini-menu__item--danger {
+  color: #b23c17;
+}
+
+.sidebar__body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  gap: 2px;
+}
+
+.sidebar__body .sidebar__list {
+  flex: 1;
+}
+
+/*
+ * Trilha de datas ao estilo da galeria do Android: rótulos de mês, sem
+ * pontinhos — arraste na trilha para percorrer o tempo, um balão flutuante
+ * mostra a data exata sob o cursor/dedo enquanto arrasta.
+ */
+.sidebar__timeline {
+  position: relative;
+  width: 40px;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sidebar__timeline:active {
+  cursor: grabbing;
+}
+
+.sidebar__timeline-track {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 6px;
+  width: 1.5px;
+  background: rgba(43, 27, 16, 0.14);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.sidebar__timeline-label {
+  position: absolute;
+  right: 4px;
+  transform: translateY(-50%);
+  font-family: var(--font-ui);
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(43, 27, 16, 0.4);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sidebar__timeline-bubble {
+  position: absolute;
+  right: 100%;
+  margin-right: 10px;
+  transform: translateY(-50%);
+  background: var(--color-ink);
+  color: var(--color-page);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 7px 13px;
+  border-radius: 10px;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(43, 27, 16, 0.28);
+  pointer-events: none;
+  z-index: 45;
+}
+
+.sidebar__timeline-bubble::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: var(--color-ink);
 }
 
 .sidebar__foot {
@@ -316,11 +446,11 @@ button {
 .sidebar__tool {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   border: none;
   background: transparent;
   color: rgba(43, 27, 16, 0.7);
-  font-size: 12.5px;
+  font-size: 14.5px;
   font-weight: 700;
   padding: 8px 11px;
   border-radius: 10px;
@@ -362,6 +492,14 @@ button {
 .topbar-title {
   font-weight: 800;
   font-size: 17px;
+  text-align: center;
+}
+
+/* Título fica sempre centralizado na barra (grid de 3 colunas), mesmo com
+   ações de largura diferente dos dois lados. */
+.history-topbar > .icon-button,
+.security-topbar > .icon-button {
+  justify-self: start;
 }
 
 .badge {
@@ -883,10 +1021,21 @@ button {
   width: 100%;
 }
 
+/* Título e pauta centralizados na coluna que sobra entre painel e a
+   margem inutilizável do outro lado. */
+@media (min-width: 900px) {
+  .title-input {
+    text-align: center;
+    padding-left: 72px;
+    padding-right: 72px;
+  }
+}
+
 .write-lines {
   flex: 1;
   overflow: auto;
   padding: 6px 20px 100px;
+  cursor: text;
 }
 
 .paragraph-textarea {
@@ -900,7 +1049,7 @@ button {
   overflow: hidden;
   outline: none;
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 18.5px;
   line-height: var(--line-height);
   color: var(--color-ink);
 }
@@ -910,12 +1059,23 @@ button {
   padding: 6px 20px 14px;
 }
 
+/* No desktop, a data/hora/título de uma anotação bloqueada acompanham o
+   mesmo centro do título editável — senão só as notas antigas ficam
+   desalinhadas à esquerda. */
+@media (min-width: 900px) {
+  .read-head {
+    text-align: center;
+    padding-left: 72px;
+    padding-right: 72px;
+  }
+}
+
 /* History screen */
 
 .history-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 20px;
 }
 
@@ -923,6 +1083,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-self: end;
 }
 
 .history-grid {
@@ -1050,6 +1211,15 @@ button {
   padding: 6px 20px 40px;
 }
 
+/* Mais respiro entre o texto e a borda da coluna central no desktop. */
+@media (min-width: 900px) {
+  .write-lines,
+  .detail-body {
+    padding-left: 72px;
+    padding-right: 72px;
+  }
+}
+
 .detail-body .detail-date,
 .detail-body .detail-time,
 .detail-body .detail-title {
@@ -1077,7 +1247,7 @@ button {
 
 .paragraph-readonly {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 18.5px;
   line-height: var(--line-height);
   margin: 0;
   white-space: pre-wrap;
@@ -1130,9 +1300,9 @@ button {
 /* Security screen */
 
 .security-topbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 12px;
   padding: 20px;
 }
 
@@ -1298,6 +1468,7 @@ button {
   cursor: pointer;
 }
 
-.keypad-key:active {
-  background: rgba(43, 27, 16, 0.12);
+.keypad-key:active,
+.keypad-key--flash {
+  background: rgba(249, 115, 22, 0.22);
 }

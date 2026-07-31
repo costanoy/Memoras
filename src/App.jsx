@@ -179,6 +179,7 @@ function App() {
         now={store.now}
         setTitle={store.setTitle}
         setParagraphText={store.setParagraphText}
+        resetParagraphs={store.resetParagraphs}
         handleParagraphKeyDown={store.handleParagraphKeyDown}
         onOpenHistory={() => goTo('history')}
         onNewEntry={newEntry}
@@ -200,6 +201,8 @@ function App() {
         onOpenSecurity={() => goTo('security')}
         onOpenAccount={() => goTo('account')}
         accountEmail={authState.user?.email ?? null}
+        onArchive={store.archiveEntry}
+        onTrash={store.trashEntry}
       />
       <button
         type="button"

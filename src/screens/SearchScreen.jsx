@@ -20,7 +20,7 @@ export function SearchScreen({ entries, now, onBack, onOpenEntry }) {
           ‹
         </button>
         <span className="topbar-title">Pesquisar</span>
-        <div style={{ width: 30 }} />
+        <div />
       </div>
 
       <div className="search-field">

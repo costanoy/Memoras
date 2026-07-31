@@ -1,0 +1,4 @@
+# Hospedagem compartilhada costuma não conhecer a extensão .webmanifest e serve
+# o arquivo com o tipo errado. Isso garante o tipo correto para o manifesto do PWA.
+AddType application/manifest+json .webmanifest
+AddType image/svg+xml .svg

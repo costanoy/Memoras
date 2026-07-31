@@ -151,6 +151,17 @@ export function useEntries(uid = null) {
     });
   }, [selectedId, updateEntry]);
 
+  /** Colapsa todos os parágrafos em um só — usado quando o usuário digita ou
+   *  apaga logo depois de um "selecionar tudo" virtual (Ctrl+A entre caixas). */
+  const resetParagraphs = useCallback((text) => {
+    if (!selectedId) return;
+    updateEntry(selectedId, (e) => ({
+      ...e,
+      paragraphs: [{ text, time: null }],
+      lastActiveAt: Date.now(),
+    }));
+  }, [selectedId, updateEntry]);
+
   const selectedEntry = useMemo(
     () => entries.find((e) => e.id === selectedId) ?? null,
     [entries, selectedId]
@@ -191,6 +202,7 @@ export function useEntries(uid = null) {
     consumeDirty,
     setTitle,
     setParagraphText,
+    resetParagraphs,
     handleParagraphKeyDown,
     archiveEntry: (id) => setStatus(id, 'archived'),
     trashEntry: (id) => setStatus(id, 'trashed'),
