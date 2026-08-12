@@ -240,14 +240,7 @@ function App() {
         setTitle={store.setTitle}
         setEntryTitle={store.setEntryTitle}
         setParagraphText={store.setParagraphText}
-        resetParagraphs={store.resetParagraphs}
-        mergeParagraphBack={store.mergeParagraphBack}
-        splitParagraph={store.splitParagraph}
-        removeParagraph={store.removeParagraph}
-        undo={store.undo}
-        redo={store.redo}
-        canUndo={store.canUndo}
-        canRedo={store.canRedo}
+        startNewBlock={store.startNewBlock}
         onOpenHistory={() => goTo('history')}
         onNewEntry={newEntry}
         onStartTyping={handleStartTyping}

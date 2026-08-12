@@ -634,86 +634,6 @@ button {
   white-space: nowrap;
 }
 
-.dashed-divider__delete {
-  border: none;
-  background: rgba(212, 90, 12, 0.14);
-  color: var(--color-accent);
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  padding: 0;
-}
-
-.dashed-divider__delete:hover {
-  background: rgba(212, 90, 12, 0.26);
-}
-
-/* Confirmação estilizada, usada antes de apagar uma divisória de vez. */
-.confirm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(43, 27, 16, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 200;
-}
-
-.confirm-card {
-  width: 100%;
-  max-width: 320px;
-  background: var(--color-page);
-  border-radius: 16px;
-  padding: 22px 20px;
-  box-shadow: 0 20px 50px rgba(43, 27, 16, 0.35);
-  text-align: center;
-}
-
-.confirm-card__text {
-  margin: 0 0 18px;
-  font-family: var(--font-ui);
-  font-size: 14.5px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--color-ink);
-}
-
-.confirm-card__actions {
-  display: flex;
-  gap: 10px;
-}
-
-.confirm-card__cancel,
-.confirm-card__danger {
-  flex: 1;
-  border: none;
-  border-radius: 12px;
-  padding: 11px;
-  font-family: var(--font-ui);
-  font-weight: 800;
-  font-size: 13.5px;
-  cursor: pointer;
-}
-
-.confirm-card__cancel {
-  background: rgba(43, 27, 16, 0.08);
-  color: var(--color-ink);
-}
-
-.confirm-card__danger {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.confirm-card__danger:hover {
-  background: var(--color-accent);
-}
 
 .fab {
   position: absolute;
@@ -1107,20 +1027,6 @@ button {
   margin-left: auto;
 }
 
-.undo-redo {
-  display: flex;
-  gap: 6px;
-}
-
-.undo-redo .icon-button--round:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.undo-redo .icon-button--round:not(:disabled):hover {
-  background: rgba(43, 27, 16, 0.12);
-}
-
 .short-date {
   font-weight: 800;
   font-size: 15px;
@@ -1177,10 +1083,6 @@ button {
 /* O "Ctrl+A" virtual seleciona todas as caixas por baixo dos panos, mas o
    navegador só desenha a seleção nativa (azul) na caixa que está com foco de
    verdade — as outras ficam pintadas à mão pra parecerem selecionadas também. */
-.paragraph-textarea--selected {
-  background: rgba(249, 115, 22, 0.45);
-}
-
 /* Cabeçalho de leitura fica fora da pauta para o texto começar na linha certa. */
 .read-head {
   padding: 6px 20px 14px;
