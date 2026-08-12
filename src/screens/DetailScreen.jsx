@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { fmtFull, fmtTime } from '../dateUtils';
 import { WARNING_VISIBLE_MS } from '../constants';
 
-export function DetailScreen({ entry, onBack }) {
+export function DetailScreen({ entry, onBack, setEntryTitle }) {
   const [warningVisible, setWarningVisible] = useState(false);
   const warnTimer = useRef(null);
 
@@ -37,7 +37,12 @@ export function DetailScreen({ entry, onBack }) {
       <div className="read-head">
         <div className="detail-date">{fmtFull(entry.createdAt)}</div>
         <div className="detail-time">{fmtTime(entry.createdAt)}</div>
-        <div className="detail-title">{entry.title && entry.title.trim() ? entry.title : 'Sem título'}</div>
+        <input
+          className="detail-title-input"
+          placeholder="Título"
+          value={entry.title}
+          onChange={(e) => setEntryTitle(entry.id, e.target.value)}
+        />
       </div>
       <div className="notebook-lines detail-body">
         {entry.paragraphs.map((p, i) => (

@@ -18,10 +18,3 @@ export function fmtTime(ts) {
   const d = new Date(ts);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
-
-/** "jul" no ano atual, "jul 2025" em anos anteriores — rótulo da timeline. */
-export function fmtMonthLabel(ts) {
-  const d = new Date(ts);
-  const abbr = MONTHS_ABBR[d.getMonth()];
-  return d.getFullYear() === new Date().getFullYear() ? abbr : `${abbr} ${d.getFullYear()}`;
-}

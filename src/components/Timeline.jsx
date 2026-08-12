@@ -1,20 +1,5 @@
 import { useRef, useState } from 'react';
-import { fmtFull, fmtMonthLabel } from '../dateUtils';
-
-/** Um rótulo por mês em que a lista muda — só no primeiro item de cada mês. */
-function buildMonthMarks(entries) {
-  const marks = [];
-  let lastKey = null;
-  entries.forEach((entry, index) => {
-    const d = new Date(entry.createdAt);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    if (key !== lastKey) {
-      marks.push({ index, label: fmtMonthLabel(entry.createdAt) });
-      lastKey = key;
-    }
-  });
-  return marks;
-}
+import { fmtFull } from '../dateUtils';
 
 function indexAtFraction(fraction, count) {
   if (count <= 1) return 0;
@@ -34,7 +19,6 @@ export function Timeline({ entries, scrollTop, scrollHeight, clientHeight, onScr
 
   if (entries.length === 0) return null;
 
-  const marks = buildMonthMarks(entries);
   const posOf = (index) => `${(index / Math.max(entries.length - 1, 1)) * 100}%`;
 
   const canScroll = scrollHeight > clientHeight + 1;
@@ -85,11 +69,6 @@ export function Timeline({ entries, scrollTop, scrollHeight, clientHeight, onScr
           style={{ top: `${thumbTopFraction * 100}%`, height: `${thumbHeightFraction * 100}%` }}
         />
       )}
-      {marks.map((m) => (
-        <span key={m.index} className="sidebar__timeline-label" style={{ top: posOf(m.index) }}>
-          {m.label}
-        </span>
-      ))}
       {dragIndex !== null && (
         <div className="sidebar__timeline-bubble" style={{ top: posOf(dragIndex) }}>
           {fmtFull(entries[dragIndex].createdAt)}

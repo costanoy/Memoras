@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EntryCard } from '../components/EntryCard';
 import { ActionSheet } from '../components/ActionSheet';
-import { LockIcon, NewNoteIcon, SearchIcon, TrashIcon, ArchiveIcon } from '../components/Icons';
+import { LockIcon, SearchIcon, TrashIcon, ArchiveIcon, MoreIcon } from '../components/Icons';
 import { MemorasOutline } from '../components/Logo';
 
 export function HistoryScreen({
@@ -19,7 +19,14 @@ export function HistoryScreen({
   onTrash,
 }) {
   const [sheetEntry, setSheetEntry] = useState(null);
-  const [fabOpen, setFabOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = () => setMenuOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [menuOpen]);
 
   return (
     <div className="screen history-screen">
@@ -30,11 +37,35 @@ export function HistoryScreen({
         <span className="topbar-title">Histórico</span>
         <div className="history-topbar__actions">
           <button type="button" className="icon-button icon-button--round" onClick={onOpenSecurity} aria-label="Segurança">
-            <LockIcon />
+            <LockIcon size={18} />
           </button>
-          <button type="button" className="icon-button icon-button--round" onClick={onNewEntry} aria-label="Nova anotação">
-            <NewNoteIcon size={17} />
-          </button>
+          <div className="history-menu">
+            <button
+              type="button"
+              className="icon-button icon-button--round"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
+              aria-label="Mais opções"
+              aria-expanded={menuOpen}
+            >
+              <MoreIcon size={20} />
+            </button>
+            {menuOpen && (
+              <div className="mini-menu mini-menu--history">
+                <button type="button" className="mini-menu__item" onClick={() => { setMenuOpen(false); onOpenSearch(); }}>
+                  <SearchIcon size={17} />
+                  <span>Pesquisar</span>
+                </button>
+                <button type="button" className="mini-menu__item" onClick={() => { setMenuOpen(false); onOpenTrash(); }}>
+                  <TrashIcon size={17} />
+                  <span>Lixeira</span>
+                </button>
+                <button type="button" className="mini-menu__item" onClick={() => { setMenuOpen(false); onOpenArchive(); }}>
+                  <ArchiveIcon size={17} />
+                  <span>Arquivadas</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -58,46 +89,9 @@ export function HistoryScreen({
         ))}
       </div>
 
-      {fabOpen && <div className="fab-scrim" onClick={() => setFabOpen(false)} />}
-      <div className="fab-stack">
-        {fabOpen && (
-          <div className="fab-menu">
-            <button
-              type="button"
-              className="fab-menu__item"
-              onClick={() => { setFabOpen(false); onOpenSearch(); }}
-            >
-              <SearchIcon size={17} />
-              <span>Pesquisar</span>
-            </button>
-            <button
-              type="button"
-              className="fab-menu__item"
-              onClick={() => { setFabOpen(false); onOpenTrash(); }}
-            >
-              <TrashIcon size={17} />
-              <span>Lixeira</span>
-            </button>
-            <button
-              type="button"
-              className="fab-menu__item"
-              onClick={() => { setFabOpen(false); onOpenArchive(); }}
-            >
-              <ArchiveIcon size={17} />
-              <span>Arquivadas</span>
-            </button>
-          </div>
-        )}
-        <button
-          type="button"
-          className={`fab${fabOpen ? ' fab--open' : ''}`}
-          onClick={() => setFabOpen((o) => !o)}
-          aria-label="Mais opções"
-          aria-expanded={fabOpen}
-        >
-          +
-        </button>
-      </div>
+      <button type="button" className="fab" onClick={onNewEntry} aria-label="Nova anotação">
+        +
+      </button>
 
       <ActionSheet
         entry={sheetEntry}

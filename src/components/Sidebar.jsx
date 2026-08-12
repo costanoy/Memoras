@@ -19,6 +19,8 @@ export function Sidebar({
   accountEmail,
   onArchive,
   onTrash,
+  diaryName,
+  onDiaryNameChange,
 }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const listRef = useRef(null);
@@ -58,7 +60,14 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${className}`.trim()}>
       <div className="sidebar__head">
-        <MemorasMark height={30} />
+        <MemorasMark height={42} />
+        <input
+          className="sidebar__diary-name"
+          placeholder="Memoras"
+          value={diaryName ?? ''}
+          onChange={(e) => onDiaryNameChange?.(e.target.value)}
+          aria-label="Nome do diário"
+        />
         <button type="button" className="icon-button icon-button--round" onClick={onNewEntry} aria-label="Nova anotação">
           <NewNoteIcon size={17} />
         </button>

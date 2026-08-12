@@ -88,3 +88,21 @@ export function CloseIcon({ size = 18 }) {
     </svg>
   );
 }
+
+export function UndoIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M7 7h9a4.5 4.5 0 0 1 0 9H9" />
+      <path d="M10.5 3.5L7 7l3.5 3.5" />
+    </svg>
+  );
+}
+
+export function RedoIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M17 7H8a4.5 4.5 0 0 0 0 9h6.5" />
+      <path d="M13.5 3.5L17 7l-3.5 3.5" />
+    </svg>
+  );
+}

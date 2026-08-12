@@ -28,6 +28,12 @@ body,
   height: 100%;
 }
 
+/* Reserva o espaço da barra de rolagem sempre — sem isso, o conteúdo inteiro
+   desloca alguns pixels para o lado toda vez que uma tela passa a rolar. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   background: var(--color-canvas);
@@ -124,8 +130,26 @@ button {
   }
 }
 
+/* Ao sair do texto de volta para o Histórico, a tela entra pela esquerda —
+   o mesmo sentido de "voltar" usado em apps de celular. */
+.app-main--slide-back .screen {
+  animation: screen-in-from-left 0.22s ease-out;
+}
+
+@keyframes screen-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .screen,
+  .app-main--slide-back .screen,
   .splash,
   .toast--saved {
     animation: none;
@@ -232,10 +256,8 @@ button {
     min-height: auto;
   }
 
-  /* On desktop the side panel replaces the phone's floating buttons. */
-  .app-shell .fab,
-  .app-shell .fab-stack,
-  .app-shell .fab-scrim {
+  /* On desktop the side panel replaces the phone's floating button. */
+  .app-shell .fab {
     display: none;
   }
 
@@ -253,9 +275,30 @@ button {
 .sidebar__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 0 6px 4px;
-  min-height: 32px;
+  min-height: 44px;
+}
+
+.sidebar__diary-name {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 4px 2px;
+}
+
+.sidebar__diary-name::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.55;
+}
+
+.sidebar__diary-name:focus {
+  outline: none;
 }
 
 .sidebar__list {
@@ -370,6 +413,16 @@ button {
   color: #b23c17;
 }
 
+/* Menu de opções do topo do Histórico (pesquisar/lixeira/arquivadas). */
+.history-menu {
+  position: relative;
+}
+
+.mini-menu--history {
+  top: 42px;
+  right: 0;
+}
+
 .sidebar__body {
   flex: 1;
   display: flex;
@@ -383,8 +436,8 @@ button {
 
 /*
  * A própria barra de rolagem da lista, ao estilo da galeria do Android:
- * arraste para rolar E percorrer o tempo ao mesmo tempo, com rótulos de mês
- * e um balão flutuante mostrando a data exata sob o cursor/dedo.
+ * arraste para rolar E percorrer o tempo ao mesmo tempo, com um balão
+ * flutuante mostrando a data exata sob o cursor/dedo.
  */
 .sidebar__timeline {
   position: relative;
@@ -402,7 +455,7 @@ button {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 6px;
+  right: 8px;
   width: 1.5px;
   background: rgba(43, 27, 16, 0.14);
   border-radius: 2px;
@@ -412,7 +465,7 @@ button {
 /* O "polegar" da barra: mostra o trecho visível da lista, arrastável. */
 .sidebar__timeline-thumb {
   position: absolute;
-  left: 2px;
+  right: 4px;
   width: 9px;
   min-height: 24px;
   border-radius: 5px;
@@ -427,18 +480,6 @@ button {
 
 .sidebar__timeline:active .sidebar__timeline-thumb {
   background: var(--color-primary);
-}
-
-.sidebar__timeline-label {
-  position: absolute;
-  right: 4px;
-  transform: translateY(-50%);
-  font-family: var(--font-ui);
-  font-size: 9.5px;
-  font-weight: 800;
-  color: rgba(43, 27, 16, 0.4);
-  white-space: nowrap;
-  pointer-events: none;
 }
 
 .sidebar__timeline-bubble {
@@ -593,6 +634,87 @@ button {
   white-space: nowrap;
 }
 
+.dashed-divider__delete {
+  border: none;
+  background: rgba(212, 90, 12, 0.14);
+  color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.dashed-divider__delete:hover {
+  background: rgba(212, 90, 12, 0.26);
+}
+
+/* Confirmação estilizada, usada antes de apagar uma divisória de vez. */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 27, 16, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 320px;
+  background: var(--color-page);
+  border-radius: 16px;
+  padding: 22px 20px;
+  box-shadow: 0 20px 50px rgba(43, 27, 16, 0.35);
+  text-align: center;
+}
+
+.confirm-card__text {
+  margin: 0 0 18px;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-ink);
+}
+
+.confirm-card__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-card__cancel,
+.confirm-card__danger {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 11px;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.confirm-card__cancel {
+  background: rgba(43, 27, 16, 0.08);
+  color: var(--color-ink);
+}
+
+.confirm-card__danger {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.confirm-card__danger:hover {
+  background: var(--color-accent);
+}
+
 .fab {
   position: absolute;
   bottom: 22px;
@@ -607,68 +729,6 @@ button {
   font-weight: 800;
   font-size: 18px;
   cursor: pointer;
-}
-
-.fab--inline {
-  position: static;
-  width: 32px;
-  height: 32px;
-  font-size: 15px;
-  box-shadow: none;
-}
-
-.fab--open {
-  transform: rotate(45deg);
-}
-
-.fab-stack {
-  position: absolute;
-  bottom: 22px;
-  right: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
-  z-index: 5;
-}
-
-.fab-stack .fab {
-  position: static;
-  transition: transform 0.18s;
-}
-
-.fab-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(43, 27, 16, 0.18);
-  z-index: 4;
-}
-
-.fab-menu {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.fab-menu__item {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  background: #fff;
-  color: var(--color-ink);
-  border: 1px solid rgba(43, 27, 16, 0.1);
-  border-radius: 24px;
-  padding: 11px 17px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(43, 27, 16, 0.18);
-  white-space: nowrap;
-}
-
-.fab-menu__item:hover {
-  background: #fffdf9;
 }
 
 /* Action sheet (long press on a history card) */
@@ -1047,10 +1107,25 @@ button {
   margin-left: auto;
 }
 
+.undo-redo {
+  display: flex;
+  gap: 6px;
+}
+
+.undo-redo .icon-button--round:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.undo-redo .icon-button--round:not(:disabled):hover {
+  background: rgba(43, 27, 16, 0.12);
+}
+
 .short-date {
   font-weight: 800;
   font-size: 15px;
   color: var(--color-accent);
+  font-family: var(--font-serif);
 }
 
 .title-input {
@@ -1059,9 +1134,9 @@ button {
   font-weight: 800;
   font-size: 22px;
   color: var(--color-ink);
-  padding: 6px 20px;
+  padding: 6px 20px 22px;
   outline: none;
-  font-family: var(--font-ui);
+  font-family: var(--font-serif);
   width: 100%;
 }
 
@@ -1096,6 +1171,14 @@ button {
   font-size: 18.5px;
   line-height: var(--line-height);
   color: var(--color-ink);
+  text-indent: 1.8em;
+}
+
+/* O "Ctrl+A" virtual seleciona todas as caixas por baixo dos panos, mas o
+   navegador só desenha a seleção nativa (azul) na caixa que está com foco de
+   verdade — as outras ficam pintadas à mão pra parecerem selecionadas também. */
+.paragraph-textarea--selected {
+  background: rgba(249, 115, 22, 0.45);
 }
 
 /* Cabeçalho de leitura fica fora da pauta para o texto começar na linha certa. */
@@ -1123,11 +1206,22 @@ button {
   padding: 20px;
 }
 
+/* Painel de navegação principal do celular — cabeçalho e ícones maiores que
+   o padrão das telas secundárias, para pesar mais como a tela "central". */
+.history-topbar .topbar-title {
+  font-size: 19px;
+}
+
 .history-topbar__actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   justify-self: end;
+}
+
+.history-topbar__actions .icon-button--round {
+  width: 38px;
+  height: 38px;
 }
 
 .history-grid {
@@ -1136,20 +1230,20 @@ button {
   padding: 4px 20px 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
   align-content: start;
 }
 
 .history-card {
   background: var(--color-surface);
   border: 1px solid rgba(43, 27, 16, 0.1);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 16px;
+  padding: 17px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
-  min-height: 118px;
+  min-height: 134px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -1178,8 +1272,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   margin: -4px -4px -4px 0;
   border: none;
   border-radius: 50%;
@@ -1209,29 +1303,29 @@ button {
 }
 
 .history-card__flag {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   color: rgba(43, 27, 16, 0.45);
   background: rgba(43, 27, 16, 0.07);
-  padding: 2px 6px;
+  padding: 3px 7px;
   border-radius: 6px;
   white-space: nowrap;
 }
 
 .history-card__date {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--color-accent);
 }
 
 .history-card__title {
   font-weight: 800;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .history-card__snippet {
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13.5px;
+  line-height: 1.45;
   color: rgba(43, 27, 16, 0.65);
   font-family: var(--font-serif);
   overflow: hidden;
@@ -1264,17 +1358,12 @@ button {
   }
 }
 
-.detail-body .detail-date,
-.detail-body .detail-time,
-.detail-body .detail-title {
-  margin-bottom: 0;
-}
-
 .detail-date {
   font-size: 13px;
   font-weight: 700;
   color: var(--color-accent);
   margin-bottom: 2px;
+  font-family: var(--font-serif);
 }
 
 .detail-time {
@@ -1283,10 +1372,21 @@ button {
   margin-bottom: 16px;
 }
 
-.detail-title {
+/* Título continua editável mesmo numa anotação já bloqueada — só o corpo
+   do texto trava. Visualmente idêntico ao antigo texto fixo. */
+.detail-title-input {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+  font-family: var(--font-serif);
+  color: var(--color-ink);
   font-weight: 800;
   font-size: 21px;
-  margin-bottom: 14px;
+  margin-bottom: 22px;
+  text-align: inherit;
 }
 
 .paragraph-readonly {
@@ -1296,13 +1396,20 @@ button {
   margin: 0;
   white-space: pre-wrap;
   cursor: pointer;
+  text-indent: 1.8em;
 }
 
+/* `fixed`, não `absolute` — a tela de escrita/leitura pode crescer mais alta
+   que a janela quando o texto é longo (só usa min-height, não height), e um
+   aviso `absolute` ficaria "bottom" daquele conteúdo todo, não da tela
+   visível — só apareceria rolando até o fim do texto. */
 .toast {
-  position: absolute;
+  position: fixed;
   bottom: 22px;
   left: 18px;
   right: 18px;
+  max-width: 480px;
+  margin: 0 auto;
   background: var(--color-ink);
   color: var(--color-page);
   font-size: 12.5px;
@@ -1311,6 +1418,7 @@ button {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  z-index: 80;
 }
 
 /* Confirmação curta de gravação, no estilo do ColorNote. */

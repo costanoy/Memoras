@@ -88,4 +88,22 @@ export async function putSettings(settings) {
   return db.put('settings', settings, 'current');
 }
 
-export { DEFAULT_SETTINGS };
+const DEFAULT_PREFS = {
+  diaryName: '',
+};
+
+// Mesma object store da senha, chave diferente ('prefs' em vez de 'current') —
+// preferências de exibição não têm nada a ver com segurança, mas não vale a
+// pena criar uma store nova só para isso.
+export async function getPrefs() {
+  const db = await getDB();
+  const prefs = await db.get('settings', 'prefs');
+  return prefs ?? DEFAULT_PREFS;
+}
+
+export async function putPrefs(prefs) {
+  const db = await getDB();
+  return db.put('settings', prefs, 'prefs');
+}
+
+export { DEFAULT_SETTINGS, DEFAULT_PREFS };

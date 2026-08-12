@@ -59,7 +59,7 @@ export function EntryCard({ entry, now, isSelected, onOpen, onLongPress, showMen
                 onLongPress(entry);
               }}
             >
-              <MoreIcon size={16} />
+              <MoreIcon size={18} />
             </button>
           )}
         </div>
