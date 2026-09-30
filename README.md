@@ -20,12 +20,23 @@ Precisa de `https` ou `localhost`, porque a criptografia usa a Web Crypto do nav
 ```
 npm run desktop   # abre o app de desktop sem instalar
 npm run dist      # gera release/Memoras-Setup-<versão>.exe
-npm run release   # gera e publica a versão no GitHub Releases
+npm run release   # publica .exe e .apk no GitHub Releases
 ```
 
 O app instalado procura versão nova em `github.com/costanoy/Memoras` (Releases) ao abrir e a cada 4 horas, baixa em segundo plano e instala ao fechar. Para lançar uma versão: suba o `version` no `package.json`, defina `GH_TOKEN` e rode `npm run release`; depois publique o rascunho de release que aparece no GitHub. O arquivo `latest.yml` precisa ir junto com o `.exe`, é ele que o app consulta.
 
 O instalador não tem assinatura digital, então o Windows mostra o aviso do SmartScreen na primeira instalação.
+
+## App de Android (.apk)
+
+```
+npm run apk       # gera release/Memoras.apk assinado
+npm run release   # publica .exe e .apk juntos no release v<versão>
+```
+
+O APK é assinado com a chave em `~/.memoras/` (`memoras-release.jks` e `keystore.properties`), fora do repositório. **Faça backup dessa pasta:** sem ela, nenhuma versão nova instala por cima da atual, e quem já tem o app precisaria desinstalar e perder os dados do aparelho.
+
+A versão do app (Windows e Android) vem do `version` do `package.json`. Suba esse número antes de cada `npm run release`.
 
 ## Contas e sincronização (opcional)
 
