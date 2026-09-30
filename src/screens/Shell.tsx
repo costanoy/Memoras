@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, monthYear, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
-import { activeSorted, archive, editSeg, go, live, newNote, openNote, reducedMotion, set, setCfg, setPrefs, setStatus, setTitle, startCreatePin, toast, trash, typeNew, useApp, type State } from '../store';
+import { activeSorted, archive, editSeg, go, live, newNote, openNew, openNote, reducedMotion, set, setCfg, setPrefs, setStatus, setTitle, sfx, startCreatePin, toast, trash, typeNew, useApp, type State } from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { Icon, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
 
@@ -300,6 +300,15 @@ function Settings({ s }: { s: State }) {
         </div>
 
         <div className="gcard setcard">
+          <div className="group">Sons</div>
+          <button className="press row" aria-pressed={s.cfg.sounds} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
+            onClick={() => setCfg({ sounds: !s.cfg.sounds })}>
+            <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Sons do app</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Ao desbloquear, criar, arquivar e mandar para a lixeira. Nunca enquanto você escreve.</span></span>
+            <Toggle on={s.cfg.sounds} />
+          </button>
+        </div>
+
+        <div className="gcard setcard">
           <div className="group">PIN deste aparelho</div>
           <button className="press row" aria-pressed={s.cfg.pinOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
             onClick={() => { if (s.cfg.pinOn) { setCfg({ pinOn: false }); toast('PIN desativado'); } else startCreatePin('settings'); }}>
@@ -350,12 +359,13 @@ function usePlusBurst() {
     const el = ref.current;
     if (!burst || !el) return;
     const grow = el.animate([{ transform: 'scale(1)', opacity: 0.95 }, { transform: `scale(${burst.scale})`, opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
-    const t = setTimeout(newNote, 230);
+    const t = setTimeout(openNew, 230);
     grow.onfinish = () => { el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' }).onfinish = () => setBurst(null); };
     return () => clearTimeout(t);
   }, [burst]);
   const start = (btn: HTMLElement) => {
     if (reducedMotion()) return newNote();
+    sfx('new-note');
     const r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
     const far = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     setBurst({ x, y, scale: far / 26 + 1 });

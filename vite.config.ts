@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
         background_color: '#1fd0c8',
         icons: [{ src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,png,woff2}'] },
+      workbox: { globPatterns: ['**/*.{js,css,html,png,woff2,mp3}'] },
     }),
   ],
 }));

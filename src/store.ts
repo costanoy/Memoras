@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { kvGet, kvSet, noteDel, notePut, notesAll, wipeAll } from './lib/db';
 import { hashSecret, normCode, randomCode, verifySecret } from './lib/crypto';
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
+import { playSound, type Sound } from './sounds';
 import { applyTheme, THEMES, type ThemeKey } from './themes';
 
 export type Screen = 'loading' | 'pin' | 'forgotPin' | 'pinkey' | 'onboard' | 'auth' | 'recovery' | 'forgot' | 'history' | 'editor' | 'search' | 'archive' | 'settings';
@@ -16,6 +17,7 @@ export interface Cfg {
   pinOn: boolean; pinHash: string; pinSalt: string; pinKeyHash: string; pinKeySalt: string;
   pinFails: number; lockUntil: number;
   invite: boolean;
+  sounds: boolean;
   account: Account | null; dk: string | null; lastPull: string | null;
 }
 
@@ -43,7 +45,7 @@ export interface State {
 const defaultCfg: Cfg = {
   onboarded: false, diaryName: 'Meu diário', theme: 'turquesa', prefsTs: 0,
   pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0,
-  invite: true, account: null, dk: null, lastPull: null,
+  invite: true, sounds: true, account: null, dk: null, lastPull: null,
 };
 
 const mq = window.matchMedia('(max-width: 719.98px)');
@@ -133,7 +135,11 @@ export function upd(id: string, fn: (n: Note) => void) {
   set(s => ({ notes: s.notes.map(n => { if (n.id !== id) return n; const c = { ...n }; fn(c); c.rev = n.rev + 1; changed = c; return c; }) }));
   if (changed) { void notePut(changed); hooks.changed(); }
 }
-export function newNote() {
+export const sfx = (name: Sound) => { if (state.cfg.sounds) void playSound(name); };
+
+export function newNote() { sfx('new-note'); openNew(); }
+// Abre a anotação nova sem som: o + do celular toca o som no toque, antes da animação.
+export function openNew() {
   const n = blank(uid());
   set({ notes: [n, ...cleaned(state.notes, null)], sel: n.id, day: null, screen: 'editor', confirm: null });
 }
@@ -170,14 +176,14 @@ function drop(ids: string[]) {
 export function archive(id: string) {
   const n = state.notes.find(x => x.id === id); if (!n) return;
   if (n.status === 'archived') { setStatus(id, 'active'); toast('Anotação desarquivada'); return; }
-  setStatus(id, 'archived'); afterRemove(id);
+  setStatus(id, 'archived'); afterRemove(id); sfx('archive');
   toast('Anotação arquivada', () => { setStatus(id, 'active'); set({ sel: id }); });
 }
 export function trash(id: string) {
   const n = state.notes.find(x => x.id === id); if (!n) return;
   const prev = n.status;
   if (isEmpty(n)) { drop([id]); afterRemove(id); return; }
-  setStatus(id, 'trashed'); afterRemove(id);
+  setStatus(id, 'trashed'); afterRemove(id); sfx('trash');
   toast('Movida para a lixeira', () => { setStatus(id, prev); set({ sel: id }); });
 }
 export function confirmDo() {
@@ -205,13 +211,15 @@ export function flashKey(k: string) {
 export function pressKey(d: string) {
   const s = state;
   if (s.unlocking || s.cfg.lockUntil > Date.now()) return;
-  if (d === 'del') { set({ pin: s.pin.slice(0, -1) }); return; }
+  if (d === 'del') { if (s.pin) sfx('pin-key'); set({ pin: s.pin.slice(0, -1) }); return; }
   if (s.pin.length >= 4) return;
+  sfx('pin-key');
   const pin = s.pin + d;
   set({ pin, pinError: false, pinMsg: '' });
   if (pin.length === 4) setTimeout(() => void submitPin(pin), 140);
 }
 function pinFail(msg: string, extra: Partial<State> = {}) {
+  sfx('pin-error');
   set(s => ({ pinError: true, pinMsg: msg, shake: s.shake + 1, ...extra }));
   setTimeout(() => set({ pin: '' }), 420);
 }
@@ -228,6 +236,7 @@ async function submitPin(pin: string) {
       const rm = reducedMotion();
       setCfg({ pinFails: 0 });
       set({ unlocking: true, unlocked: true, pin: '' });
+      sfx('unlock');
       setTimeout(() => go('history'), rm ? 0 : 60);
       setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
       return;
