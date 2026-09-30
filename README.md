@@ -1,3 +1,5 @@
+> **OBSOLETO: NÃO USAR.** Versão antiga e abandonada do Memoras, guardada só como registro. Veja [OBSOLETO.md](OBSOLETO.md). O app atual está no branch `main`.
+
 # Memoras
 
 Diário pessoal — React + Vite, com armazenamento local (IndexedDB) e sincronização
