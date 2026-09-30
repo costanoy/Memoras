@@ -14,7 +14,9 @@ process.env.GH_TOKEN ||= execSync('gh auth token', { encoding: 'utf8' }).trim();
 
 run('npm run apk');
 run('npm run build:desktop');
-run('npx electron-builder --win --publish always');
+// O envio ao GitHub às vezes falha de primeira; uma segunda tentativa costuma passar.
+try { run('npx electron-builder --win --publish always'); }
+catch { console.log('Falhou o envio do instalador, tentando de novo…'); run('npx electron-builder --win --publish always'); }
 
 // O electron-builder às vezes cria dois rascunhos para a mesma versão: fica o que tem o latest.yml.
 const drafts = json(`gh api repos/${REPO}/releases`).filter(r => r.tag_name === tag);
