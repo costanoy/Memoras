@@ -1,69 +1,50 @@
 # Memoras
 
-Diário pessoal — React + Vite, com armazenamento local (IndexedDB) e sincronização
-opcional na nuvem via Firebase.
+Diário pessoal privado para computador e celular. Feito a partir de `design_handoff_memoras/`.
 
-## Rodando localmente
+É um app web instalável (PWA): React + Vite + TypeScript. A mesma base serve os dois formatos; abaixo de 720 px de largura entra o layout de celular.
 
-```bash
+## Rodar
+
+```
 npm install
-npm run dev
+npm run dev       # desenvolvimento
+npm run build     # gera dist/
+npm run preview   # serve dist/ (com uso offline)
 ```
 
-## Gerando o site para publicar
+Precisa de `https` ou `localhost`, porque a criptografia usa a Web Crypto do navegador.
 
-```bash
-npm run build
-```
-
-O resultado fica na pasta `dist/`. Publique **o conteúdo** dessa pasta (o `index.html`
-e a pasta `assets/`) na raiz do site/subdomínio. Não envie o código-fonte.
-
-## Sincronização na nuvem (Firebase)
-
-Sem configuração, o app funciona normalmente, só que **local**: cada aparelho tem seu
-próprio diário e nada sai do navegador. Para ligar contas e sincronização:
-
-### 1. Criar o projeto
-
-1. Acesse <https://console.firebase.google.com> e crie um projeto (plano Spark, gratuito).
-2. Em **Criação › Authentication**, clique em *Começar* e ative o provedor **E-mail/senha**.
-3. Em **Criação › Firestore Database**, crie o banco (escolha a região mais próxima, ex.: `southamerica-east1`).
-4. Em **Configurações do projeto › Seus aplicativos**, adicione um app **Web** e copie os dados do SDK.
-
-### 2. Preencher as credenciais
-
-Copie `.env.example` para `.env` e preencha com os valores do passo anterior:
-
-```bash
-cp .env.example .env
-```
-
-Esses valores **não são segredo** — eles ficam visíveis no código de qualquer site que
-use Firebase, por design. A segurança vem das regras do banco, no passo seguinte.
-
-Depois de preencher, rode `npm run build` de novo: só a partir daí a tela de conta
-passa a funcionar.
-
-### 3. Aplicar as regras de segurança (obrigatório)
-
-No console do Firebase, em **Firestore Database › Regras**, cole o conteúdo do arquivo
-[`firestore.rules`](./firestore.rules) e publique.
-
-Sem isso o banco fica aberto para qualquer pessoa. As regras garantem que cada usuário
-só consegue ler e escrever as próprias anotações.
-
-### Como os dados ficam organizados
+## App de Windows (.exe)
 
 ```
-users/{uid}/entries/{entryId}
+npm run desktop   # abre o app de desktop sem instalar
+npm run dist      # gera release/Memoras-Setup-<versão>.exe
+npm run release   # gera e publica a versão no GitHub Releases
 ```
 
-- **Deslogado:** tudo em IndexedDB, no próprio aparelho.
-- **Logado:** tudo no Firestore, que mantém cache offline — dá para escrever sem internet
-  e sincroniza sozinho quando a conexão volta.
-- **No primeiro login em cada aparelho**, as anotações que já existiam localmente são
-  enviadas para a conta, sem duplicar as que já estavam na nuvem.
+O app instalado procura versão nova em `github.com/costanoy/Memoras` (Releases) ao abrir e a cada 4 horas, baixa em segundo plano e instala ao fechar. Para lançar uma versão: suba o `version` no `package.json`, defina `GH_TOKEN` e rode `npm run release`; depois publique o rascunho de release que aparece no GitHub. O arquivo `latest.yml` precisa ir junto com o `.exe`, é ele que o app consulta.
 
-O **PIN** da tela de bloqueio é sempre local: ele trava o aplicativo naquele aparelho e
-é independente da conta.
+O instalador não tem assinatura digital, então o Windows mostra o aviso do SmartScreen na primeira instalação.
+
+## Contas e sincronização (opcional)
+
+Sem configuração o app funciona inteiro, só no aparelho. Para ligar contas:
+
+1. Crie um projeto no Supabase e rode `supabase/schema.sql` no SQL Editor.
+2. Copie `.env.example` para `.env` e preencha a URL e a chave anônima.
+3. Em Authentication, URL Configuration, coloque o endereço do app em Site URL e Redirect URLs (o link de "Esqueci minha senha" volta para ele).
+
+## Como os dados ficam
+
+- **No aparelho:** IndexedDB (`memoras`). Anotações e preferências.
+- **No servidor:** só texto cifrado (AES-GCM). Uma chave do diário é criada no aparelho e guardada no servidor cifrada duas vezes: com a senha e com a chave de recuperação. A senha digitada não é enviada; o login usa um valor derivado dela.
+- **PIN:** é uma tranca da tela neste aparelho, guardada como hash. Não cifra os dados no disco.
+- **Junção entre aparelhos:** cada trecho, o título e o estado da anotação carregam o horário da última mudança; vale o mais recente de cada um (`merge` em `src/lib/notes.ts`).
+
+## Onde está cada coisa
+
+- `src/store.ts`: estado, navegação, anotações, regras do PIN.
+- `src/sync.ts`: conta, chaves e sincronização com o Supabase.
+- `src/lib/`: criptografia, IndexedDB, modelo das anotações e datas.
+- `src/screens/`: as telas. `src/styles.css` e `src/themes.ts`: visual e os 10 temas.

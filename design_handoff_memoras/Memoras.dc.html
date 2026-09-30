@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="icon" type="image/png" href="assets/memoras-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Code+Pro:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--gel-fg:#fff;--sb:#0c2b40;--bg:radial-gradient(55% 45% at 10% 6%, rgba(255,255,255,.6), rgba(255,255,255,0) 62%), radial-gradient(50% 60% at 90% 16%, #c6f66c 0%, rgba(198,246,108,0) 60%), radial-gradient(55% 55% at 78% 94%, #33e1c1 0%, rgba(51,225,193,0) 62%), radial-gradient(32% 34% at 16% 90%, rgba(255,138,204,.55), rgba(255,138,204,0) 70%), linear-gradient(160deg, #1d9cf0 0%, #29c3e6 45%, #5ad98a 80%, #a8e24d 100%);--gel:linear-gradient(180deg,#5cc8f7 0%,#1a8fd6 48%,#0876c0 52%,#0c84cb 100%);--acc:#1a8fd6;--acc-d:#0a6fae;--acc-dd:#0876c0;--ring:rgba(92,200,247,.35);--acc-a:rgba(26,143,214,.5);--gel-bd:rgba(0,70,130,.45);--gel-sh:rgba(0,100,180,.6);--gel-ts:rgba(0,50,100,.45);--ink:#0c2b40;--ink2:#35566b;--ink3:#24485e;--ink4:#1f4a63;--base:#2cb3ea;--lock:linear-gradient(160deg, rgba(170,242,255,.9), rgba(40,170,230,.8) 50%, rgba(130,222,90,.85));--glass:linear-gradient(180deg,rgba(255,255,255,.58),rgba(255,255,255,.30));--glass2:linear-gradient(180deg,rgba(255,255,255,.84),rgba(255,255,255,.60));--milk:linear-gradient(180deg,rgba(251,254,255,.97),rgba(242,250,253,.94));--blur:blur(22px) saturate(170%);}
+html,body{margin:0;height:100%}
+body{font-family:'Source Sans 3',system-ui,sans-serif;color:var(--ink);background:var(--base);-webkit-font-smoothing:antialiased}
+a{color:var(--acc-d)}a:hover{color:var(--acc-dd)}
+input,textarea,button,select{font-family:inherit}
+textarea::placeholder,input::placeholder{color:#6d8898}
+@keyframes mFade{from{opacity:1}to{opacity:0}}
+@keyframes mIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes mTurn{from{transform:rotate(0)}to{transform:rotate(90deg)}}
+@keyframes mSheen{from{transform:translateX(0) skewX(-20deg)}to{transform:translateX(280px) skewX(-20deg)}}
+@keyframes mShackle{from{transform:translateY(0)}to{transform:translateY(-18px)}}
+@keyframes mLockOut{from{transform:scale(1);opacity:1}to{transform:scale(1.35);opacity:0}}
+@keyframes mShake{0%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}}
+@keyframes mSpin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="position:relative; min-height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--bg);">
+  <div style="position:absolute; left:-10%; top:52%; width:70%; height:40%; border-radius:50%; background:rgba(255,255,255,.22); filter:blur(50px); pointer-events:none"></div>
+  <div style="position:absolute; left:6%; top:10%; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 6%, rgba(255,255,255,.3) 20%, rgba(255,255,255,.06) 56%, rgba(255,255,255,.3) 71%, rgba(255,255,255,0) 73%); pointer-events:none"></div>
+  <div style="position:absolute; right:9%; top:58%; width:190px; height:190px; border-radius:50%; background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.9) 0 5%, rgba(255,255,255,.26) 20%, rgba(255,255,255,.05) 56%, rgba(255,255,255,.3) 71%, rgba(255,255,255,0) 73%); pointer-events:none"></div>
+  <div style="position:absolute; right:22%; top:8%; width:56px; height:56px; border-radius:50%; background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 7%, rgba(255,255,255,.3) 22%, rgba(255,255,255,.06) 56%, rgba(255,255,255,.35) 71%, rgba(255,255,255,0) 73%); pointer-events:none"></div>
+  <div style="position:absolute; left:30%; bottom:6%; width:80px; height:80px; border-radius:50%; background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0 6%, rgba(255,255,255,.28) 20%, rgba(255,255,255,.05) 56%, rgba(255,255,255,.3) 71%, rgba(255,255,255,0) 73%); pointer-events:none"></div>
+
+  <div style="{{ stageStyle }}">
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:50%; top:10px; width:118px; height:34px; margin-left:-59px; border-radius:20px; background:#0d1c28; z-index:60; pointer-events:none"></div>
+      <div style="position:absolute; left:0; right:0; top:0; height:50px; display:flex; align-items:center; justify-content:space-between; padding:0 30px; box-sizing:border-box; font-weight:700; font-size:15px; color:var(--sb); z-index:59; pointer-events:none">
+        <span>9:41</span>
+        <span style="display:flex; align-items:center; gap:3px"><span style="width:24px; height:12px; border:1.5px solid var(--sb); border-radius:4px; box-sizing:border-box; padding:1.5px; display:block"><span style="display:block; width:70%; height:100%; background:var(--sb); border-radius:1.5px"></span></span></span>
+      </div>
+    </sc-if>
+
+    <!-- PIN -->
+    <sc-if value="{{ isPin }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; align-items:safe center; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:360px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; gap:22px; padding:34px 24px 28px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center">
+            <div style="font-size:14px; font-weight:600; color:var(--ink4); letter-spacing:.04em">{{ diaryName }}</div>
+            <div style="font-size:24px; font-weight:700">{{ pinTitle }}</div>
+          </div>
+          {{ pinDotsEl }}
+          <div style="min-height:22px; font-size:15px; font-weight:600; color:#b0284a; text-align:center">{{ pinMsg }}</div>
+          <div style="display:grid; grid-template-columns:repeat(3,76px); gap:14px 20px; justify-content:center">
+            <sc-for list="{{ pinKeys }}" as="k" hint-placeholder-count="12">
+              <button onClick="{{ k.onClick }}" aria-label="{{ k.aria }}" style="width:76px; height:76px; border-radius:50%; visibility:{{ k.vis }}; background:linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.62) 49%, rgba(214,242,255,.62) 51%, rgba(255,255,255,.85) 100%); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, inset 0 -4px 10px rgba(0,100,160,.12), 0 8px 18px -8px rgba(0,60,110,.5); font-size:{{ k.fs }}; opacity:{{ k.op }}; transform:{{ k.tf }}; filter:{{ k.fl }}; font-weight:500; color:var(--ink); cursor:pointer; transition:transform .08s" style-active="transform:scale(.93)" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)">{{ k.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ pinIsUnlock }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ goForgotPin }}" style="background:none; border:none; padding:8px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Esqueci o PIN</button>
+          </sc-if>
+          <sc-if value="{{ pinCanBack }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ pinBack }}" style="background:none; border:none; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; padding:8px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Cancelar</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ONBOARDING -->
+    <sc-if value="{{ isOnboard }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; align-items:safe center; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:440px; box-sizing:border-box; display:flex; flex-direction:column; gap:22px; padding:34px 30px 30px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="display:flex; gap:6px">
+            <sc-for list="{{ obDots }}" as="d" hint-placeholder-count="3">
+              <div style="height:6px; flex:1; border-radius:3px; background:{{ d.bg }}"></div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ ob1 }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:15px; font-weight:600; color:var(--ink4)">Boas-vindas ao Memoras</div>
+              <div style="font-size:28px; font-weight:700; line-height:1.15; text-wrap:balance">Como vai se chamar seu diário?</div>
+              <div style="font-size:16px; color:var(--ink2); line-height:1.45">Aparece no topo do app. Dá para mudar depois nas configurações.</div>
+            </div>
+            <input value="{{ diaryName }}" onChange="{{ onDiaryName }}" placeholder="Meu diário" style="height:54px; border-radius:18px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 18px; font-size:18px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+            <button onClick="{{ obNext }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Continuar</button>
+          </sc-if>
+          <sc-if value="{{ obC }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:28px; font-weight:700; line-height:1.15">Escolha sua cor</div>
+              <div style="font-size:16px; color:var(--ink2); line-height:1.45">Muda o fundo, os botões e os destaques. Dá para trocar depois nas configurações.</div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px 6px">
+              <sc-for list="{{ themeOpts }}" as="t" hint-placeholder-count="10">
+                <button onClick="{{ t.onClick }}" aria-label="{{ t.label }}" aria-pressed="{{ t.on }}" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; color:var(--ink); font-size:13px; line-height:1.2; text-align:center; font-weight:{{ t.fw }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                  <span style="position:relative; display:block; width:48px; height:48px; border-radius:50%; box-sizing:border-box; border:2px solid #fff; overflow:hidden; background:{{ t.sw }}; box-shadow:{{ t.ring }}; transition:box-shadow .15s"><span style="position:absolute; left:7px; top:4px; width:28px; height:16px; border-radius:50%; background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0))"></span></span>
+                  <span>{{ t.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:10px">
+              <button onClick="{{ obBack }}" style="height:52px; border-radius:999px; padding:0 20px; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Voltar</button>
+              <button onClick="{{ obNext }}" style="flex:1; height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Continuar</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ ob2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:28px; font-weight:700; line-height:1.15">Onde guardar suas anotações?</div>
+              <div style="font-size:16px; color:var(--ink2); line-height:1.45">O Memoras funciona sem internet nos dois casos.</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px">
+              <sc-for list="{{ storeOpts }}" as="o" hint-placeholder-count="2">
+                <button onClick="{{ o.onClick }}" style="text-align:left; display:flex; gap:14px; align-items:flex-start; padding:16px 18px; border-radius:22px; cursor:pointer; color:var(--ink); background:{{ o.bg }}; border:1.5px solid {{ o.bd }}; box-shadow:{{ o.sh }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                  <span style="flex:none; width:22px; height:22px; margin-top:2px; border-radius:50%; box-sizing:border-box; border:2px solid {{ o.ring }}; background:{{ o.dot }}"></span>
+                  <span style="display:flex; flex-direction:column; gap:3px">
+                    <span style="font-size:18px; font-weight:700">{{ o.title }}</span>
+                    <span style="font-size:15px; line-height:1.45; color:var(--ink2)">{{ o.text }}</span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:10px">
+              <button onClick="{{ obBack }}" style="height:52px; border-radius:999px; padding:0 20px; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Voltar</button>
+              <button onClick="{{ obNext }}" style="flex:1; height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Continuar</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ ob3 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="font-size:28px; font-weight:700; line-height:1.15">Proteger com um PIN?</div>
+              <div style="font-size:16px; color:var(--ink2); line-height:1.45">O PIN pede um código de 4 dígitos ao abrir o app neste aparelho. É independente da senha da conta. Opcional.</div>
+              <div style="font-size:15px; color:var(--ink2); line-height:1.45">{{ obPinNote }}</div>
+            </div>
+            <button onClick="{{ obTogglePin }}" style="display:flex; align-items:center; gap:14px; padding:16px 18px; border-radius:22px; cursor:pointer; text-align:left; color:var(--ink); background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.95); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+              <span style="flex:1; font-size:17px; font-weight:600">Ativar PIN</span>
+              <span style="width:52px; height:30px; border-radius:15px; position:relative; flex:none; background:{{ obPinTrack }}; box-shadow:inset 0 1px 3px rgba(0,40,80,.25)"><span style="position:absolute; top:3px; left:{{ obPinKnob }}; width:24px; height:24px; border-radius:50%; background:linear-gradient(180deg,#fff,#e6f3f9); box-shadow:0 2px 4px rgba(0,40,80,.3); transition:left .15s"></span></span>
+            </button>
+            <button onClick="{{ obFinish }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">{{ obFinishLabel }}</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- AUTH -->
+    <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; align-items:safe center; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:420px; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; padding:30px 28px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="display:flex; padding:4px; border-radius:999px; background:rgba(12,60,90,.08); box-shadow:inset 0 1px 3px rgba(0,40,80,.12)">
+            <sc-for list="{{ authTabs }}" as="t" hint-placeholder-count="2">
+              <button onClick="{{ t.onClick }}" style="flex:1; height:40px; border-radius:999px; border:none; cursor:pointer; font-size:15px; font-weight:700; color:var(--ink); background:{{ t.bg }}; box-shadow:{{ t.sh }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <div style="font-size:26px; font-weight:700">{{ authTitle }}</div>
+            <div style="display:grid; font-size:15px; color:var(--ink2); line-height:1.45">
+              <span style="grid-area:1/1; visibility:{{ authSubSignupVis }}">Para sincronizar entre aparelhos. Suas anotações são criptografadas antes de sair do aparelho.</span>
+              <span style="grid-area:1/1; visibility:{{ authSubLoginVis }}">Entre para sincronizar este aparelho com os outros.</span>
+            </div>
+          </div>
+          <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:600; color:var(--ink4)">Email
+            <input type="email" value="{{ email }}" onChange="{{ onEmail }}" placeholder="voce@email.com" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; font-weight:400; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:6px; font-size:14px; font-weight:600; color:var(--ink4)">Senha
+            <input type="password" value="{{ password }}" onChange="{{ onPassword }}" placeholder="{{ pwPlaceholder }}" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; font-weight:400; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+          </label>
+          <sc-if value="{{ authErr }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:15px; font-weight:600; color:#b0284a">{{ authErr }}</div>
+          </sc-if>
+          <button onClick="{{ authSubmit }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">{{ authCta }}</button>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap">
+            <button onClick="{{ authBack }}" style="background:none; border:none; padding:8px 0; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Voltar</button>
+            <button onClick="{{ goForgot }}" style="background:none; border:none; padding:8px 0; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Esqueci minha senha</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- RECOVERY KEY -->
+    <sc-if value="{{ isRecovery }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; justify-content:center; padding:60px 16px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:500px; margin:auto 0; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; padding:30px 26px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Sua chave de recuperação</div>
+            <div style="font-size:16px; color:var(--ink2); line-height:1.45">Ela reabre suas anotações se você esquecer a senha. <strong style="color:var(--ink)">Esta chave aparece só agora.</strong> Guarde antes de continuar.</div>
+          </div>
+          <div style="padding:18px 16px; border-radius:20px; background:var(--milk); border:1px solid #fff; box-shadow:inset 0 2px 6px rgba(0,50,100,.1); font-family:'Source Code Pro',monospace; font-size:19px; font-weight:600; letter-spacing:.04em; text-align:center; color:var(--ink); word-break:break-all; line-height:1.5">{{ recKey }}</div>
+          <button onClick="{{ recEmail }}" style="display:flex; align-items:center; justify-content:center; gap:10px; height:54px; border-radius:999px; padding:0 20px; font-size:17px; font-weight:700; color:var(--ink); cursor:pointer; background:linear-gradient(180deg,#e2ffab 0%,#a6e756 48%,#86d535 52%,#99de47 100%); border:1px solid rgba(60,120,20,.4); box-shadow:inset 0 1px 0 rgba(255,255,255,.9), inset 0 -3px 8px rgba(40,100,0,.2), 0 10px 20px -8px rgba(60,140,20,.6); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">{{ recEmailLabel }}<span style="font-size:12px; font-weight:700; letter-spacing:.04em; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.75); color:#2d5a0c">RECOMENDADO</span></button>
+          <div style="display:flex; flex-wrap:wrap; gap:8px">
+            <sc-for list="{{ recActions }}" as="a" hint-placeholder-count="3">
+              <button onClick="{{ a.onClick }}" style="flex:1 1 auto; height:46px; border-radius:999px; padding:0 16px; white-space:nowrap; font-size:15px; font-weight:600; color:{{ a.color }}; cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ a.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:18px; background:rgba(255,236,190,.8); border:1px solid rgba(255,255,255,.9); font-size:15px; line-height:1.45; color:#4a3300">
+            <strong>Quem acessar seu email poderá abrir seu diário.</strong>
+            <span>Se enviar a chave por email, ative a verificação em duas etapas na sua conta de email.</span>
+          </div>
+          <button onClick="{{ recToggleConfirm }}" style="display:flex; align-items:center; gap:12px; padding:6px 2px; background:none; border:none; cursor:pointer; text-align:left; color:var(--ink); font-size:17px; font-weight:600; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+            <span style="flex:none; width:26px; height:26px; border-radius:8px; box-sizing:border-box; display:grid; place-items:center; color:#fff; font-size:16px; background:{{ recBoxBg }}; border:2px solid {{ recBoxBd }}">{{ recCheck }}</span>
+            Guardei minha chave
+          </button>
+          <button onClick="{{ recContinue }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; opacity:{{ recContOpacity }}; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Continuar</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- FORGOT -->
+    <sc-if value="{{ isForgot }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:440px; margin:auto 0; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; padding:30px 28px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="font-size:14px; font-weight:600; color:var(--ink4)">{{ fStepLabel }}</div>
+          <sc-if value="{{ f1 }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Esqueci minha senha</div>
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:16px; line-height:1.45; color:var(--ink2)">
+              <span>São duas etapas:</span>
+              <span><strong style="color:var(--ink)">1. Nova senha:</strong> para voltar a entrar na conta.</span>
+              <span><strong style="color:var(--ink)">2. Chave de recuperação:</strong> para reabrir suas anotações. A senha nova sozinha não abre o diário.</span>
+            </div>
+            <input type="email" value="{{ fEmail }}" onChange="{{ onFEmail }}" placeholder="Seu email" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+          </sc-if>
+          <sc-if value="{{ f2 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Crie uma nova senha</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Abrimos o link enviado para {{ fEmailShown }}.</div>
+            <input type="password" value="{{ fPass }}" onChange="{{ onFPass }}" placeholder="Nova senha, mínimo 8 caracteres" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+          </sc-if>
+          <sc-if value="{{ f3 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Agora, reabra suas anotações</div>
+            <div style="padding:14px 16px; border-radius:18px; background:rgba(214,242,255,.85); border:1px solid #fff; font-size:15px; line-height:1.45; color:#0c3a56">Sua senha foi trocada. As anotações são criptografadas e só abrem com a <strong>chave de recuperação</strong> que você guardou no cadastro.</div>
+            <textarea value="{{ fKey }}" onChange="{{ onFKey }}" placeholder="MEMO-XXXX-XXXX-XXXX-XXXX-XXXX" rows="2" style="resize:none; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:14px 16px; font-family:'Source Code Pro',monospace; font-size:17px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)"></textarea>
+            <button onClick="{{ toggleNoKey }}" style="align-self:flex-start; background:none; border:none; padding:0; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; text-decoration:underline; text-underline-offset:3px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Não tenho a chave</button>
+            <sc-if value="{{ fNoKey }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:15px; line-height:1.45; color:var(--ink2)">Sem a chave, as anotações antigas não podem ser reabertas, nem por nós. Você pode continuar usando a conta com um diário novo.</div>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{ f4 }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Tudo certo</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Sua senha nova já funciona e suas anotações foram reabertas neste aparelho.</div>
+          </sc-if>
+          <sc-if value="{{ fErr }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:15px; font-weight:600; color:#b0284a">{{ fErr }}</div>
+          </sc-if>
+          <button onClick="{{ fNext }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">{{ fCta }}</button>
+          <button onClick="{{ fBack }}" style="align-self:center; background:none; border:none; padding:6px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Voltar para o login</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- FORGOT PIN -->
+    <sc-if value="{{ isForgotPin }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:440px; margin:auto 0; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; padding:30px 28px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <sc-if value="{{ fpAuth }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Esqueci o PIN</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Entre com o email e a senha da sua conta para criar um PIN novo. Suas anotações continuam aqui.</div>
+            <input type="email" value="{{ fpEmail }}" onChange="{{ onFpEmail }}" placeholder="Email" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+            <input type="password" value="{{ fpPass }}" onChange="{{ onFpPass }}" placeholder="Senha" style="height:52px; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:0 16px; font-size:17px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+            <sc-if value="{{ fpErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:15px; font-weight:600; color:#b0284a">{{ fpErr }}</div></sc-if>
+            <button onClick="{{ fpSubmit }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Confirmar</button>
+            <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap">
+              <button onClick="{{ fpBack }}" style="background:none; border:none; padding:8px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; padding:6px 0; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Voltar</button>
+              <button onClick="{{ goForgot }}" style="background:none; border:none; padding:8px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; padding:6px 0; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Esqueci minha senha</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ fpKeyStep }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Esqueci o PIN</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Digite a chave do PIN que você guardou quando ativou o PIN neste aparelho.</div>
+            <textarea value="{{ fpKey }}" onChange="{{ onFpKey }}" placeholder="PIN-XXXX-XXXX-XXXX" rows="1" style="resize:none; border-radius:16px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); padding:14px 16px; font-family:'Source Code Pro',monospace; font-size:18px; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)"></textarea>
+            <sc-if value="{{ fpErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:15px; font-weight:600; color:#b0284a">{{ fpErr }}</div></sc-if>
+            <button onClick="{{ fpSubmit }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Confirmar</button>
+            <button onClick="{{ fpToggleNoKey }}" style="background:none; border:none; padding:8px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; align-self:flex-start; padding:0; text-decoration:underline; text-underline-offset:3px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Não tenho a chave</button>
+            <sc-if value="{{ fpNoKey }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px; padding:14px 16px; border-radius:18px; background:rgba(255,236,190,.85); border:1px solid rgba(255,255,255,.9)">
+                <div style="font-size:15px; line-height:1.45; color:#4a3300">Sem conta e sem a chave, não há como abrir este diário. A única saída é apagar tudo neste aparelho e começar de novo.</div>
+                <button onClick="{{ fpAskReset }}" style="align-self:flex-start; height:42px; border-radius:999px; padding:0 16px; font-size:15px; font-weight:700; white-space:nowrap; color:#a3203f; cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(163,32,63,.25); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Apagar diário e recomeçar</button>
+              </div>
+            </sc-if>
+            <button onClick="{{ fpBack }}" style="background:none; border:none; padding:8px; color:var(--acc-d); font-size:15px; font-weight:600; cursor:pointer; align-self:center; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Voltar</button>
+          </sc-if>
+          <sc-if value="{{ fpDone }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Tudo certo, é você</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Crie um PIN novo agora ou desative o PIN neste aparelho.</div>
+            <button onClick="{{ fpNewPin }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Criar novo PIN</button>
+            <button onClick="{{ fpDisablePin }}" style="height:50px; border-radius:999px; padding:0 20px; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Desativar PIN</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PIN KEY -->
+    <sc-if value="{{ isPinKey }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; overflow:auto; display:flex; justify-content:center; padding:60px 20px 32px; box-sizing:border-box">
+        <div style="width:100%; max-width:440px; margin:auto 0; box-sizing:border-box; display:flex; flex-direction:column; gap:18px; padding:30px 28px; border-radius:36px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.85); box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)">
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <div style="font-size:26px; font-weight:700; line-height:1.15">Chave do PIN</div>
+            <div style="font-size:16px; line-height:1.45; color:var(--ink2)">Sem conta, esta chave é a única forma de abrir o diário se você esquecer o PIN. <strong style="color:var(--ink)">Ela aparece só agora.</strong></div>
+          </div>
+          <div style="padding:18px 16px; border-radius:20px; background:var(--milk); border:1px solid #fff; box-shadow:inset 0 2px 6px rgba(0,50,100,.1); font-family:'Source Code Pro',monospace; font-size:21px; font-weight:600; letter-spacing:.05em; text-align:center; color:var(--ink)">{{ pinKey }}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px">
+            <sc-for list="{{ pkActions }}" as="a" hint-placeholder-count="3">
+              <button onClick="{{ a.onClick }}" style="flex:1 1 auto; height:46px; border-radius:999px; padding:0 16px; white-space:nowrap; font-size:15px; font-weight:600; white-space:nowrap; color:{{ a.color }}; cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ a.label }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size:15px; line-height:1.45; color:var(--ink2)">Guarde fora deste aparelho: num gerenciador de senhas, impressa ou anotada em papel.</div>
+          <button onClick="{{ pkToggle }}" style="display:flex; align-items:center; gap:12px; padding:6px 2px; background:none; border:none; cursor:pointer; text-align:left; color:var(--ink); font-size:17px; font-weight:600; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+            <span style="flex:none; width:26px; height:26px; border-radius:8px; box-sizing:border-box; display:grid; place-items:center; color:var(--gel-fg); font-size:16px; background:{{ pkBoxBg }}; border:2px solid {{ pkBoxBd }}">{{ pkCheck }}</span>
+            Guardei minha chave
+          </button>
+          <button onClick="{{ pkContinue }}" style="height:52px; border-radius:999px; padding:0 24px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); opacity:{{ pkContOpacity }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Continuar</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- APP -->
+    <sc-if value="{{ inApp }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ appWrapStyle }}">
+        <!-- Sidebar / History -->
+        <div style="{{ sideStyle }}">
+          <div style="flex:1; min-height:0; display:flex; flex-direction:column; gap:12px; padding:18px 14px 12px; border-radius:28px; background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.75); box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 24px 60px -28px rgba(0,50,100,.5); overflow:hidden">
+            <div style="display:flex; align-items:flex-start; gap:10px; padding:0 4px">
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px">
+                <input value="{{ diaryName }}" onChange="{{ onDiaryName }}" onBlur="{{ onDiaryBlur }}" onKeyDown="{{ onDiaryKey }}" aria-label="Nome do diário" title="Clique para renomear" placeholder="Nome do diário" style="width:100%; box-sizing:border-box; margin:-4px 0 0 -6px; padding:2px 6px; border-radius:10px; border:1px solid transparent; background:transparent; font-size:24px; font-weight:700; line-height:1.2; color:var(--ink); outline:none; text-overflow:ellipsis" style-hover="background:rgba(255,255,255,.5); border-color:rgba(255,255,255,.9)" style-focus="background:rgba(255,255,255,.92); border-color:var(--acc); box-shadow:0 0 0 3px var(--ring)">
+                <button onClick="{{ syncClick }}" style="align-self:flex-start; display:flex; align-items:center; gap:7px; height:28px; padding:0 11px 0 9px; border-radius:999px; font-size:13px; font-weight:600; color:var(--ink3); cursor:pointer; background:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.9); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ syncIcon }}{{ syncLabel }}</button>
+              </div>
+              <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toggleCal }}" aria-label="Calendário" style="flex:none; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; cursor:pointer; color:{{ calBtnColor }}; background:{{ calBtnBg }}; border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><line x1="3.5" y1="10" x2="20.5" y2="10"></line><line x1="8" y1="3" x2="8" y2="6.5"></line><line x1="16" y1="3" x2="16" y2="6.5"></line></svg></button></sc-if>
+            </div>
+
+            <sc-if value="{{ showInvite }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:18px; background:rgba(255,255,255,.72); border:1px solid #fff">
+                <div style="flex:1; display:flex; flex-direction:column; gap:4px; font-size:14px; line-height:1.4; color:var(--ink2)">
+                  <span>Suas anotações estão só neste aparelho.</span>
+                  <button onClick="{{ goSignup }}" style="align-self:flex-start; background:none; border:none; padding:0; color:var(--acc-d); font-size:14px; font-weight:700; cursor:pointer; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Criar conta para sincronizar</button>
+                </div>
+                <button onClick="{{ hideInvite }}" aria-label="Dispensar" style="flex:none; width:28px; height:28px; border-radius:50%; border:none; background:rgba(12,60,90,.08); color:var(--ink2); cursor:pointer; font-size:16px; line-height:1; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">×</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ newNote }}" style="display:flex; align-items:center; justify-content:center; gap:8px; height:50px; border-radius:999px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; flex:none; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Nova anotação</button>
+              
+            </sc-if>
+
+            
+
+            <sc-if value="{{ dayFiltered }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 6px; font-size:14px; color:var(--ink3); flex:none">
+                <span>Mostrando <strong>{{ dayFilterLabel }}</strong></span>
+                <button onClick="{{ clearDay }}" style="background:none; border:none; padding:6px 0; color:var(--acc-d); font-size:14px; font-weight:700; cursor:pointer; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="color:var(--acc-dd); text-decoration:underline; text-underline-offset:3px" style-active="opacity:.6; transform:scale(.97)">Ver todas</button>
+              </div>
+            </sc-if>
+
+            <div style="flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:14px; padding:2px 2px 8px; margin:0 -2px">
+              <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex; flex-direction:column; gap:6px">
+                  <div style="font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink4); padding:0 8px">{{ g.label }}</div>
+                  <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="2">
+                    <button onClick="{{ n.onClick }}" style="text-align:left; display:flex; flex-direction:column; gap:3px; padding:12px 14px; border-radius:18px; cursor:pointer; color:var(--ink); background:{{ n.bg }}; border:1px solid {{ n.bd }}; box-shadow:{{ n.sh }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                      <span style="display:flex; gap:8px; align-items:baseline; width:100%"><span style="flex:1; min-width:0; font-weight:700; font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ n.title }}</span><span style="flex:none; font-size:13px; color:var(--ink2)">{{ n.time }}</span></span>
+                      <span style="font-size:14px; line-height:1.4; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">{{ n.preview }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="margin:auto 0; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; padding:24px 16px">
+                  <div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 32% 28%, #fff 0 8%, rgba(255,255,255,.5) 24%, rgba(160,230,255,.35) 60%, rgba(255,255,255,.7) 72%, rgba(255,255,255,0) 74%)"></div>
+                  <div style="font-size:18px; font-weight:700">Nenhuma anotação ainda</div>
+                  <div style="font-size:15px; line-height:1.45; color:var(--ink2); max-width:240px">Escreva o que quiser. Fica tudo guardado aqui, só para você.</div>
+                  <button onClick="{{ newNote }}" style="margin-top:4px; height:44px; border-radius:999px; padding:0 20px; font-size:15px; font-weight:700; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Escrever a primeira</button>
+                </div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ calShown }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:none; padding:12px; border-radius:20px; background:rgba(255,255,255,.62); border:1px solid rgba(255,255,255,.95)">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px">
+                  <button onClick="{{ calPrev }}" aria-label="Mês anterior" style="width:32px; height:32px; border-radius:50%; border:none; background:rgba(255,255,255,.7); cursor:pointer; color:var(--ink); font-size:18px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">‹</button>
+                  <span style="font-size:15px; font-weight:700">{{ calLabel }}</span>
+                  <button onClick="{{ calNext }}" aria-label="Próximo mês" style="width:32px; height:32px; border-radius:50%; border:none; background:rgba(255,255,255,.7); cursor:pointer; color:var(--ink); font-size:18px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">›</button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; text-align:center">
+                  <sc-for list="{{ calDow }}" as="w" hint-placeholder-count="7">
+                    <span style="font-size:12px; font-weight:700; color:var(--ink4); padding:2px 0">{{ w }}</span>
+                  </sc-for>
+                  <sc-for list="{{ calCells }}" as="c" hint-placeholder-count="30">
+                    <button onClick="{{ c.onClick }}" style="position:relative; height:32px; border-radius:10px; border:none; padding:0; font-size:14px; cursor:{{ c.cursor }}; visibility:{{ c.vis }}; font-weight:{{ c.fw }}; color:{{ c.color }}; background:{{ c.bg }}; box-shadow:{{ c.sh }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ c.label }}<span style="position:absolute; left:50%; bottom:3px; width:4px; height:4px; margin-left:-2px; border-radius:50%; background:{{ c.dot }}"></span></button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:none; display:flex; align-items:center; justify-content:space-between; gap:4px; padding:6px; border-radius:24px; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.9); box-shadow:inset 0 1px 0 #fff">
+                <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="5">
+                  <button onClick="{{ n.onClick }}" title="{{ n.label }}" aria-label="{{ n.label }}" aria-pressed="{{ n.on }}" style="flex:none; display:flex; align-items:center; justify-content:center; gap:6px; height:44px; min-width:44px; box-sizing:border-box; overflow:hidden; padding:{{ n.pad }}; border-radius:999px; border:1px solid {{ n.bd }}; cursor:pointer; font-size:14px; font-weight:700; color:{{ n.color }}; background:{{ n.bg }}; box-shadow:{{ n.sh }}; transition:background .15s, padding .15s" style-hover="background:rgba(255,255,255,.85)" style-active="filter:brightness(.95); transform:scale(.97)"><sc-if value="{{ n.is_search }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></sc-if><sc-if value="{{ n.is_archive }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="5" y="9" width="14" height="11" rx="1.5"></rect><line x1="10" y1="13" x2="14" y2="13"></line></svg></sc-if><sc-if value="{{ n.is_trash }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="6" y="7" width="12" height="14" rx="2"></rect><line x1="4" y1="7" x2="20" y2="7"></line><line x1="10" y1="3.5" x2="14" y2="3.5"></line></svg></sc-if><sc-if value="{{ n.is_settings }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if><sc-if value="{{ n.is_calendar }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect><line x1="3.5" y1="10" x2="20.5" y2="10"></line><line x1="8" y1="3" x2="8" y2="6.5"></line><line x1="16" y1="3" x2="16" y2="6.5"></line></svg></sc-if><span style="display:{{ n.labelDisplay }}; white-space:nowrap">{{ n.label }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- Main pane -->
+        <div style="{{ mainStyle }}">
+          <div style="flex:1; min-height:0; display:flex; flex-direction:column; border-radius:28px; background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.75); box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 24px 60px -28px rgba(0,50,100,.5); overflow:hidden; position:relative">
+
+            <sc-if value="{{ showEditor }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:8px; padding:12px 14px; flex:none">
+                <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ goHistory }}" aria-label="Voltar" style="flex:none; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; cursor:pointer; color:var(--ink); background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg></button>
+                </sc-if>
+                <div style="flex:1; min-width:0; padding-left:6px">
+                  <div style="font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ edDate }}</div>
+                  <div style="font-size:13px; color:var(--ink2)">{{ edSub }}</div>
+                </div>
+                <button onClick="{{ edArchive }}" aria-label="{{ edArchiveLabel }}" style="flex:none; display:flex; align-items:center; gap:7px; height:44px; padding:0 14px; border-radius:999px; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="5" y="9" width="14" height="11" rx="1.5"></rect><line x1="10" y1="13" x2="14" y2="13"></line></svg><sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">{{ edArchiveLabel }}</sc-if></button>
+                <button onClick="{{ edTrash }}" aria-label="Mover para a lixeira" style="flex:none; display:flex; align-items:center; gap:7px; height:44px; padding:0 14px; border-radius:999px; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="6" y="7" width="12" height="14" rx="2"></rect><line x1="4" y1="7" x2="20" y2="7"></line><line x1="10" y1="3.5" x2="14" y2="3.5"></line></svg><sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">Lixeira</sc-if></button>
+              </div>
+              <div style="flex:1; min-height:0; overflow:auto; padding:0 12px 12px">
+                <div data-ed-card="1" style="max-width:740px; margin:0 auto; min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; background:var(--milk); border:1px solid #fff; border-radius:24px; box-shadow:inset 0 1px 0 #fff, 0 10px 30px -18px rgba(0,50,100,.35); padding:{{ milkPad }}">
+                  <input value="{{ edTitle }}" onChange="{{ onTitle }}" placeholder="Título (opcional)" style="border:none; outline:none; background:transparent; padding:0; font-size:30px; font-weight:700; color:var(--ink); width:100%">
+                  <sc-for list="{{ segs }}" as="s" hint-placeholder-count="2">
+                    <div style="margin-top:22px; display:flex; flex-direction:column; gap:4px">
+                      <div style="display:{{ s.timeDisplay }}; font-size:13px; font-weight:600; color:var(--ink4); letter-spacing:.04em">{{ s.time }}</div>
+                      <textarea value="{{ s.text }}" onChange="{{ s.onInput }}" placeholder="{{ s.placeholder }}" style="field-sizing:content; min-height:1.8em; resize:none; border:none; outline:none; background:transparent; padding:0; width:100%; font-size:19px; line-height:1.75; color:var(--ink)"></textarea>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showMainEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; padding:24px">
+                <div style="width:84px; height:84px; border-radius:50%; background:radial-gradient(circle at 32% 28%, #fff 0 8%, rgba(255,255,255,.5) 24%, rgba(160,230,255,.35) 60%, rgba(255,255,255,.7) 72%, rgba(255,255,255,0) 74%)"></div>
+                <div style="font-size:24px; font-weight:700">Seu diário está em branco</div>
+                <div style="font-size:16px; color:var(--ink3); max-width:320px; line-height:1.45">Comece com uma frase. Você pode voltar e continuar quando quiser.</div>
+                <button onClick="{{ newNote }}" style="margin-top:6px; height:50px; border-radius:999px; padding:0 26px; font-size:17px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.25), 0 10px 20px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Nova anotação</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:22px 20px 12px; display:flex; flex-direction:column; gap:14px; flex:none">
+                <div style="font-size:26px; font-weight:700">Busca</div>
+                <label style="display:flex; align-items:center; gap:10px; height:52px; padding:0 16px; border-radius:999px; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); box-shadow:inset 0 2px 4px rgba(0,40,80,.08); color:var(--ink2)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+                  <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Buscar nas anotações" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:17px; color:var(--ink)">
+                </label>
+                <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:14px; font-weight:600; color:var(--ink4); padding:0 6px">{{ resultCount }}</div>
+                </sc-if>
+              </div>
+              <div style="flex:1; min-height:0; overflow:auto; padding:0 16px 16px; display:flex; flex-direction:column; gap:8px">
+                <sc-for list="{{ results }}" as="r" hint-placeholder-count="0">
+                  <button onClick="{{ r.onClick }}" style="text-align:left; display:flex; flex-direction:column; gap:4px; padding:14px 16px; border-radius:20px; cursor:pointer; color:var(--ink); background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                    <span style="display:flex; gap:8px; align-items:baseline; width:100%"><span style="flex:1; min-width:0; font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ r.title }}</span><span style="flex:none; font-size:13px; color:var(--ink2)">{{ r.date }}</span></span>
+                    <span style="font-size:15px; line-height:1.5; color:var(--ink3)">{{ r.before }}<mark style="background:rgba(166,231,86,.75); color:var(--ink); border-radius:4px; padding:0 2px">{{ r.match }}</mark>{{ r.after }}</span>
+                    <sc-if value="{{ r.archived }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; background:rgba(12,60,90,.08); color:var(--ink2)">Arquivada</span></sc-if>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ searchEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:auto; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; padding:24px">
+                    <div style="font-size:19px; font-weight:700">Nada encontrado</div>
+                    <div style="font-size:15px; color:var(--ink3); max-width:280px; line-height:1.45">Nenhuma anotação tem “{{ query }}”. Tente outra palavra.</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ searchIdle }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin:auto; font-size:15px; color:var(--ink3); text-align:center; max-width:280px; line-height:1.45; padding:24px">Busque por qualquer palavra. A busca acontece no aparelho, mesmo offline.</div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isShelf }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:22px 20px 12px; display:flex; flex-direction:column; gap:14px; flex:none">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px">
+                  <div style="font-size:26px; font-weight:700">{{ shelfTitle }}</div>
+                  <sc-if value="{{ canEmptyTrash }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ askEmptyTrash }}" style="height:40px; border-radius:999px; padding:0 16px; font-size:14px; font-weight:700; white-space:nowrap; color:#a3203f; cursor:pointer; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Esvaziar lixeira</button>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; padding:4px; border-radius:999px; background:rgba(12,60,90,.08)">
+                    <sc-for list="{{ shelfTabs }}" as="t" hint-placeholder-count="2">
+                      <button onClick="{{ t.onClick }}" style="flex:1; height:40px; border-radius:999px; border:none; cursor:pointer; font-size:15px; font-weight:700; color:var(--ink); background:{{ t.bg }}; box-shadow:{{ t.sh }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ t.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <div style="font-size:15px; color:var(--ink3); line-height:1.4">{{ shelfSub }}</div>
+              </div>
+              <div style="flex:1; min-height:0; overflow:auto; padding:0 16px 16px; display:flex; flex-direction:column; gap:8px">
+                <sc-for list="{{ shelfRows }}" as="r" hint-placeholder-count="2">
+                  <div style="display:flex; flex-direction:column; gap:10px; padding:14px 16px; border-radius:20px; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff">
+                    <div style="display:flex; flex-direction:column; gap:3px">
+                      <span style="display:flex; gap:8px; align-items:baseline"><span style="flex:1; min-width:0; font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ r.title }}</span><span style="flex:none; font-size:13px; color:var(--ink2)">{{ r.date }}</span></span>
+                      <span style="font-size:14px; line-height:1.4; color:var(--ink2); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">{{ r.preview }}</span>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap">
+                      <button onClick="{{ r.onPrimary }}" style="height:40px; border-radius:999px; padding:0 16px; font-size:14px; font-weight:700; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); box-shadow:inset 0 1px 0 #fff; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ r.primary }}</button>
+                      <sc-if value="{{ r.hasDanger }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ r.onDanger }}" style="height:40px; border-radius:999px; padding:0 16px; font-size:14px; font-weight:700; white-space:nowrap; color:#a3203f; cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(163,32,63,.25); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Apagar para sempre</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ shelfEmpty }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:auto; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; padding:24px">
+                    <div style="width:64px; height:64px; border-radius:50%; background:radial-gradient(circle at 32% 28%, #fff 0 8%, rgba(255,255,255,.5) 24%, rgba(160,230,255,.35) 60%, rgba(255,255,255,.7) 72%, rgba(255,255,255,0) 74%)"></div>
+                    <div style="font-size:19px; font-weight:700">{{ shelfEmptyTitle }}</div>
+                    <div style="font-size:15px; color:var(--ink3); max-width:280px; line-height:1.45">{{ shelfEmptyText }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1; min-height:0; overflow:auto; padding:22px 16px 20px">
+                <div style="max-width:620px; margin:0 auto; display:flex; flex-direction:column; gap:14px">
+                  <div style="font-size:26px; font-weight:700; padding:0 4px">Configurações</div>
+
+                  <div style="display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:22px; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff">
+                    <div style="font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink4)">Diário</div>
+                    <label style="display:flex; flex-direction:column; gap:6px; font-size:15px; font-weight:600">Nome do diário
+                      <input value="{{ diaryName }}" onChange="{{ onDiaryName }}" style="height:48px; border-radius:14px; border:1px solid rgba(12,60,90,.2); background:rgba(255,255,255,.9); padding:0 14px; font-size:17px; font-weight:400; color:var(--ink); outline:none" style-focus="border-color:var(--acc); box-shadow:0 0 0 4px var(--ring)">
+                    </label>
+                    <div style="font-size:15px; font-weight:600; margin-top:4px">Cor</div>
+                    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px 6px">
+              <sc-for list="{{ themeOpts }}" as="t" hint-placeholder-count="10">
+                <button onClick="{{ t.onClick }}" aria-label="{{ t.label }}" aria-pressed="{{ t.on }}" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding:0; border:none; background:none; cursor:pointer; color:var(--ink); font-size:13px; line-height:1.2; text-align:center; font-weight:{{ t.fw }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                  <span style="position:relative; display:block; width:48px; height:48px; border-radius:50%; box-sizing:border-box; border:2px solid #fff; overflow:hidden; background:{{ t.sw }}; box-shadow:{{ t.ring }}; transition:box-shadow .15s"><span style="position:absolute; left:7px; top:4px; width:28px; height:16px; border-radius:50%; background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0))"></span></span>
+                  <span>{{ t.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:22px; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff">
+                    <div style="font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink4)">PIN deste aparelho</div>
+                    <button onClick="{{ setTogglePin }}" style="display:flex; align-items:center; gap:14px; padding:0; background:none; border:none; cursor:pointer; text-align:left; color:var(--ink); min-height:44px; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+                      <span style="flex:1; display:flex; flex-direction:column; gap:2px"><span style="font-size:17px; font-weight:600">Pedir PIN ao abrir</span><span style="font-size:14px; color:var(--ink2)">Independente da senha da conta.</span></span>
+                      <span style="width:52px; height:30px; border-radius:15px; position:relative; flex:none; background:{{ pinTrack }}; box-shadow:inset 0 1px 3px rgba(0,40,80,.25)"><span style="position:absolute; top:3px; left:{{ pinKnob }}; width:24px; height:24px; border-radius:50%; background:linear-gradient(180deg,#fff,#e6f3f9); box-shadow:0 2px 4px rgba(0,40,80,.3); transition:left .15s"></span></span>
+                    </button>
+                    <sc-if value="{{ pinOn }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ changePin }}" style="align-self:flex-start; height:42px; border-radius:999px; padding:0 18px; font-size:15px; font-weight:600; white-space:nowrap; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Trocar PIN</button>
+                    </sc-if>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:22px; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff">
+                    <div style="font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink4)">Conta e sincronização</div>
+                    <sc-if value="{{ hasAccount }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex; flex-direction:column; gap:2px"><span style="font-size:17px; font-weight:600">{{ accountEmail }}</span><span style="font-size:14px; color:var(--ink2)">Criptografia de ponta a ponta. Edições em dois aparelhos se juntam sozinhas.</span></div>
+                      <div style="display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:var(--ink3)">{{ syncIcon }}{{ syncLabel }}</div>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap">
+                        <button onClick="{{ syncNow }}" style="height:42px; border-radius:999px; padding:0 18px; font-size:15px; font-weight:600; white-space:nowrap; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Sincronizar agora</button>
+                        <button onClick="{{ logout }}" style="height:42px; border-radius:999px; padding:0 18px; font-size:15px; font-weight:600; white-space:nowrap; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Sair da conta</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ noAccount }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:15px; line-height:1.45; color:var(--ink2)">Sem conta, suas anotações ficam só neste aparelho. Crie uma para sincronizar com seus outros aparelhos.</div>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap">
+                        <button onClick="{{ goSignup }}" style="height:44px; border-radius:999px; padding:0 20px; font-size:15px; font-weight:700; color:var(--gel-fg); cursor:pointer; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 8px 16px -8px var(--gel-sh); text-shadow:0 1px 1px var(--gel-ts); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Criar conta</button>
+                        <button onClick="{{ goLogin }}" style="height:44px; border-radius:999px; padding:0 18px; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Entrar</button>
+                      </div>
+                    </sc-if>
+                  </div>
+
+                  <sc-if value="{{ hasAccount }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex; flex-direction:column; gap:10px; padding:18px; border-radius:22px; background:var(--glass2); border:1px solid rgba(255,255,255,.95); box-shadow:inset 0 1px 0 #fff">
+                      <div style="font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--ink4)">Chave de recuperação</div>
+                      <div style="font-size:15px; line-height:1.45; color:var(--ink2)">Criada no cadastro e mostrada uma única vez. Se você perdeu a sua, gere uma nova. A anterior deixa de funcionar.</div>
+                      <button onClick="{{ regenKey }}" style="align-self:flex-start; height:42px; border-radius:999px; padding:0 18px; font-size:15px; font-weight:600; white-space:nowrap; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Gerar nova chave</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; left:12px; right:12px; bottom:14px; height:72px; z-index:20; display:flex; align-items:center; justify-content:space-around; padding:0 6px; border-radius:30px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid rgba(255,255,255,.9); box-shadow:inset 0 1px 0 #fff, 0 18px 40px -18px rgba(0,50,100,.55)">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.onClick }}" aria-label="{{ t.label }}" style="flex:1; height:60px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border:none; background:none; cursor:pointer; color:{{ t.color }}; font-size:12px; font-weight:700; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">
+              <sc-if value="{{ t.is_history }}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2.5"></rect><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line><line x1="9" y1="16" x2="13" y2="16"></line></svg></sc-if><sc-if value="{{ t.is_search }}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></sc-if><sc-if value="{{ t.is_archive }}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="5" y="9" width="14" height="11" rx="1.5"></rect><line x1="10" y1="13" x2="14" y2="13"></line></svg></sc-if><sc-if value="{{ t.is_settings }}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path stroke-linejoin="round" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if>
+              <span style="display:{{ t.plusDisplay }}; width:52px; height:52px; margin-top:-4px; border-radius:50%; place-items:center; color:var(--gel-fg); font-size:30px; font-weight:400; line-height:1; background:var(--gel); border:1px solid var(--gel-bd); box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 8px 16px -6px var(--gel-sh)">+</span>
+              <span style="display:{{ t.plainDisplay }}">{{ t.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:50%; bottom:{{ toastBottom }}; transform:translateX(-50%); z-index:40; width:max-content; max-width:calc(100% - 32px); box-sizing:border-box; display:flex; align-items:center; gap:14px; padding:10px 10px 10px 20px; border-radius:999px; background:rgba(12,43,64,.88); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.35); box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 16px 30px -12px rgba(0,30,60,.6); color:#fff; font-size:15px; font-weight:600">
+        <span>{{ toastText }}</span>
+        <sc-if value="{{ toastHasUndo }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ toastUndo }}" style="height:36px; border-radius:999px; padding:0 16px; border:none; cursor:pointer; font-size:15px; font-weight:700; color:var(--ink); background:linear-gradient(180deg,#e2ffab 0%,#a6e756 50%,#8fd83e 100%); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Desfazer</button>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(8,40,70,.28)">
+        <div style="width:100%; max-width:380px; box-sizing:border-box; display:flex; flex-direction:column; gap:12px; padding:26px 24px 22px; border-radius:30px; background:var(--glass2); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); border:1px solid #fff; box-shadow:inset 0 1px 0 #fff, 0 30px 60px -20px rgba(0,30,60,.6)">
+          <div style="font-size:22px; font-weight:700">{{ confirmTitle }}</div>
+          <div style="font-size:16px; line-height:1.45; color:var(--ink3)">Isso não pode ser desfeito, nem em outros aparelhos.</div>
+          <div style="display:flex; gap:10px; margin-top:6px">
+            <button onClick="{{ confirmCancel }}" style="flex:1; height:48px; border-radius:999px; font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; background:rgba(255,255,255,.9); border:1px solid rgba(12,60,90,.15); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Cancelar</button>
+            <button onClick="{{ confirmDo }}" style="flex:1; height:48px; border-radius:999px; font-size:16px; font-weight:700; color:#fff; cursor:pointer; background:linear-gradient(180deg,#f58aa3 0%,#d9446a 48%,#bf2d55 52%,#c9365d 100%); border:1px solid rgba(120,20,50,.45); box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 8px 16px -8px rgba(180,30,70,.6); text-shadow:0 1px 1px rgba(90,10,30,.4); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:brightness(1.08) saturate(1.1); transform:translateY(-1px)" style-active="filter:brightness(.92); transform:translateY(1px) scale(.98)">Apagar</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    {{ unlockEl }}
+  </div>
+
+  <!-- Prototype controls -->
+  <div style="position:fixed; right:14px; bottom:14px; z-index:300; width:250px; font-size:13px; color:var(--ink); background:rgba(255,255,255,.9); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid #fff; border-radius:18px; box-shadow:0 18px 40px -18px rgba(0,40,80,.55); overflow:hidden">
+    <button onClick="{{ toggleReview }}" style="width:100%; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:700; color:var(--ink); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)"><span>Controles do protótipo</span><span>{{ reviewChevron }}</span></button>
+    <sc-if value="{{ reviewOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; gap:10px; padding:0 14px 14px">
+        <div style="display:flex; padding:3px; border-radius:10px; background:rgba(12,60,90,.08)">
+          <sc-for list="{{ devOpts }}" as="d" hint-placeholder-count="2">
+            <button onClick="{{ d.onClick }}" style="flex:1; height:30px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700; color:var(--ink); background:{{ d.bg }}; transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">{{ d.label }}</button>
+          </sc-for>
+        </div>
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:8px">Cores
+          <select value="{{ themeSel }}" onChange="{{ onThemeSel }}" style="width:150px; height:30px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; font-size:13px; color:var(--ink)">
+            <sc-for list="{{ themeOpts }}" as="t" hint-placeholder-count="0"><option value="{{ t.k }}">{{ t.label }}</option></sc-for>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:8px">Tela
+          <select value="{{ screen }}" onChange="{{ onJump }}" style="width:150px; height:30px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; font-size:13px; color:var(--ink)">
+            <sc-for list="{{ screenOpts }}" as="o" hint-placeholder-count="0"><option value="{{ o.v }}">{{ o.l }}</option></sc-for>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:8px">Sincronização
+          <select value="{{ sync }}" onChange="{{ onSyncSel }}" style="width:150px; height:30px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; font-size:13px; color:var(--ink)">
+            <option value="synced">Sincronizado</option><option value="syncing">Sincronizando</option><option value="offline">Offline</option><option value="error">Erro</option>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:8px">Conta
+          <select value="{{ accountSel }}" onChange="{{ onAccountSel }}" style="width:150px; height:30px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; font-size:13px; color:var(--ink)">
+            <option value="yes">Com conta</option><option value="no">Sem conta</option>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; justify-content:space-between; gap:8px">Anotações
+          <select value="{{ dataSel }}" onChange="{{ onDataSel }}" style="width:150px; height:30px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; font-size:13px; color:var(--ink)">
+            <option value="seed">Exemplos</option><option value="empty">Nenhuma (vazio)</option>
+          </select>
+        </label>
+        <button onClick="{{ sim2h }}" style="height:32px; border-radius:8px; border:1px solid rgba(12,60,90,.2); background:#fff; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink); transition:transform .12s ease, filter .12s ease, opacity .12s ease, color .12s ease" style-hover="filter:drop-shadow(0 6px 12px rgba(0,40,90,.18)) brightness(1.03); transform:translateY(-1px)" style-active="filter:brightness(.95); transform:scale(.97)">Simular 2 h sem escrever</button>
+        <div style="color:var(--ink2); line-height:1.4">PIN de teste: <strong style="color:var(--ink)">2580</strong>. Qualquer outro mostra o erro.</div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;turquesa&quot;,&quot;azul&quot;,&quot;verde&quot;,&quot;amarelo&quot;,&quot;laranja&quot;,&quot;vermelho&quot;,&quot;rosa&quot;,&quot;roxo&quot;,&quot;porDoSol&quot;,&quot;noite&quot;],&quot;default&quot;:&quot;turquesa&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Cores&quot;},&quot;reduceTransparency&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Acessibilidade&quot;},&quot;reduceMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Acessibilidade&quot;}}">
+const DAY = 864e5, H = 36e5, MIN = 6e4;
+const KEY = 'MEMO-7K2F-QX9D-4HVB-PL3R-WZ8N';
+const PINKEY = 'PIN-4F7K-92QD-LM3X';
+const at = (ago, h, m) => { const d = new Date(); d.setDate(d.getDate() - ago); d.setHours(h, m, 0, 0); return d.getTime(); };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtT = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const same = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+const dayLabel = t => {
+  const n = Date.now();
+  if (same(t, n)) return 'Hoje';
+  if (same(t, n - DAY)) return 'Ontem';
+  const d = new Date(t), o = { weekday: 'long', day: 'numeric', month: 'long' };
+  if (d.getFullYear() !== new Date().getFullYear()) o.year = 'numeric';
+  return cap(d.toLocaleDateString('pt-BR', o).replace('-feira', ''));
+};
+const nd = n => (n.segs[0] ? n.segs[0].t : n.id);
+const fullText = n => n.segs.map(s => s.text).join(' ');
+const dispTitle = n => n.title || (fullText(n).trim().split(/\s+/).slice(0, 6).join(' ') + (fullText(n).trim() ? '…' : '')) || 'Nova anotação';
+const preview = n => fullText(n).trim().slice(0, 160) || 'Sem texto ainda';
+function normMap(s) { let out = '', map = []; for (let i = 0; i < s.length; i++) { const c = s[i].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); for (let j = 0; j < c.length; j++) { out += c[j]; map.push(i); } } return { out, map }; }
+function seed() {
+  const n = Date.now();
+  return [
+    { id: 1, title: 'Caminhada antes do trabalho', status: 'active', last: n - 38 * MIN, segs: [
+      { t: n - 5 * H - 12 * MIN, text: 'Acordei antes do despertador e fui caminhar até o parque. O céu estava daquele azul limpo de primavera, e o lago tinha uma camada fina de névoa. Faz tempo que eu não saía sem fone de ouvido. Deu para ouvir os pássaros e os próprios pensamentos.' },
+      { t: n - 55 * MIN, text: 'Voltando ao assunto de hoje cedo: decidi repetir a caminhada pelo menos três vezes por semana. Deixo anotado aqui para me cobrar depois.' }] },
+    { id: 2, title: '', status: 'active', last: at(1, 22, 34), segs: [
+      { t: at(1, 22, 15), text: 'Dia cansativo. A reunião das quatro se estendeu até quase sete e eu saí sem jantar. Pelo menos a conversa com a Júlia no fim do dia foi boa, ela tem um jeito de colocar as coisas em perspectiva.' }] },
+    { id: 3, title: 'Almoço com a Bia', status: 'active', last: at(2, 19, 52), segs: [
+      { t: at(2, 13, 5), text: 'Almoçamos naquele restaurante japonês perto do trabalho dela. Ela contou que vai se mudar para Lisboa em março.' },
+      { t: at(2, 19, 40), text: 'Ainda pensando na mudança da Bia. Fico feliz por ela, mas vai ser estranho não tê-la a quinze minutos de distância.' }] },
+    { id: 4, title: 'Ideias para a viagem de dezembro', status: 'active', last: at(5, 21, 20), segs: [
+      { t: at(5, 21, 0), text: 'Opções até agora: Chapada Diamantina, Jericoacoara ou ficar em casa e finalmente arrumar o escritório. A Chapada ganha por enquanto. Preciso ver passagens antes do dia 10.' }] },
+    { id: 5, title: 'Primeira aula de cerâmica', status: 'active', last: at(9, 20, 45), segs: [
+      { t: at(9, 20, 30), text: 'Minha primeira peça saiu torta, mas é minha. A professora disse que todo mundo começa assim. Já quero voltar na semana que vem.' }] },
+    { id: 6, title: 'Domingo de chuva', status: 'active', last: at(15, 18, 10), segs: [
+      { t: at(15, 17, 50), text: 'Choveu o dia inteiro. Li metade de um livro, fiz pão pela primeira vez em meses e não abri o email. Quero mais domingos assim.' }] },
+    { id: 7, title: 'Planos de agosto', status: 'archived', last: at(40, 9, 0), segs: [{ t: at(40, 8, 40), text: 'Terminar o curso de fotografia, visitar a vó em Campinas, trocar o sofá da sala.' }] },
+    { id: 8, title: 'Lista de livros', status: 'archived', last: at(52, 22, 0), segs: [{ t: at(52, 21, 40), text: 'Torto Arado, O Avesso da Pele, Tudo é Rio, A Vida Invisível de Eurídice Gusmão.' }] },
+    { id: 9, title: 'Rascunho', status: 'trashed', last: at(3, 10, 0), segs: [{ t: at(3, 9, 58), text: 'lembrar de comprar pilhas e ligar para o encanador' }] },
+  ];
+}
+const GEL = 'var(--gel)';
+const bgOf = (a, b, c, d) => 'radial-gradient(55% 45% at 10% 6%, rgba(255,255,255,.6), rgba(255,255,255,0) 62%), radial-gradient(50% 60% at 90% 16%, ' + a + ' 0%, transparent 60%), radial-gradient(55% 55% at 78% 94%, ' + b + ' 0%, transparent 62%), radial-gradient(32% 34% at 16% 90%, ' + c + ', transparent 70%), ' + d;
+const THEMES = {
+  azul: null,
+  laranja: { '--bg': bgOf('#ffe066', '#ff6f91', 'rgba(90,220,230,.55)', 'linear-gradient(160deg,#ff8a1f 0%,#ffa53a 45%,#ffc94a 80%,#ffe27a 100%)'), '--gel': 'linear-gradient(180deg,#ffb366 0%,#e56a0a 48%,#c9520a 52%,#d85f0c 100%)', '--acc': '#e0680c', '--acc-d': '#a84600', '--acc-dd': '#c9520a', '--ring': 'rgba(255,170,90,.42)', '--acc-a': 'rgba(224,104,12,.5)', '--gel-bd': 'rgba(140,60,0,.45)', '--gel-sh': 'rgba(210,100,10,.55)', '--gel-ts': 'rgba(120,50,0,.45)', '--ink': '#3a1f0a', '--ink2': '#664226', '--ink3': '#553618', '--ink4': '#6e3a12', '--base': '#ff9a2e', '--lock': 'linear-gradient(160deg, rgba(255,232,170,.92), rgba(240,130,30,.82) 50%, rgba(255,120,150,.82))' },
+  verde: { '--bg': bgOf('#e8ff6a', '#2fd8c8', 'rgba(255,220,90,.55)', 'linear-gradient(160deg,#1fb35a 0%,#3fcf6a 45%,#7fe04a 80%,#c4ec4d 100%)'), '--gel': 'linear-gradient(180deg,#8ee27a 0%,#2a9a3e 48%,#1c8030 52%,#248c37 100%)', '--acc': '#27973d', '--acc-d': '#136a27', '--acc-dd': '#1c8030', '--ring': 'rgba(140,230,110,.42)', '--acc-a': 'rgba(39,151,61,.5)', '--gel-bd': 'rgba(10,80,20,.45)', '--gel-sh': 'rgba(30,130,40,.55)', '--gel-ts': 'rgba(0,60,10,.45)', '--ink': '#0d2e16', '--ink2': '#36573d', '--ink3': '#274a2f', '--ink4': '#1f5530', '--base': '#3fcf6a', '--lock': 'linear-gradient(160deg, rgba(225,255,180,.92), rgba(40,170,80,.82) 50%, rgba(60,210,200,.82))' },
+  vermelho: { '--bg': bgOf('#ffb14a', '#ff4f9a', 'rgba(255,210,120,.55)', 'linear-gradient(160deg,#e8243a 0%,#f2474a 45%,#ff6a5c 80%,#ff9a6a 100%)'), '--gel': 'linear-gradient(180deg,#ff9a9a 0%,#d8283e 48%,#b81c30 52%,#c8243a 100%)', '--acc': '#d42a40', '--acc-d': '#9e1428', '--acc-dd': '#b81c30', '--ring': 'rgba(255,140,150,.45)', '--acc-a': 'rgba(212,42,64,.5)', '--gel-bd': 'rgba(110,10,25,.45)', '--gel-sh': 'rgba(190,30,50,.55)', '--gel-ts': 'rgba(90,0,15,.45)', '--ink': '#3a0d14', '--ink2': '#663840', '--ink3': '#552a31', '--ink4': '#7a1e2c', '--base': '#f2474a', '--lock': 'linear-gradient(160deg, rgba(255,215,205,.92), rgba(220,40,60,.82) 50%, rgba(255,150,80,.82))' },
+  roxo: { '--bg': bgOf('#ff8ad8', '#6fb8ff', 'rgba(255,200,120,.5)', 'linear-gradient(160deg,#6a3cf0 0%,#8a52f2 45%,#b36af0 80%,#e08af2 100%)'), '--gel': 'linear-gradient(180deg,#c2a0ff 0%,#7a3fe0 48%,#6128c8 52%,#6e33d4 100%)', '--acc': '#7a3fe0', '--acc-d': '#5a22b8', '--acc-dd': '#6128c8', '--ring': 'rgba(190,150,255,.45)', '--acc-a': 'rgba(122,63,224,.5)', '--gel-bd': 'rgba(60,10,120,.45)', '--gel-sh': 'rgba(110,50,210,.55)', '--gel-ts': 'rgba(40,0,90,.45)', '--ink': '#221040', '--ink2': '#4c3a6a', '--ink3': '#3c2a5a', '--ink4': '#4a2a80', '--base': '#8a52f2', '--sb': '#221040', '--lock': 'linear-gradient(160deg, rgba(235,215,255,.92), rgba(130,70,230,.82) 50%, rgba(255,140,210,.82))' },
+  rosa: { '--bg': bgOf('#ffc27a', '#c79bff', 'rgba(120,220,255,.5)', 'linear-gradient(160deg,#ff4fa0 0%,#ff6fb4 45%,#ff94c2 80%,#ffb8a8 100%)'), '--gel': 'linear-gradient(180deg,#ffa3cf 0%,#e0357f 48%,#c42068 52%,#d22a74 100%)', '--acc': '#d62c78', '--acc-d': '#a3155a', '--acc-dd': '#c42068', '--ring': 'rgba(255,150,200,.45)', '--acc-a': 'rgba(214,44,120,.5)', '--gel-bd': 'rgba(110,0,50,.45)', '--gel-sh': 'rgba(200,30,110,.55)', '--gel-ts': 'rgba(90,0,40,.45)', '--ink': '#3a0c24', '--ink2': '#6a3a52', '--ink3': '#582a42', '--ink4': '#8a1e52', '--base': '#ff6fb4', '--sb': '#3a0c24', '--lock': 'linear-gradient(160deg, rgba(255,220,240,.92), rgba(230,60,140,.82) 50%, rgba(200,150,255,.82))' },
+  turquesa: { '--bg': bgOf('#b8ff8a', '#4fb8ff', 'rgba(255,240,140,.5)', 'linear-gradient(160deg,#00b8c8 0%,#1fd0c8 45%,#4fe0b0 80%,#9af0b8 100%)'), '--gel': 'linear-gradient(180deg,#8aeef0 0%,#0aa0b0 48%,#008494 52%,#0092a2 100%)', '--acc': '#0a9aaa', '--acc-d': '#00707c', '--acc-dd': '#008494', '--ring': 'rgba(100,230,230,.45)', '--acc-a': 'rgba(10,154,170,.5)', '--gel-bd': 'rgba(0,70,80,.45)', '--gel-sh': 'rgba(0,130,150,.55)', '--gel-ts': 'rgba(0,50,60,.45)', '--ink': '#08302f', '--ink2': '#335a58', '--ink3': '#244a48', '--ink4': '#135a5a', '--base': '#1fd0c8', '--sb': '#08302f', '--lock': 'linear-gradient(160deg, rgba(200,255,250,.92), rgba(20,180,190,.82) 50%, rgba(140,240,150,.82))' },
+  amarelo: { '--bg': bgOf('#fff7a0', '#ffb04a', 'rgba(140,230,120,.5)', 'linear-gradient(160deg,#ffc814 0%,#ffd83a 45%,#ffe866 80%,#f4f58a 100%)'), '--gel': 'linear-gradient(180deg,#fff3a8 0%,#ffd12e 48%,#f5b800 52%,#ffc414 100%)', '--acc': '#d99a00', '--acc-d': '#7a5000', '--acc-dd': '#a86e00', '--ring': 'rgba(255,200,60,.5)', '--acc-a': 'rgba(200,140,0,.5)', '--gel-bd': 'rgba(150,100,0,.45)', '--gel-sh': 'rgba(200,140,0,.5)', '--gel-ts': 'rgba(255,255,255,.55)', '--ink': '#2e2300', '--ink2': '#5c4a1a', '--ink3': '#4a3a10', '--ink4': '#6a4a00', '--base': '#ffd83a', '--sb': '#2e2300', '--lock': 'linear-gradient(160deg, rgba(255,250,200,.92), rgba(255,200,40,.85) 50%, rgba(255,150,60,.82))', '--gel-fg': '#3a2a00' },
+  porDoSol: { '--bg': bgOf('#ffd36a', '#7a4fe0', 'rgba(255,120,160,.55)', 'linear-gradient(170deg,#ff9a3c 0%,#ff6a6a 40%,#e0508f 70%,#8a4fd0 100%)'), '--gel': 'linear-gradient(180deg,#ffb89a 0%,#e8505a 48%,#c93a52 52%,#d84458 100%)', '--acc': '#e04a5a', '--acc-d': '#a8283c', '--acc-dd': '#c93a52', '--ring': 'rgba(255,150,140,.45)', '--acc-a': 'rgba(224,74,90,.5)', '--gel-bd': 'rgba(120,20,40,.45)', '--gel-sh': 'rgba(200,60,80,.55)', '--gel-ts': 'rgba(90,10,30,.45)', '--ink': '#351020', '--ink2': '#643a4a', '--ink3': '#522a3a', '--ink4': '#7a2a40', '--base': '#ff6a6a', '--sb': '#351020', '--lock': 'linear-gradient(160deg, rgba(255,220,180,.92), rgba(240,90,100,.82) 50%, rgba(150,90,220,.82))' },
+  noite: { '--bg': 'radial-gradient(60% 40% at 20% 0%, rgba(80,255,180,.45), rgba(80,255,180,0) 65%), radial-gradient(50% 50% at 90% 20%, rgba(160,90,240,.55), rgba(160,90,240,0) 60%), radial-gradient(55% 55% at 70% 100%, rgba(40,160,255,.4), rgba(40,160,255,0) 62%), linear-gradient(165deg,#081634 0%,#0e2456 50%,#1c1f5a 100%)', '--gel': 'linear-gradient(180deg,#7ab8ff 0%,#2f6ae0 48%,#1f52c4 52%,#285ed2 100%)', '--acc': '#2f6ae0', '--acc-d': '#1a45a8', '--acc-dd': '#1f52c4', '--ring': 'rgba(120,170,255,.45)', '--acc-a': 'rgba(47,106,224,.5)', '--gel-bd': 'rgba(10,30,90,.5)', '--gel-sh': 'rgba(20,60,180,.55)', '--gel-ts': 'rgba(0,20,70,.45)', '--ink': '#0c1a3a', '--ink2': '#3a4a6a', '--ink3': '#2a3a5a', '--ink4': '#23407a', '--base': '#0e2456', '--sb': '#ffffff', '--lock': 'linear-gradient(160deg, rgba(200,230,255,.92), rgba(60,110,230,.82) 50%, rgba(120,240,190,.8))', '--glass': 'linear-gradient(180deg,rgba(235,245,255,.8),rgba(220,235,250,.66))', '--glass2': 'linear-gradient(180deg,rgba(245,250,255,.94),rgba(232,242,252,.85))' }
+};
+
+const THEME_META = [
+  ['turquesa', 'Turquesa', 'linear-gradient(160deg,#00b8c8,#1fd0c8 45%,#4fe0b0 80%,#9af0b8)'],
+  ['azul', 'Azul', 'linear-gradient(160deg,#1d9cf0,#29c3e6 45%,#5ad98a 80%,#a8e24d)'],
+  ['verde', 'Verde', 'linear-gradient(160deg,#1fb35a,#3fcf6a 45%,#7fe04a 80%,#c4ec4d)'],
+  ['amarelo', 'Amarelo', 'linear-gradient(160deg,#ffc814,#ffd83a 45%,#ffe866 80%,#f4f58a)'],
+  ['laranja', 'Laranja', 'linear-gradient(160deg,#ff8a1f,#ffa53a 45%,#ffc94a 80%,#ffe27a)'],
+  ['vermelho', 'Vermelho', 'linear-gradient(160deg,#e8243a,#f2474a 45%,#ff6a5c 80%,#ff9a6a)'],
+  ['rosa', 'Rosa', 'linear-gradient(160deg,#ff4fa0,#ff6fb4 45%,#ff94c2 80%,#ffb8a8)'],
+  ['roxo', 'Roxo', 'linear-gradient(160deg,#6a3cf0,#8a52f2 45%,#b36af0 80%,#e08af2)'],
+  ['porDoSol', 'Pôr do sol', 'linear-gradient(170deg,#ff9a3c,#ff6a6a 40%,#e0508f 70%,#8a4fd0)'],
+  ['noite', 'Noite', 'radial-gradient(70% 50% at 30% 10%, rgba(80,255,180,.6), rgba(80,255,180,0) 70%), linear-gradient(165deg,#081634,#1c1f5a)'],
+];
+const THEME_KEYS = ['--gel-fg','--sb','--glass','--glass2','--bg','--gel','--acc','--acc-d','--acc-dd','--ring','--acc-a','--gel-bd','--gel-sh','--gel-ts','--ink','--ink2','--ink3','--ink4','--base','--lock'];
+
+
+class Component extends DCLogic {
+  state = (() => {
+    const d = new Date();
+    return {
+      device: (typeof window !== 'undefined' && window.innerWidth < 720) ? 'mobile' : 'desktop',
+      screen: 'pin', pinMode: 'unlock', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinCode: '2580', pinOn: true, pinReturn: 'history',
+      unlocking: false,
+      onStep: 1, diaryName: 'Diário de Vini', storeMode: 'local', obPin: true,
+      authMode: 'signup', email: '', password: '', authErr: '', authReturn: 'onboard',
+      hasAccount: true, accountEmail: 'vini@exemplo.com', sync: 'synced', invite: true,
+      rec: { copied: false, saved: false, printed: false, emailed: false, confirmed: false }, recReturn: 'onboardPin',
+      fStep: 1, fEmail: '', fPass: '', fKey: '', fErr: '', fNoKey: false,
+      notes: seed(), dataSel: 'seed', sel: 1, query: '', shelf: 'archive',
+      calOpen: null, calY: d.getFullYear(), calM: d.getMonth(), day: null,
+      toast: null, confirm: null, review: true, theme: null,
+      pinFails: 0, lockUntil: 0, fpStep: 'verify', fpEmail: '', fpPass: '', fpKey: '', fpErr: '', fpNoKey: false, pk: { copied: false, saved: false, printed: false, confirmed: false }, pkReturn: 'history', vh: typeof window !== 'undefined' ? window.innerHeight : 900,
+    };
+  })();
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ vh: window.innerHeight });
+    window.addEventListener('resize', this.onResize);
+    this.onKey = e => {
+      if (this.state.screen !== 'pin' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); this.flashKey(e.key); this.pressKey(e.key); }
+      else if (e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); this.flashKey('del'); this.pressKey('del'); }
+    };
+    window.addEventListener('keydown', this.onKey);
+    this.applyTheme();
+    try {
+      this.mqM = window.matchMedia('(prefers-reduced-motion: reduce)');
+      this.mqT = window.matchMedia('(prefers-reduced-transparency: reduce)');
+    } catch (e) {}
+  }
+  themeName() { return this.state.theme || this.props.theme || 'turquesa'; }
+  applyTheme() {
+    const n = this.themeName(); if (n === this._th) return; this._th = n;
+    const t = THEMES[n], st = document.documentElement.style;
+    THEME_KEYS.forEach(k => t && t[k] ? st.setProperty(k, t[k]) : st.removeProperty(k));
+  }
+  edRef = React.createRef();
+  componentDidUpdate() {
+    this.applyTheme();
+    const s = this.state, el = document.querySelector('[data-ed-card]');
+    const sig = el ? s.sel + '|' + s.screen : null, changed = sig && sig !== this._edSig;
+    this._edSig = sig; this._edSelPrev = s.sel;
+    if (el && el.animate && changed) {
+      const rm = this.rm();
+      el.animate(rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(8px) scale(.995)' }, { opacity: 1, transform: 'none' }], { duration: rm ? 120 : 180, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    }
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this.onResize); window.removeEventListener('keydown', this.onKey); clearInterval(this.lockIv); clearTimeout(this.tt); }
+  rm() { return !!this.props.reduceMotion || !!(this.mqM && this.mqM.matches); }
+  rt() { return !!this.props.reduceTransparency || !!(this.mqT && this.mqT.matches); }
+
+  cleanNotes(notes, keep) { return notes.filter(n => n.id === keep || n.segs.length || n.title || n.status !== 'active'); }
+  go(screen, extra = {}) {
+    this.setState(s => ({ screen, confirm: null, notes: this.cleanNotes(s.notes, screen === 'editor' || screen === 'history' ? (extra.sel ?? s.sel) : null), ...extra }));
+  }
+  toastMsg(text, undo) {
+    clearTimeout(this.tt);
+    this.setState({ toast: { text, undo } });
+    this.tt = setTimeout(() => this.setState({ toast: null }), 5000);
+  }
+  upd(id, fn) { this.setState(s => ({ notes: s.notes.map(n => n.id === id ? fn({ ...n }) : n) })); }
+
+  // PIN
+  flashKey(k) { clearTimeout(this.fk); this.setState({ pressedKey: k }); this.fk = setTimeout(() => this.setState({ pressedKey: null }), 130); }
+  pressKey(d) {
+    const s = this.state; if (s.unlocking || s.lockUntil > Date.now()) return;
+    if (d === 'del') { this.setState({ pin: s.pin.slice(0, -1) }); return; }
+    if (s.pin.length >= 4) return;
+    const pin = s.pin + d;
+    this.setState({ pin, pinError: false, pinMsg: '' });
+    if (pin.length === 4) setTimeout(() => this.submitPin(pin), 140);
+  }
+  pinFail(msg, extra = {}) {
+    this.setState(s => ({ pinError: true, pinMsg: msg, shake: s.shake + 1, ...extra }));
+    setTimeout(() => this.setState({ pin: '' }), 420);
+  }
+  submitPin(pin) {
+    const s = this.state;
+    if (s.pinMode === 'unlock') {
+      if (pin === s.pinCode) {
+        this.setState({ unlocking: true, pin: '', pinFails: 0 });
+        setTimeout(() => this.setState({ screen: 'history' }), this.rm() ? 0 : 60);
+        setTimeout(() => this.setState({ unlocking: false }), this.rm() ? 240 : 720);
+      } else {
+        const fails = s.pinFails + 1;
+        if (fails >= 5) {
+          this.pinFail('', { pinFails: 0, lockUntil: Date.now() + 30000 });
+          clearInterval(this.lockIv);
+          this.lockIv = setInterval(() => { if (this.state.lockUntil <= Date.now()) { clearInterval(this.lockIv); this.setState({ lockUntil: 0, pinError: false }); } else this.forceUpdate(); }, 1000);
+        } else this.pinFail(fails >= 3 ? 'PIN incorreto. ' + (5 - fails) + (5 - fails === 1 ? ' tentativa' : ' tentativas') + ' antes de uma pausa.' : 'PIN incorreto. Tente de novo.', { pinFails: fails });
+      }
+    } else if (s.pinMode === 'create') {
+      this.setState({ pinMode: 'confirm', pinTmp: pin, pin: '' });
+    } else {
+      if (pin === s.pinTmp) {
+        const changed = s.pinOn && s.pinReturn === 'settings';
+        this.setState({ pinCode: pin, pinOn: true, pin: '', pinMode: 'unlock' });
+        if (!s.hasAccount) { this.go('pinkey', { pk: { copied: false, saved: false, printed: false, confirmed: false }, pkReturn: s.pinReturn, pkMsg: changed ? 'PIN alterado' : 'PIN ativado' }); return; }
+        this.go(s.pinReturn);
+        this.toastMsg(changed ? 'PIN alterado' : 'PIN ativado');
+      } else this.pinFail('Os PINs não coincidem. Crie de novo.', { pinMode: 'create' });
+    }
+  }
+  pinDotsEl() {
+    const e = React.createElement, { pin, pinError, shake } = this.state;
+    return e('div', { key: 'd' + shake, style: { display: 'flex', gap: 18, justifyContent: 'center', animation: shake && !this.rm() ? 'mShake .38s ease' : 'none' } },
+      [0, 1, 2, 3].map(i => e('div', { key: i, style: { width: 16, height: 16, borderRadius: '50%', boxSizing: 'border-box', border: '2px solid ' + (pinError ? '#c0365a' : 'var(--acc)'), background: i < pin.length ? (pinError ? '#e0567a' : 'var(--gel)') : 'rgba(255,255,255,.7)', transition: 'background .12s' } })));
+  }
+  unlockEl() {
+    if (!this.state.unlocking) return null;
+    const e = React.createElement;
+    const bg = 'var(--bg)';
+    if (this.rm()) return e('div', { key: 'u', style: { position: 'absolute', inset: 0, zIndex: 50, background: bg, animation: 'mFade .22s ease-out forwards' } });
+    return e('div', { key: 'u', style: { position: 'absolute', inset: 0, zIndex: 50, display: 'grid', placeItems: 'center', background: bg, animation: 'mFade .26s ease-in .44s forwards' } },
+      e('div', { style: { position: 'relative', width: 140, height: 176, animation: 'mLockOut .3s cubic-bezier(.5,0,.8,.4) .38s forwards' } },
+        e('div', { style: { position: 'absolute', left: 28, top: 0, width: 84, height: 88, boxSizing: 'border-box', border: '14px solid rgba(255,255,255,.92)', borderBottom: 'none', borderRadius: '46px 46px 0 0', boxShadow: '0 0 18px rgba(255,255,255,.6), inset 0 2px 6px rgba(0,80,140,.2)', animation: 'mShackle .16s cubic-bezier(.2,.9,.3,1.3) .24s forwards' } }),
+        e('div', { style: { position: 'absolute', left: 0, top: 66, width: 140, height: 110, borderRadius: 32, overflow: 'hidden', background: 'var(--lock)', border: '1.5px solid rgba(255,255,255,.95)', boxShadow: 'inset 0 2px 0 #fff, inset 0 -12px 24px rgba(0,80,140,.25), 0 26px 50px -16px rgba(0,50,100,.55)' } },
+          e('div', { style: { position: 'absolute', left: 10, right: 10, top: 6, height: 42, borderRadius: '26px 26px 70px 70px', background: 'linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0))' } }),
+          e('div', { style: { position: 'absolute', left: 51, top: 34, width: 38, height: 38, borderRadius: '50%', background: 'rgba(6,50,90,.55)', boxShadow: 'inset 0 3px 6px rgba(0,0,0,.3)' } }),
+          e('div', { style: { position: 'absolute', left: 36, top: 47, width: 68, height: 12, borderRadius: 6, background: 'linear-gradient(180deg,#fff,#c6f2ff 50%,#79d3ff)', boxShadow: '0 0 14px rgba(255,255,255,.95)', animation: 'mTurn .24s cubic-bezier(.3,.7,.3,1) forwards' } }),
+          e('div', { style: { position: 'absolute', top: -20, bottom: -20, left: -70, width: 44, background: 'linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.95),rgba(255,255,255,0))', animation: 'mSheen .3s ease-out .06s forwards' } }))));
+  }
+
+  // Notes
+  newNote() {
+    const id = Date.now();
+    this.setState(s => ({ notes: [{ id, title: '', segs: [], last: 0, status: 'active' }, ...this.cleanNotes(s.notes, null)], sel: id, day: null, screen: 'editor', confirm: null }));
+  }
+  openNote(id) { this.go('editor', { sel: id }); }
+  editSeg(id, i, val) { this.upd(id, n => { n.segs = n.segs.map((s, j) => j === i ? { ...s, text: val } : s); if (i === n.segs.length - 1) n.last = Date.now(); return n; }); }
+  typeNew(id, val) { const t = Date.now(); this.upd(id, n => { n.segs = [...n.segs, { t, text: val }]; n.last = t; return n; }); }
+  setStatus(id, status) { this.upd(id, n => { n.status = status; return n; }); }
+  archive(id) {
+    const n = this.state.notes.find(x => x.id === id); if (!n) return;
+    if (n.status === 'archived') { this.setStatus(id, 'active'); this.toastMsg('Anotação desarquivada'); return; }
+    this.setStatus(id, 'archived'); this.afterRemove(id);
+    this.toastMsg('Anotação arquivada', () => { this.setStatus(id, 'active'); this.setState({ sel: id }); });
+  }
+  trash(id) {
+    const n = this.state.notes.find(x => x.id === id); if (!n) return;
+    const prev = n.status;
+    if (!n.segs.length && !n.title) { this.setState(s => ({ notes: s.notes.filter(x => x.id !== id) })); this.afterRemove(id); return; }
+    this.setStatus(id, 'trashed'); this.afterRemove(id);
+    this.toastMsg('Movida para a lixeira', () => { this.setStatus(id, prev); this.setState({ sel: id }); });
+  }
+  afterRemove(id) {
+    const next = this.state.notes.filter(n => n.status === 'active' && n.id !== id).sort((a, b) => nd(b) - nd(a))[0];
+    this.setState({ sel: next ? next.id : null, screen: 'history' });
+  }
+  confirmDo() {
+    const c = this.state.confirm; if (!c) return;
+    if (c.reset) { this.setState({ notes: [], sel: null, pinOn: false, confirm: null, fpNoKey: false, fpKey: '', dataSel: 'empty' }); this.go('onboard', { onStep: 1 }); this.toastMsg('Diário apagado neste aparelho'); return; }
+    this.setState(s => ({ notes: s.notes.filter(n => c.all ? n.status !== 'trashed' : n.id !== c.id), confirm: null }));
+    this.toastMsg(c.all ? 'Lixeira esvaziada' : 'Apagada para sempre');
+  }
+  syncNow() { this.setState({ sync: 'syncing' }); clearTimeout(this.st); this.st = setTimeout(() => this.setState({ sync: 'synced' }), 1500); }
+  syncIcon() {
+    const e = React.createElement, s = this.state;
+    if (s.hasAccount && s.sync === 'syncing') return e('span', { key: 'sp', style: { width: 12, height: 12, borderRadius: '50%', boxSizing: 'border-box', border: '2px solid var(--acc-a)', borderTopColor: 'var(--acc)', animation: this.rm() ? 'none' : 'mSpin .8s linear infinite', flex: 'none' } });
+    const c = !s.hasAccount ? '#6b8595' : ({ synced: '#2fae4f', offline: '#6b8595', error: '#d08a00' })[s.sync];
+    return e('span', { key: 'dot', style: { width: 9, height: 9, borderRadius: '50%', background: c, boxShadow: '0 0 0 3px ' + c + '33', flex: 'none' } });
+  }
+
+  // Auth
+  authSubmit() {
+    const s = this.state;
+    if (!/.+@.+\..+/.test(s.email)) return this.setState({ authErr: 'Digite um email válido.' });
+    if (s.authMode === 'signup' && s.password.length < 8) return this.setState({ authErr: 'A senha precisa ter pelo menos 8 caracteres.' });
+    if (s.authMode === 'login' && !s.password) return this.setState({ authErr: 'Digite sua senha.' });
+    this.setState({ hasAccount: true, accountEmail: s.email, authErr: '', password: '' });
+    this.syncNow();
+    if (s.authMode === 'signup') this.go('recovery', { rec: { copied: false, saved: false, printed: false, emailed: false, confirmed: false }, recReturn: s.authReturn === 'onboard' ? 'onboardPin' : 'settings' });
+    else if (s.authReturn === 'onboard') this.go('onboard', { onStep: 4 });
+    else { this.go('history'); this.toastMsg('Conta conectada. Sincronizando…'); }
+  }
+  setRec(k) { this.setState(s => ({ rec: { ...s.rec, [k]: true } })); }
+
+  fNext() {
+    const s = this.state;
+    if (s.fStep === 1) { if (!/.+@.+\..+/.test(s.fEmail)) return this.setState({ fErr: 'Digite o email da sua conta.' }); return this.setState({ fStep: 2, fErr: '' }); }
+    if (s.fStep === 2) { if (s.fPass.length < 8) return this.setState({ fErr: 'A senha precisa ter pelo menos 8 caracteres.' }); return this.setState({ fStep: 3, fErr: '' }); }
+    if (s.fStep === 3) {
+      if (s.fNoKey) { this.setState({ hasAccount: true, accountEmail: s.fEmail, fStep: 1, fKey: '', fPass: '', fNoKey: false, notes: [], sel: null, fErr: '' }); this.go('history'); this.toastMsg('Diário novo criado nesta conta'); return; }
+      if (s.fKey.replace(/[^a-z0-9]/gi, '').length < 24) return this.setState({ fErr: 'Chave incompleta. Confira e tente de novo.' });
+      return this.setState({ fStep: 4, fErr: '' });
+    }
+    this.setState({ hasAccount: true, accountEmail: s.fEmail, fStep: 1, fKey: '', fPass: '' });
+    this.go('history'); this.syncNow();
+  }
+
+  jump(v) {
+    const s = this.state, x = {};
+    if (v === 'pin') Object.assign(x, { pinMode: 'unlock', pinOn: true, pin: '', pinError: false, pinMsg: '' });
+    if (v === 'onboard') x.onStep = 1;
+    if (v === 'auth') Object.assign(x, { authMode: 'signup', authReturn: 'onboard', authErr: '' });
+    if (v === 'recovery') x.rec = { copied: false, saved: false, printed: false, emailed: false, confirmed: false };
+    if (v === 'forgot') Object.assign(x, { fStep: 1, fErr: '', fNoKey: false });
+    if (v === 'forgotPin') Object.assign(x, { fpStep: 'verify', fpEmail: s.accountEmail, fpPass: '', fpKey: '', fpErr: '', fpNoKey: false });
+    if (v === 'pinkey') Object.assign(x, { pk: { copied: false, saved: false, printed: false, confirmed: false }, pkReturn: 'history' });
+    if (v === 'editor') { const f = s.notes.find(n => n.status === 'active'); if (f) x.sel = f.id; else { this.newNote(); return; } }
+    if (v === 'archive' || v === 'trash') x.shelf = v;
+    this.go(v === 'trash' ? 'archive' : v, x);
+  }
+
+  renderVals() {
+    const s = this.state, isMobile = s.device === 'mobile', isDesktop = !isMobile;
+    const scr = s.screen, inApp = ['history', 'editor', 'search', 'archive', 'settings'].includes(scr);
+    const act = s.notes.filter(n => n.status === 'active').sort((a, b) => nd(b) - nd(a));
+    const cur = s.notes.find(n => n.id === s.sel && n.status !== 'trashed');
+
+    const vars = this.rt() ? { '--glass': '#e2f1f8', '--glass2': '#f1f8fb', '--milk': '#fcfeff', '--blur': 'none' } : {};
+    const zoom = isMobile ? Math.min(1, (s.vh - 32) / 864) : 1;
+    const stageStyle = isMobile
+      ? { position: 'relative', width: 390, height: 844, flex: 'none', borderRadius: 56, overflow: 'hidden', border: '10px solid #0d1c28', boxShadow: '0 40px 80px -30px rgba(0,30,60,.65), 0 0 0 1px rgba(255,255,255,.35)', background: 'var(--bg)', zoom, ...vars }
+      : { position: 'relative', width: '100%', height: '100vh', minHeight: 460, ...vars };
+
+    // PIN
+    const pinKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].map(k => ({
+      tf: s.pressedKey === k ? 'scale(.9)' : 'none', fl: s.pressedKey === k ? 'brightness(.9) drop-shadow(0 0 10px var(--ring))' : 'none', op: s.lockUntil > Date.now() ? 0.45 : 1, label: k === 'del' ? '⌫' : k, aria: k === 'del' ? 'Apagar' : k, vis: k === '' ? 'hidden' : 'visible', fs: k === 'del' ? '22px' : '28px',
+      onClick: () => k && this.pressKey(k),
+    }));
+    const pinTitle = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
+
+    // Onboarding
+    const obDots = [1, 2, 3, 4].map(i => ({ bg: i <= s.onStep ? GEL : 'rgba(12,60,90,.12)' }));
+    const curTheme = this.themeName();
+    const themeOpts = THEME_META.map(([k, label, sw]) => ({ k, label, sw, on: curTheme === k, fw: curTheme === k ? 700 : 500,
+      ring: curTheme === k ? '0 0 0 3px var(--acc), 0 6px 14px -4px rgba(0,40,80,.45)' : '0 4px 10px -4px rgba(0,40,80,.4)',
+      onClick: () => this.setState({ theme: k }) }));
+    const storeOpts = [
+      { k: 'local', title: 'Só neste aparelho', text: 'Sem conta e sem internet. Você pode criar uma conta depois.' },
+      { k: 'account', title: 'Criar conta', text: 'Sincroniza entre seus aparelhos, com criptografia de ponta a ponta.' },
+    ].map(o => { const on = s.storeMode === o.k; return { ...o, onClick: () => this.setState({ storeMode: o.k }), bg: on ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.55)', bd: on ? 'var(--acc)' : 'rgba(255,255,255,.95)', sh: on ? '0 0 0 4px var(--ring)' : 'none', ring: on ? 'var(--acc)' : '#8aa6b6', dot: on ? 'radial-gradient(circle,var(--acc) 0 45%,transparent 50%)' : 'transparent' }; });
+
+    // Calendar
+    const first = new Date(s.calY, s.calM, 1), dim = new Date(s.calY, s.calM + 1, 0).getDate();
+    const calCells = [];
+    for (let i = 0; i < first.getDay(); i++) calCells.push({ label: '', vis: 'hidden', onClick: () => {}, cursor: 'default', fw: 400, color: 'transparent', bg: 'transparent', sh: 'none', dot: 'transparent' });
+    for (let d = 1; d <= dim; d++) {
+      const t = new Date(s.calY, s.calM, d).getTime(), has = act.some(n => same(nd(n), t)), sel = s.day && same(s.day, t), today = same(t, Date.now());
+      calCells.push({ label: String(d), vis: 'visible', cursor: has ? 'pointer' : 'default', fw: has ? 700 : 400,
+        color: sel ? 'var(--gel-fg)' : has ? 'var(--ink)' : 'var(--ink4)', bg: sel ? GEL : today ? 'rgba(255,255,255,.95)' : 'transparent',
+        sh: today && !sel ? 'inset 0 0 0 1.5px var(--acc)' : 'none', dot: has ? (sel ? 'var(--gel-fg)' : 'var(--acc)') : 'transparent',
+        onClick: () => has && this.setState({ day: sel ? null : t, screen: isMobile ? 'history' : s.screen === 'editor' || s.screen === 'history' ? s.screen : 'history' }) });
+    }
+    const calShown = !!s.calOpen;
+
+    // History list
+    let list = s.day ? act.filter(n => same(nd(n), s.day)) : act;
+    const groups = [];
+    list.forEach(n => {
+      const lbl = dayLabel(nd(n)); let g = groups[groups.length - 1];
+      if (!g || g.label !== lbl) { g = { label: lbl, items: [] }; groups.push(g); }
+      const on = isDesktop && s.sel === n.id && (scr === 'history' || scr === 'editor');
+      g.items.push({ title: dispTitle(n), preview: preview(n), time: fmtT(nd(n)), onClick: () => this.openNote(n.id),
+        bg: on ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.5)', bd: on ? 'var(--acc-a)' : 'rgba(255,255,255,.8)', sh: on ? '0 0 0 3px var(--ring)' : 'none' });
+    });
+
+    // Sync
+    const syncLabel = !s.hasAccount ? 'Só neste aparelho' : ({ synced: 'Sincronizado', syncing: 'Sincronizando…', offline: 'Offline · salvo no aparelho', error: 'Não sincronizou · tentar de novo' })[s.sync];
+
+    // Editor
+    const showEditor = inApp && !!cur && (scr === 'editor' || (isDesktop && scr === 'history'));
+    let segs = [];
+    if (cur) {
+      segs = cur.segs.map((sg, i) => ({ time: fmtT(sg.t), timeDisplay: 'block', text: sg.text, placeholder: '', onInput: e => this.editSeg(cur.id, i, e.target.value) }));
+      if (!cur.segs.length || Date.now() - cur.last >= 2 * H) segs.push({ time: '', timeDisplay: 'none', text: '', placeholder: cur.segs.length ? 'Continue escrevendo…' : 'Escreva o que quiser…', onInput: e => e.target.value && this.typeNew(cur.id, e.target.value) });
+    }
+    const edSub = cur ? (cur.status === 'archived' ? 'Arquivada' : !s.hasAccount ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo') : '';
+
+    // Search
+    const q = s.query.trim(); let results = [];
+    if (q) {
+      const nq = normMap(q).out;
+      s.notes.filter(n => n.status !== 'trashed').sort((a, b) => nd(b) - nd(a)).forEach(n => {
+        const src = [n.title, fullText(n)].join(' · '), m = normMap(src), idx = m.out.indexOf(nq);
+        if (idx < 0) return;
+        const a = m.map[idx], b = m.map[idx + nq.length - 1] + 1, st = Math.max(0, a - 60);
+        results.push({ title: dispTitle(n), date: dayLabel(nd(n)), archived: n.status === 'archived', onClick: () => this.openNote(n.id),
+          before: (st > 0 ? '…' : '') + src.slice(st, a), match: src.slice(a, b), after: src.slice(b, b + 90) + (b + 90 < src.length ? '…' : '') });
+      });
+    }
+
+    // Shelf (archive/trash)
+    const isTrash = s.shelf === 'trash';
+    const shelfNotes = s.notes.filter(n => n.status === (isTrash ? 'trashed' : 'archived')).sort((a, b) => nd(b) - nd(a));
+    const shelfRows = shelfNotes.map(n => ({ title: dispTitle(n), preview: preview(n), date: dayLabel(nd(n)), hasDanger: isTrash,
+      primary: isTrash ? 'Restaurar' : 'Desarquivar',
+      onPrimary: () => { this.setStatus(n.id, 'active'); this.toastMsg(isTrash ? 'Anotação restaurada' : 'Anotação desarquivada'); },
+      onDanger: () => this.setState({ confirm: { id: n.id } }) }));
+
+    const navActive = scr === 'search' || scr === 'archive' || scr === 'settings';
+    const navItems = [
+      { k: 'search', label: 'Busca' }, { k: 'archive', label: 'Arquivo' }, { k: 'trash', label: 'Lixeira' }, { k: 'settings', label: 'Ajustes' }, { k: 'calendar', label: 'Calendário' },
+    ].map(n => { const on = n.k === 'calendar' ? calShown : n.k === 'trash' ? scr === 'archive' && isTrash : n.k === 'archive' ? scr === 'archive' && !isTrash : scr === n.k;
+      return { ...n, on, is_search: n.k === 'search', is_archive: n.k === 'archive', is_trash: n.k === 'trash', is_settings: n.k === 'settings', is_calendar: n.k === 'calendar',
+        labelDisplay: on && !(n.k === 'calendar' && navActive) ? 'inline' : 'none', pad: on && !(n.k === 'calendar' && navActive) ? '0 14px 0 12px' : '0',
+        color: on ? 'var(--acc-d)' : 'var(--ink)', bg: on ? 'rgba(255,255,255,.95)' : 'transparent', bd: on ? 'var(--acc-a)' : 'transparent', sh: on ? '0 0 0 3px var(--ring), inset 0 1px 0 #fff' : 'none',
+        onClick: () => n.k === 'calendar' ? this.setState({ calOpen: !calShown }) : n.k === 'trash' || n.k === 'archive' ? this.go('archive', { shelf: n.k }) : this.go(n.k) }; });
+
+    const tabs = [
+      { k: 'history', label: 'Diário' }, { k: 'search', label: 'Busca' }, { k: 'new', label: 'Nova anotação' }, { k: 'archive', label: 'Arquivo' }, { k: 'settings', label: 'Ajustes' },
+    ].map(t => { const on = t.k === scr || (t.k === 'history' && scr === 'editor');
+      return { ...t, is_history: t.k === 'history', is_search: t.k === 'search', is_archive: t.k === 'archive', is_settings: t.k === 'settings', color: on ? 'var(--acc-d)' : 'var(--ink2)', fill: on ? 'var(--acc-a)' : 'transparent', plainDisplay: t.k === 'new' ? 'none' : 'block', plusDisplay: t.k === 'new' ? 'grid' : 'none', onClick: () => t.k === 'new' ? this.newNote() : this.go(t.k) }; });
+
+    const screenOpts = [['pin', 'Desbloqueio (PIN)'], ['forgotPin', 'Esqueci o PIN'], ['pinkey', 'Chave do PIN'], ['onboard', 'Primeiro uso'], ['auth', 'Cadastro / login'], ['recovery', 'Chave de recuperação'], ['forgot', 'Esqueci minha senha'], ['history', 'Histórico'], ['editor', 'Editor'], ['search', 'Busca'], ['archive', 'Arquivo'], ['trash', 'Lixeira'], ['settings', 'Configurações']].map(([v, l]) => ({ v, l }));
+    const r = s.rec;
+    const mailBody = encodeURIComponent('Minha chave de recuperação do Memoras:\n\n' + KEY + '\n\nGuarde este email. Quem tiver esta chave pode reabrir o diário.');
+
+    return {
+      isMobile, isDesktop, stageStyle, diaryName: s.diaryName, screen: isTrash && scr === 'archive' ? 'trash' : scr,
+      isPin: scr === 'pin', isOnboard: scr === 'onboard', isAuth: scr === 'auth', isRecovery: scr === 'recovery', isForgot: scr === 'forgot', inApp,
+      pinTitle, pinMsg: s.lockUntil > Date.now() ? 'Muitas tentativas. Tente de novo em ' + Math.ceil((s.lockUntil - Date.now()) / 1000) + ' s.' : s.pinMsg, pinKeys,
+      pinIsUnlock: s.pinMode === 'unlock',
+      goForgotPin: () => this.go('forgotPin', { fpStep: 'verify', fpEmail: s.accountEmail, fpPass: '', fpKey: '', fpErr: '', fpNoKey: false }),
+      isForgotPin: scr === 'forgotPin', fpAuth: scr === 'forgotPin' && s.fpStep === 'verify' && s.hasAccount, fpKeyStep: scr === 'forgotPin' && s.fpStep === 'verify' && !s.hasAccount, fpDone: s.fpStep === 'done',
+      fpEmail: s.fpEmail, fpPass: s.fpPass, fpKey: s.fpKey, fpErr: s.fpErr, fpNoKey: s.fpNoKey,
+      onFpEmail: e => this.setState({ fpEmail: e.target.value, fpErr: '' }), onFpPass: e => this.setState({ fpPass: e.target.value, fpErr: '' }), onFpKey: e => this.setState({ fpKey: e.target.value, fpErr: '' }),
+      fpSubmit: () => {
+        if (s.hasAccount) { if (!/.+@.+\..+/.test(s.fpEmail) || !s.fpPass) return this.setState({ fpErr: 'Digite o email e a senha da conta.' }); }
+        else if (s.fpKey.replace(/[^a-z0-9]/gi, '').toUpperCase() !== PINKEY.replace(/-/g, '')) return this.setState({ fpErr: 'Chave não confere. Confira e tente de novo.' });
+        this.setState({ fpStep: 'done', fpErr: '', fpPass: '', lockUntil: 0, pinFails: 0, pinError: false, pinMsg: '' });
+      },
+      fpBack: () => this.go('pin', { pinMode: 'unlock', pin: '' }), fpToggleNoKey: () => this.setState({ fpNoKey: !s.fpNoKey }), fpAskReset: () => this.setState({ confirm: { reset: true } }),
+      fpNewPin: () => this.go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: 'history', fpStep: 'verify' }),
+      fpDisablePin: () => { this.go('history', { pinOn: false, fpStep: 'verify' }); this.toastMsg('PIN desativado neste aparelho'); },
+      isPinKey: scr === 'pinkey', pinKey: PINKEY,
+      pkActions: [
+        { label: s.pk.copied ? 'Copiada' : 'Copiar', color: s.pk.copied ? '#2d7a12' : 'var(--ink)', onClick: () => { try { navigator.clipboard.writeText(PINKEY); } catch (e) {} this.setState({ pk: { ...s.pk, copied: true } }); } },
+        { label: s.pk.saved ? 'Arquivo salvo' : 'Salvar arquivo', color: s.pk.saved ? '#2d7a12' : 'var(--ink)', onClick: () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['Chave do PIN do Memoras\n\n' + PINKEY + '\n'], { type: 'text/plain' })); a.download = 'memoras-chave-do-pin.txt'; a.click(); } catch (e) {} this.setState({ pk: { ...s.pk, saved: true } }); } },
+        { label: s.pk.printed ? 'Impressa' : 'Imprimir', color: s.pk.printed ? '#2d7a12' : 'var(--ink)', onClick: () => this.setState({ pk: { ...s.pk, printed: true } }) },
+      ],
+      pkToggle: () => this.setState({ pk: { ...s.pk, confirmed: !s.pk.confirmed } }),
+      pkBoxBg: s.pk.confirmed ? GEL : 'rgba(255,255,255,.9)', pkBoxBd: s.pk.confirmed ? 'var(--acc-dd)' : '#8aa6b6', pkCheck: s.pk.confirmed ? '✓' : '', pkContOpacity: s.pk.confirmed ? 1 : 0.45,
+      pkContinue: () => { if (!s.pk.confirmed) return; this.go(s.pkReturn); this.toastMsg(s.pkMsg || 'PIN ativado'); },
+      obPinNote: s.hasAccount ? 'Se esquecer, é só entrar com sua conta para criar outro.' : 'Sem conta, você vai receber uma chave para usar caso esqueça o PIN.', pinDotsEl: this.pinDotsEl(), unlockEl: this.unlockEl(),
+      pinCanBack: s.pinMode !== 'unlock', pinBack: () => this.setState({ pinMode: 'unlock', pin: '', pinMsg: '', pinError: false }, () => this.go(s.pinReturn === 'history' ? 'history' : 'settings')),
+
+      obDots, ob1: s.onStep === 1, obC: s.onStep === 2, ob2: s.onStep === 3, ob3: s.onStep === 4, storeOpts, themeOpts,
+      onDiaryName: e => this.setState({ diaryName: e.target.value }),
+      onDiaryKey: e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.target.blur(); } },
+      onDiaryBlur: () => { if (!s.diaryName.trim()) this.setState({ diaryName: 'Meu diário' }); },
+      obNext: () => { if (s.onStep < 3) this.setState({ onStep: s.onStep + 1 }); else if (s.storeMode === 'account') this.go('auth', { authMode: 'signup', authReturn: 'onboard', authErr: '' }); else this.setState({ onStep: 4, hasAccount: false }); },
+      obBack: () => this.setState({ onStep: Math.max(1, s.onStep - 1) }),
+      obTogglePin: () => this.setState({ obPin: !s.obPin }), obPinTrack: s.obPin ? GEL : 'rgba(12,60,90,.2)', obPinKnob: s.obPin ? '25px' : '3px',
+      obFinishLabel: s.obPin ? 'Criar PIN' : 'Começar a escrever',
+      obFinish: () => { const base = { notes: [], sel: null, day: null, dataSel: 'empty', invite: true }; if (s.obPin) this.go('pin', { ...base, pinMode: 'create', pin: '', pinReturn: 'history', pinOn: false }); else this.go('history', { ...base, pinOn: false }); },
+
+      authTabs: [['signup', 'Criar conta'], ['login', 'Entrar']].map(([k, l]) => ({ label: l, bg: s.authMode === k ? 'linear-gradient(180deg,#fff,#eef8fc)' : 'transparent', sh: s.authMode === k ? '0 2px 6px rgba(0,50,100,.2), inset 0 1px 0 #fff' : 'none', onClick: () => this.setState({ authMode: k, authErr: '' }) })),
+      authTitle: s.authMode === 'signup' ? 'Criar conta' : 'Entrar', authCta: s.authMode === 'signup' ? 'Criar conta' : 'Entrar',
+      authSub: s.authMode === 'signup' ? 'Para sincronizar entre aparelhos. Suas anotações são criptografadas antes de sair do aparelho.' : 'Entre para sincronizar este aparelho com os outros.',
+      authSubSignupVis: s.authMode === 'signup' ? 'visible' : 'hidden', authSubLoginVis: s.authMode === 'login' ? 'visible' : 'hidden',
+      pwPlaceholder: s.authMode === 'signup' ? 'Mínimo 8 caracteres' : 'Sua senha',
+      email: s.email, password: s.password, authErr: s.authErr,
+      onEmail: e => this.setState({ email: e.target.value, authErr: '' }), onPassword: e => this.setState({ password: e.target.value, authErr: '' }),
+      authSubmit: () => this.authSubmit(),
+      authBack: () => s.authReturn === 'onboard' ? this.go('onboard', { onStep: 3 }) : this.go(s.authReturn),
+      goForgot: () => this.go('forgot', { fStep: 1, fEmail: s.email, fErr: '', fNoKey: false }),
+
+      recKey: KEY,
+      recEmailLabel: r.emailed ? 'Email aberto' : 'Enviar para meu email',
+      recEmail: () => { this.setRec('emailed'); try { window.open('mailto:' + encodeURIComponent(s.accountEmail) + '?subject=' + encodeURIComponent('Chave de recuperação do Memoras') + '&body=' + mailBody, '_blank'); } catch (e) {} },
+      recActions: [
+        { label: r.copied ? 'Copiada' : 'Copiar', color: r.copied ? '#2d7a12' : 'var(--ink)', onClick: () => { try { navigator.clipboard.writeText(KEY); } catch (e) {} this.setRec('copied'); } },
+        { label: r.saved ? 'Arquivo salvo' : 'Salvar arquivo', color: r.saved ? '#2d7a12' : 'var(--ink)', onClick: () => { try { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['Chave de recuperação do Memoras\n\n' + KEY + '\n'], { type: 'text/plain' })); a.download = 'memoras-chave-de-recuperacao.txt'; a.click(); } catch (e) {} this.setRec('saved'); } },
+        { label: r.printed ? 'Impressa' : 'Imprimir', color: r.printed ? '#2d7a12' : 'var(--ink)', onClick: () => this.setRec('printed') },
+      ],
+      recToggleConfirm: () => this.setState({ rec: { ...r, confirmed: !r.confirmed } }),
+      recBoxBg: r.confirmed ? GEL : 'rgba(255,255,255,.9)', recBoxBd: r.confirmed ? 'var(--acc-dd)' : '#8aa6b6', recCheck: r.confirmed ? '✓' : '',
+      recContOpacity: r.confirmed ? 1 : 0.45,
+      recContinue: () => { if (!r.confirmed) return; if (s.recReturn === 'onboardPin') this.go('onboard', { onStep: 4 }); else { this.go('settings'); this.toastMsg('Nova chave guardada'); } },
+
+      fStepLabel: s.fStep < 4 ? 'Passo ' + Math.min(s.fStep, 3) + ' de 3' : 'Concluído', f1: s.fStep === 1, f2: s.fStep === 2, f3: s.fStep === 3, f4: s.fStep === 4,
+      fEmail: s.fEmail, fEmailShown: s.fEmail || 'seu email', fPass: s.fPass, fKey: s.fKey, fErr: s.fErr, fNoKey: s.fNoKey,
+      onFEmail: e => this.setState({ fEmail: e.target.value, fErr: '' }), onFPass: e => this.setState({ fPass: e.target.value, fErr: '' }), onFKey: e => this.setState({ fKey: e.target.value, fErr: '' }),
+      toggleNoKey: () => this.setState({ fNoKey: !s.fNoKey, fErr: '' }),
+      fCta: ['Enviar link de redefinição', 'Salvar nova senha', s.fNoKey ? 'Começar diário novo' : 'Reabrir anotações', 'Ir para o diário'][s.fStep - 1],
+      fNext: () => this.fNext(), fBack: () => this.go('auth', { authMode: 'login', fStep: 1 }),
+
+      appWrapStyle: isDesktop ? { position: 'absolute', inset: 0, display: 'flex', gap: 18, padding: 18, boxSizing: 'border-box' } : { position: 'absolute', inset: 0, display: 'flex', padding: '52px 10px 98px', boxSizing: 'border-box' },
+      sideStyle: isDesktop ? { width: 340, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 } : { flex: 1, minWidth: 0, display: scr === 'history' ? 'flex' : 'none', flexDirection: 'column', minHeight: 0 },
+      mainStyle: { flex: 1, minWidth: 0, minHeight: 0, flexDirection: 'column', display: isMobile && scr === 'history' ? 'none' : 'flex' },
+      syncLabel, syncIcon: this.syncIcon(), syncClick: () => s.hasAccount ? (s.sync === 'error' || s.sync === 'synced' ? this.syncNow() : null) : this.go('settings'),
+      showInvite: !s.hasAccount && s.invite, hideInvite: () => this.setState({ invite: false }),
+      goSignup: () => this.go('auth', { authMode: 'signup', authReturn: 'settings', authErr: '' }),
+      goLogin: () => this.go('auth', { authMode: 'login', authReturn: 'settings', authErr: '' }),
+      newNote: () => this.newNote(), navItems,
+      toggleCal: () => this.setState({ calOpen: !calShown }), calBtnBg: calShown ? 'rgba(255,255,255,.95)' : 'var(--glass2)', calBtnColor: calShown ? 'var(--acc-d)' : 'var(--ink)',
+      calShown, calLabel: cap(first.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })), calDow: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'], calCells,
+      calPrev: () => this.setState(st => st.calM === 0 ? { calM: 11, calY: st.calY - 1 } : { calM: st.calM - 1 }),
+      calNext: () => this.setState(st => st.calM === 11 ? { calM: 0, calY: st.calY + 1 } : { calM: st.calM + 1 }),
+      dayFiltered: !!s.day, dayFilterLabel: s.day ? new Date(s.day).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }) : '', clearDay: () => this.setState({ day: null }),
+      groups, listEmpty: act.length === 0,
+
+      showEditor, showMainEmpty: isDesktop && scr === 'history' && !cur,
+      goHistory: () => this.go('history'),
+      edDate: cur ? dayLabel(nd(cur)) + (same(nd(cur), Date.now()) || same(nd(cur), Date.now() - DAY) ? ', ' + new Date(nd(cur)).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' }) : '') : '', edSub,
+      edTitle: cur ? cur.title : '', onTitle: e => cur && this.upd(cur.id, n => { n.title = e.target.value; return n; }),
+      segs, milkPad: isMobile ? '24px 20px 40px' : '36px 44px 56px',
+      edArchiveLabel: cur && cur.status === 'archived' ? 'Desarquivar' : 'Arquivar',
+      edArchive: () => cur && this.archive(cur.id), edTrash: () => cur && this.trash(cur.id),
+
+      isSearch: scr === 'search', query: s.query, onQuery: e => this.setState({ query: e.target.value }),
+      hasQuery: !!q && results.length > 0, resultCount: results.length === 1 ? '1 anotação' : results.length + ' anotações', results,
+      searchEmpty: !!q && !results.length, searchIdle: !q,
+
+      isShelf: scr === 'archive', shelfTitle: isTrash ? 'Lixeira' : 'Arquivo',
+      shelfSub: isTrash ? 'Restaure uma anotação ou apague para sempre.' : 'Anotações guardadas fora do histórico. Continuam aparecendo na busca.',
+      shelfTabs: [['archive', 'Arquivadas'], ['trash', 'Lixeira']].map(([k, l]) => ({ label: l, bg: s.shelf === k ? 'linear-gradient(180deg,#fff,#eef8fc)' : 'transparent', sh: s.shelf === k ? '0 2px 6px rgba(0,50,100,.2)' : 'none', onClick: () => this.setState({ shelf: k }) })),
+      shelfRows, shelfEmpty: !shelfRows.length,
+      shelfEmptyTitle: isTrash ? 'Lixeira vazia' : 'Nada arquivado',
+      shelfEmptyText: isTrash ? 'Anotações que você mandar para a lixeira aparecem aqui.' : 'Arquive anotações para tirá-las do histórico sem apagar.',
+      canEmptyTrash: isTrash && shelfRows.length > 0, askEmptyTrash: () => this.setState({ confirm: { all: true } }),
+
+      isSettings: scr === 'settings', pinOn: s.pinOn, pinTrack: s.pinOn ? GEL : 'rgba(12,60,90,.2)', pinKnob: s.pinOn ? '25px' : '3px',
+      setTogglePin: () => { if (s.pinOn) { this.setState({ pinOn: false }); this.toastMsg('PIN desativado'); } else this.go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: 'settings' }); },
+      changePin: () => this.go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: 'settings' }),
+      hasAccount: s.hasAccount, noAccount: !s.hasAccount, accountEmail: s.accountEmail,
+      syncNow: () => this.syncNow(), logout: () => { this.setState({ hasAccount: false, invite: true }); this.toastMsg('Você saiu. As anotações continuam neste aparelho.'); },
+      regenKey: () => this.go('recovery', { rec: { copied: false, saved: false, printed: false, emailed: false, confirmed: false }, recReturn: 'settings' }),
+      tabs,
+
+      toast: !!s.toast, toastText: s.toast ? s.toast.text : '', toastHasUndo: !!(s.toast && s.toast.undo),
+      toastUndo: () => { const u = s.toast && s.toast.undo; clearTimeout(this.tt); this.setState({ toast: null }); u && u(); },
+      toastBottom: isMobile && inApp ? '100px' : '28px',
+      confirmOpen: !!s.confirm, confirmTitle: s.confirm && s.confirm.reset ? 'Apagar todo o diário deste aparelho?' : s.confirm && s.confirm.all ? 'Esvaziar a lixeira?' : 'Apagar para sempre?',
+      confirmCancel: () => this.setState({ confirm: null }), confirmDo: () => this.confirmDo(),
+
+      reviewOpen: s.review, reviewChevron: s.review ? '−' : '+', toggleReview: () => this.setState({ review: !s.review }),
+      devOpts: [['desktop', 'Computador'], ['mobile', 'Celular']].map(([k, l]) => ({ label: l, bg: s.device === k ? '#fff' : 'transparent', onClick: () => this.setState({ device: k }) })),
+      themeSel: this.themeName(), onThemeSel: e => this.setState({ theme: e.target.value }),
+      screenOpts, onJump: e => this.jump(e.target.value),
+      sync: s.sync, onSyncSel: e => this.setState({ sync: e.target.value, hasAccount: true }),
+      accountSel: s.hasAccount ? 'yes' : 'no', onAccountSel: e => this.setState({ hasAccount: e.target.value === 'yes', invite: true }),
+      dataSel: s.dataSel, onDataSel: e => { const v = e.target.value; const notes = v === 'seed' ? seed() : []; this.setState({ dataSel: v, notes, sel: notes[0] ? notes[0].id : null, day: null }); },
+      sim2h: () => {
+        const target = cur || act[0]; if (!target) return;
+        this.upd(target.id, n => { const shift = Math.max(0, n.last - (Date.now() - 2 * H - MIN)); n.segs = n.segs.map(sg => ({ ...sg, t: sg.t - shift })); n.last -= shift; return n; });
+        this.go('editor', { sel: target.id }); this.toastMsg('Simulado: 2 h sem escrever. Um novo horário aparece ao continuar.');
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
