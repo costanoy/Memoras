@@ -223,12 +223,32 @@ O fundo de cada tema = camadas `radial-gradient(55% 45% at 10% 6%, rgba(255,255,
 
 Noite também usa vidros mais opacos (`--glass` rgba(235,245,255,.8→.66), `--glass2` rgba(245,250,255,.94→.85)) e `--sb:#fff`. `--ring` ≈ versão clara do acento a .42–.5; `--acc-a` = acento a .5. Valores exatos de `--ring`, `--gel-bd`, `--gel-sh`, `--gel-ts` e `--lock` por tema estão em `THEMES` no protótipo.
 
+## Site (memoras.cyberhat.com.br)
+Site estático **pronto para publicar** em `site/` (HTML, CSS, um JS pequeno e o ícone). Ele já é o código final: não precisa ser recriado, só publicado na raiz do domínio (ex.: GitHub Pages, Cloudflare Pages, Netlify). As regras completas estão em `site/LEIA-ME.md`.
+
+- Páginas: `index.html` (apresentação e download) e `privacidade.html` (política exigida pelo Google Play). Não tem login nem escrita de anotações.
+- Downloads: Windows `https://github.com/costanoy/Memoras/releases/latest/download/Memoras-Setup.exe` · Android `https://github.com/costanoy/Memoras/releases/latest/download/Memoras.apk`. **Confirme que os nomes dos arquivos publicados nos releases batem com esses links.**
+- **Não incluir "Versões anteriores"** nem nenhum link para a lista de releases do GitHub. O rodapé tem só "Privacidade" e "Memoras · cyberhat.com.br".
+- Contato para apagar a conta: cyberhat.tech@gmail.com.
+- Mesmos tokens e 10 temas do app (`styles.css`, `[data-theme]`, padrão turquesa). O cartão "10 cores" troca o tema do site e salva em `localStorage` (`memoras-site-cor`).
+- A imagem do app no Início é uma maquete em HTML/CSS (`.mock`), dimensionada por container query (`cqw`). Não é um print.
+- Textos em pt-BR, sem travessões. Funciona a partir de 360 px, respeita `prefers-reduced-motion` e `prefers-reduced-transparency`, e o texto tem contraste de pelo menos 4.5:1.
+- Ao editar o CSS, use `padding-top` e `padding-bottom` nas seções, nunca o atalho `padding`, para não zerar as margens laterais de `.wrap`.
+- A política de privacidade descreve o que o app precisa cumprir: sem conta, nada sai do aparelho. Com conta, anotações, nome do diário e cor são cifrados no aparelho, e o Supabase guarda só texto cifrado e o email. O login usa um valor derivado da senha, a chave de recuperação não fica guardada no servidor, e não há anúncios nem rastreamento. **A implementação do app precisa seguir isso à risca.**
+
+## Ordem sugerida de trabalho
+1. Criar o app a partir de `Memoras.dc.html` e deste README (Windows primeiro, depois Android).
+2. Implementar a criptografia, a sincronização com o Supabase e a derivação da senha, conforme a política de privacidade.
+3. Publicar os instaladores nos releases do GitHub com os nomes `Memoras-Setup.exe` e `Memoras.apk`.
+4. Publicar `site/` em memoras.cyberhat.com.br.
+
 ## Assets
 - `assets/memoras-icon.png` — ícone do app (cadeado de vidro sobre quadrado em gradiente), 512 px, recortado da proposta do Canva. Usado **só** como favicon/ícone do app; a logo **não aparece dentro das telas**. Pedir ao dono do produto os arquivos finais (PNG transparente / SVG) para gerar ícones iOS/Android/desktop.
 - Ícones de interface: traço 2.2–2.3 px, pontas arredondadas, 20–24 px (lupa, arquivo-caixa, lixeira, engrenagem estilo Lucide "settings", calendário, página com linhas para "Diário", voltar ‹). Recomenda-se usar Lucide ou equivalente.
 - Fontes: Google Fonts (Source Sans 3, Source Code Pro).
 
 ## Files
+- `site/` — site estático final (ver seção Site).
 - `Memoras.dc.html` — protótipo completo (template + lógica na classe `Component`: temas em `THEMES`/`THEME_META`, regras de PIN em `pressKey/submitPin`, regra das 2 h em `renderVals` → `segs`, busca com normalização de acentos em `normMap`).
 - `support.js` — runtime necessário só para abrir o protótipo.
 - `assets/memoras-icon.png` — ícone.

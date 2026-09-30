@@ -22,7 +22,7 @@
     "directories": { "output": "release" },
     "files": ["dist-desktop/**", "electron/**"],
     "win": { "target": "nsis", "icon": "build/icon.png" },
-    "nsis": { "artifactName": "Memoras-Setup.${ext}", "shortcutName": "Memoras" },
+    "nsis": { "artifactName": "Memoras-Setup.${ext}", "shortcutName": "Memoras", "deleteAppDataOnUninstall": true },
     "publish": { "provider": "github", "owner": "costanoy", "repo": "Memoras" }
   },
   "dependencies": {
