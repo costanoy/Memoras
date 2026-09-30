@@ -1,0 +1,7 @@
+{
+  "appId": "br.com.cyberhat.memoras",
+  "appName": "Memoras",
+  "webDir": "dist-mobile",
+  "backgroundColor": "#1fd0c8",
+  "android": { "allowMixedContent": false }
+}

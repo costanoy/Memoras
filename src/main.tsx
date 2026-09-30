@@ -5,8 +5,10 @@ import '@fontsource/source-code-pro/600.css';
 import './styles.css';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { setupBackButton } from './native';
 import { init } from './store';
 import { startSync } from './sync';
 
 createRoot(document.getElementById('root')!).render(<App />);
+setupBackButton();
 void init().then(startSync);

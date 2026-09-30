@@ -2,12 +2,12 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// `--mode desktop` gera o pacote que vai dentro do .exe: sem service worker,
-// porque ali os arquivos já estão no disco.
+// `--mode desktop` e `--mode mobile` geram os pacotes que vão dentro do .exe e do .apk:
+// sem service worker, porque ali os arquivos já estão no aparelho.
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    mode !== 'desktop' && VitePWA({
+    mode !== 'desktop' && mode !== 'mobile' && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon-512.png'],
       manifest: {

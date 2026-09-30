@@ -10,7 +10,8 @@
   --glass2:linear-gradient(180deg,rgba(255,255,255,.84),rgba(255,255,255,.60));
   --milk:linear-gradient(180deg,rgba(251,254,255,.97),rgba(242,250,253,.94));
   --blur:blur(22px) saturate(170%);
-  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  /* No Android o Capacitor informa as bordas do sistema em --safe-area-inset-*. */
+  --sat:var(--safe-area-inset-top,env(safe-area-inset-top,0px));--sab:var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px));
 }
 @media (prefers-reduced-transparency: reduce){
   :root{--glass:#e2f1f8 !important;--glass2:#f1f8fb !important;--milk:#fcfeff !important;--blur:none !important}

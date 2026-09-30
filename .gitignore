@@ -6,3 +6,5 @@ dev-dist
 dist-desktop
 release
 memoras-site.zip
+dist-mobile
+assets/icon-only.png

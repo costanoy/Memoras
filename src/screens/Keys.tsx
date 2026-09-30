@@ -1,23 +1,21 @@
 import { useState } from 'react';
+import { isNative, openExternal, saveTextFile } from '../native';
 import { commitPendingPin, go, toast, useApp } from '../store';
 
 function KeyActions({ value, heading, file }: { value: string; heading: string; file: string }) {
   const [done, setDone] = useState({ copied: false, saved: false, printed: false });
   const copy = async () => { try { await navigator.clipboard.writeText(value); setDone(d => ({ ...d, copied: true })); } catch { toast('Não deu para copiar. Selecione a chave e copie.'); } };
-  const save = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([heading + '\n\n' + value + '\n'], { type: 'text/plain' }));
-    a.download = file;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    setDone(d => ({ ...d, saved: true }));
+  const save = async () => {
+    try { await saveTextFile(file, heading + '\n\n' + value + '\n'); setDone(d => ({ ...d, saved: true })); }
+    catch { /* a pessoa fechou o menu de compartilhar sem salvar */ }
   };
   const print = () => { window.print(); setDone(d => ({ ...d, printed: true })); };
   return (
     <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
       <button className={'keyact press' + (done.copied ? ' done' : '')} onClick={copy}>{done.copied ? 'Copiada' : 'Copiar'}</button>
       <button className={'keyact press' + (done.saved ? ' done' : '')} onClick={save}>{done.saved ? 'Arquivo salvo' : 'Salvar arquivo'}</button>
-      <button className={'keyact press' + (done.printed ? ' done' : '')} onClick={print}>{done.printed ? 'Impressa' : 'Imprimir'}</button>
+      {/* O Android não imprime a partir do app; lá o arquivo salvo cumpre esse papel. */}
+      {!isNative && <button className={'keyact press' + (done.printed ? ' done' : '')} onClick={print}>{done.printed ? 'Impressa' : 'Imprimir'}</button>}
     </div>
   );
 }
@@ -32,8 +30,8 @@ export function Recovery() {
   const [kept, setKept] = useState(false);
   const mail = () => {
     setEmailed(true);
-    location.href = 'mailto:' + encodeURIComponent(s.cfg.account?.email ?? '') + '?subject=' + encodeURIComponent('Chave de recuperação do Memoras')
-      + '&body=' + encodeURIComponent('Minha chave de recuperação do Memoras:\n\n' + key + '\n\nGuarde este email. Quem tiver esta chave pode reabrir o diário.');
+    openExternal('mailto:' + encodeURIComponent(s.cfg.account?.email ?? '') + '?subject=' + encodeURIComponent('Chave de recuperação do Memoras')
+      + '&body=' + encodeURIComponent('Minha chave de recuperação do Memoras:\n\n' + key + '\n\nGuarde este email. Quem tiver esta chave pode reabrir o diário.'));
   };
   const done = () => {
     if (!kept) return;
