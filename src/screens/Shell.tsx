@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, monthYear, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
-import { activeSorted, archive, editSeg, go, live, newNote, openNote, set, setCfg, setPrefs, setStatus, setTitle, startCreatePin, toast, trash, typeNew, useApp, type State } from '../store';
+import { activeSorted, archive, editSeg, go, live, newNote, openNote, reducedMotion, set, setCfg, setPrefs, setStatus, setTitle, startCreatePin, toast, trash, typeNew, useApp, type State } from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { Icon, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
 
@@ -341,13 +341,39 @@ function Settings({ s }: { s: State }) {
 
 const TABS = [['history', 'Diário'], ['search', 'Busca'], ['new', 'Nova anotação'], ['archive', 'Arquivo'], ['settings', 'Ajustes']] as const;
 
+// O "+" do celular: o botão gira e uma bolha de gel cresce a partir dele até
+// cobrir a tela; a anotação nova abre por baixo e a bolha se desfaz.
+function usePlusBurst() {
+  const [burst, setBurst] = useState<{ x: number; y: number; scale: number } | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!burst || !el) return;
+    const grow = el.animate([{ transform: 'scale(1)', opacity: 0.95 }, { transform: `scale(${burst.scale})`, opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+    const t = setTimeout(newNote, 230);
+    grow.onfinish = () => { el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' }).onfinish = () => setBurst(null); };
+    return () => clearTimeout(t);
+  }, [burst]);
+  const start = (btn: HTMLElement) => {
+    if (reducedMotion()) return newNote();
+    const r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const far = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    setBurst({ x, y, scale: far / 26 + 1 });
+  };
+  const el = burst && <div ref={ref} className="burst" style={{ left: burst.x - 26, top: burst.y - 26 }} />;
+  return { start, el, busy: !!burst };
+}
+
 export function Shell() {
   const s = useApp(), scr = s.screen;
   const cur = s.notes.find(n => n.id === s.sel && !n.deleted && n.status !== 'trashed');
   const showEditor = !!cur && (scr === 'editor' || (!s.mobile && scr === 'history'));
   const historyOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur));
+  // Enquanto escreve no celular, o menu inferior sai de cena.
+  const tabbar = s.mobile && !showEditor;
+  const plus = usePlusBurst();
   return <>
-    <div className={'wrap' + (s.mobile ? ' m' : '')}>
+    <div className={'wrap' + (s.mobile ? ' m' : '') + (s.mobile && !tabbar ? ' notab' : '')}>
       {(!s.mobile || historyOnly) && <Side s={s} />}
       {!historyOnly && (
         <div className="main">
@@ -368,14 +394,16 @@ export function Shell() {
         </div>
       )}
     </div>
-    {s.mobile && (
+    {tabbar && (
       <div className="tabbar">
         {TABS.map(([k, label]) => (
-          <button key={k} className={'press' + (k === scr || (k === 'history' && scr === 'editor') ? ' on' : '')} aria-label={label} onClick={() => k === 'new' ? newNote() : go(k)}>
+          <button key={k} className={'press' + (k === scr || (k === 'history' && scr === 'editor') ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={label}
+            onClick={e => k === 'new' ? !plus.busy && plus.start(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : go(k)}>
             {k === 'new' ? <span className="plus">+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
           </button>
         ))}
       </div>
     )}
+    {plus.el}
   </>;
 }

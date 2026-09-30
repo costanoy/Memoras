@@ -26,24 +26,25 @@ export function openExternal(url: string) {
   else location.href = url;
 }
 
-// Botão voltar do Android: faz o mesmo que o "Voltar" de cada tela.
+// Botão voltar do Android: nunca fecha o app. Dentro do diário leva ao histórico,
+// que é a tela principal; nos fluxos faz o mesmo que o "Voltar" de cada tela.
 export function setupBackButton() {
   if (!isNative) return;
   void App.addListener('backButton', () => {
     const s = get();
     if (s.confirm) return set({ confirm: null });
     switch (s.screen) {
+      case 'history': return set({ day: null, calOpen: false });
       case 'editor': case 'search': case 'archive': case 'settings': return go('history');
-      case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : void App.exitApp();
+      case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : undefined;
       case 'auth': return s.authReturn === 'onboard' ? go('onboard', { onStep: 3 }) : go('settings');
       case 'forgot': return go('auth', { authMode: 'login', fStep: 1 });
       case 'forgotPin': return go('pin', { pinMode: 'unlock', pin: '' });
       case 'pin':
-        if (s.pinMode === 'unlock') return void App.exitApp();
+        if (s.pinMode === 'unlock') return;
         set({ pinMode: 'unlock', pin: '', pinMsg: '', pinError: false });
         return go(s.pinReturn);
-      case 'recovery': case 'pinkey': return;
-      default: return void App.exitApp();
+      default: return;
     }
   });
 }
