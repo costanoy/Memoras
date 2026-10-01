@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, net, protocol, shell } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { autoUpdater } = require('electron-updater');
@@ -16,17 +16,30 @@ let win = null;
 const external = url => { if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url); };
 
 function createWindow() {
+  // Sem a moldura do Windows: o app desenha a própria barra de título, em vidro.
   win = new BrowserWindow({
-    width: 1180, height: 800, minWidth: 360, minHeight: 520,
+    width: 1180, height: 800, minWidth: 360, minHeight: 520, frame: false,
     backgroundColor: '#1fd0c8', autoHideMenuBar: true, title: 'Memoras',
     icon: path.join(ROOT, 'icon-512.png'),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, 'preload.cjs') },
   });
   win.webContents.setWindowOpenHandler(({ url }) => { external(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(ORIGIN)) { e.preventDefault(); external(url); } });
+  const sendMax = () => win?.webContents.send('win-max', win.isMaximized());
+  win.on('maximize', sendMax);
+  win.on('unmaximize', sendMax);
+  win.webContents.on('did-finish-load', sendMax);
   win.on('closed', () => { win = null; });
   void win.loadURL(ORIGIN + '/');
 }
+
+ipcMain.on('win', (e, action) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (!w) return;
+  if (action === 'min') w.minimize();
+  else if (action === 'max') { if (w.isMaximized()) w.unmaximize(); else w.maximize(); }
+  else if (action === 'close') w.close();
+});
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {

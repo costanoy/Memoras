@@ -183,6 +183,25 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 .burst{position:fixed;z-index:30;width:52px;height:52px;border-radius:50%;background:var(--gel);box-shadow:inset 0 1px 0 rgba(255,255,255,.75);pointer-events:none;will-change:transform,opacity}
 .plus{display:grid;place-items:center;width:52px;height:52px;margin-top:-4px;border-radius:50%;color:var(--gel-fg);font-size:30px;font-weight:400;line-height:1;background:var(--gel);border:1px solid var(--gel-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 8px 16px -6px var(--gel-sh)}
 
+/* Barra de título do app de Windows (só aparece lá) */
+:root{--tb:0px}
+.electron{--tb:38px}
+.wrap,.flow{top:var(--tb)}
+.titlebar{position:absolute;left:0;right:0;top:0;height:var(--tb);z-index:60;display:flex;align-items:center;gap:9px;padding:0 6px 0 14px;-webkit-app-region:drag;user-select:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.32) 50%,rgba(255,255,255,.14) 51%,rgba(255,255,255,.24) 100%);
+  border-bottom:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 6px 18px -12px rgba(0,50,100,.45);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.titlebar img{flex:none;filter:drop-shadow(0 1px 2px rgba(0,50,100,.3))}
+/* O brilho branco atrás do título lembra o vidro do Windows 7. */
+.tbtitle{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--ink);text-shadow:0 0 8px rgba(255,255,255,.95), 0 0 16px rgba(255,255,255,.75)}
+.tbtns{margin-left:auto;display:flex;gap:4px;-webkit-app-region:no-drag}
+.tbtn{width:42px;height:26px;padding:0;border-radius:8px;display:grid;place-items:center;color:var(--ink);
+  background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.62) 49%,rgba(214,242,255,.5) 51%,rgba(255,255,255,.78) 100%);
+  border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff, 0 2px 6px -2px rgba(0,50,100,.4);transition:filter .12s ease, box-shadow .12s ease, color .12s ease}
+.tbtn:hover{color:var(--gel-fg);background:var(--gel);border-color:var(--gel-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 0 12px var(--ring)}
+.tbtn:active{filter:brightness(.9)}
+.tbtn.close{width:50px;color:#fff;background:linear-gradient(180deg,#f7a0b4 0%,#e0567a 48%,#c93158 52%,#d64468 100%);border-color:rgba(120,20,50,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 2px 6px -2px rgba(150,20,60,.5)}
+.tbtn.close:hover{color:#fff;filter:brightness(1.1) saturate(1.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 0 14px rgba(255,80,120,.75)}
+
 /* Avisos */
 .toast{position:absolute;left:50%;bottom:calc(28px + var(--sab));transform:translateX(-50%);z-index:40;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:14px;padding:10px 20px;min-height:56px;border-radius:999px;background:rgba(12,43,64,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 16px 30px -12px rgba(0,30,60,.6);color:#fff;font-size:15px;font-weight:600}
 .toast.up{bottom:calc(100px + var(--sab))}

@@ -5,12 +5,14 @@ import { PinKey, Recovery } from './screens/Keys';
 import { Onboard } from './screens/Onboard';
 import { Pin } from './screens/Pin';
 import { Shell } from './screens/Shell';
+import { TitleBar } from './TitleBar';
 
 export function App() {
   const s = useApp(), scr = s.screen, c = s.confirm;
   return <>
     <div className="stage">
       <div className="deco haze" /><div className="deco b1" /><div className="deco b2" /><div className="deco b3" /><div className="deco b4" />
+      <TitleBar />
 
       {scr === 'pin' && <Pin />}
       {scr === 'onboard' && <Onboard />}

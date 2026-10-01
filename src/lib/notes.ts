@@ -53,8 +53,11 @@ export const nd = (n: NoteContent) => { const s = n.segs.find(g => g.text !== ''
 export const fullText = (n: NoteContent) => n.segs.map(s => s.text).filter(Boolean).join(' ');
 export const isEmpty = (n: NoteContent) => !n.title && n.segs.every(s => !s.text);
 export const dispTitle = (n: NoteContent) => {
-  const t = fullText(n).trim();
-  return n.title || (t ? t.split(/\s+/).slice(0, 6).join(' ') + '…' : 'Nova anotação');
+  const words = fullText(n).trim().split(/\s+/).filter(Boolean);
+  if (n.title) return n.title;
+  if (!words.length) return 'Nova anotação';
+  // Reticências só quando o texto continua depois das 6 primeiras palavras.
+  return words.length > 6 ? words.slice(0, 6).join(' ').replace(/[.,;:!?…]+$/, '') + '…' : words.join(' ');
 };
 export const preview = (n: NoteContent) => fullText(n).trim().slice(0, 160) || 'Sem texto ainda';
 
