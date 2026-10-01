@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { kvGet, kvSet, noteDel, notePut, notesAll, wipeAll } from './lib/db';
+import { kvDel, kvRead, kvSet, noteDel, notePut, notesRead, wipeAll } from './lib/db';
 import { hashSecret, normCode, randomCode, verifySecret } from './lib/crypto';
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
 import { playSound, type Sound } from './sounds';
@@ -47,6 +47,9 @@ const defaultCfg: Cfg = {
   pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0,
   invite: true, sounds: true, account: null, dk: null, lastPull: null,
 };
+
+// Versão do app (do package.json), usada para guardar uma cópia dos dados a cada atualização.
+const APP_VERSION = __APP_VERSION__;
 
 const mq = window.matchMedia('(max-width: 719.98px)');
 const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -267,11 +270,47 @@ async function submitPin(pin: string) {
 }
 export const startCreatePin = (ret: 'history' | 'settings') => go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: ret });
 
+// Se o banco não abrir, o app não segue em frente: começar "vazio" levaria ao primeiro uso
+// e a pessoa poderia gravar por cima das configurações. Tenta de novo algumas vezes.
+async function readAll() {
+  for (let i = 0; ; i++) {
+    try { return { saved: await kvRead<Partial<Cfg>>('cfg'), stored: await notesRead(), lastVersion: await kvRead<string>('appVersion') }; }
+    catch (e) {
+      if (i >= 4) throw e;
+      await new Promise(r => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+}
+
+// Na primeira abertura de cada versão nova, guarda uma cópia das anotações e das
+// configurações como estavam. Se uma versão tiver algum defeito, os dados anteriores
+// continuam no aparelho. Ficam as 3 cópias mais recentes.
+async function snapshotOnUpgrade(lastVersion: string | undefined, saved: Partial<Cfg> | undefined, stored: Note[]) {
+  if (lastVersion === APP_VERSION) return;
+  if (lastVersion && (saved || stored.length)) {
+    const list = (await kvRead<string[]>('backups')) ?? [];
+    const key = 'backup:' + lastVersion;
+    await kvSet(key, { version: lastVersion, at: Date.now(), cfg: saved, notes: stored });
+    const keep = [key, ...list.filter(k => k !== key)];
+    for (const old of keep.slice(3)) await kvDel(old);
+    await kvSet('backups', keep.slice(0, 3));
+  }
+  await kvSet('appVersion', APP_VERSION);
+}
+
 export async function init() {
-  const saved = await kvGet<Partial<Cfg>>('cfg');
+  let data;
+  try { data = await readAll(); }
+  catch (e) {
+    console.error('Memoras: não foi possível abrir o banco', e);
+    toast('Não foi possível abrir suas anotações. Feche e abra o app de novo.');
+    return;
+  }
+  const { saved, stored, lastVersion } = data;
+  await snapshotOnUpgrade(lastVersion, saved, stored);
   const cfg: Cfg = { ...defaultCfg, ...saved };
   if (!THEMES[cfg.theme]) cfg.theme = 'turquesa';
-  const notes = (await notesAll()).filter(n => {
+  const notes = stored.filter(n => {
     if (n.deleted || !isEmpty(n) || n.status !== 'active' || n.pushed) return true;
     void noteDel(n.id); return false;
   });

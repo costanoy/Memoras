@@ -3,5 +3,11 @@
   "appName": "Memoras",
   "webDir": "dist-mobile",
   "backgroundColor": "#1fd0c8",
-  "android": { "allowMixedContent": false }
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  }
 }

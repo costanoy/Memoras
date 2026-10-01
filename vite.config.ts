@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import pkg from './package.json' with { type: 'json' };
 
 // `--mode desktop` e `--mode mobile` geram os pacotes que vão dentro do .exe e do .apk:
 // sem service worker, porque ali os arquivos já estão no aparelho.
 export default defineConfig(({ mode }) => ({
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
     mode !== 'desktop' && mode !== 'mobile' && VitePWA({

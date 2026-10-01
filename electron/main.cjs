@@ -4,6 +4,8 @@ const { pathToFileURL } = require('url');
 const { autoUpdater } = require('electron-updater');
 
 const ROOT = path.join(__dirname, '..', 'dist-desktop');
+// NUNCA mude este endereço: as anotações (IndexedDB) ficam presas a ele.
+// Trocar o esquema ou o nome faria o app abrir vazio depois de uma atualização.
 const ORIGIN = 'app://memoras';
 
 // Endereço próprio e estável: a criptografia do navegador exige contexto seguro
@@ -41,7 +43,7 @@ else {
     createWindow();
 
     // Baixa a versão nova em segundo plano e instala ao fechar o app.
-    if (app.isPackaged) {
+    if (app.isPackaged && !process.env.MEMORAS_NO_UPDATE) {
       const check = () => autoUpdater.checkForUpdatesAndNotify().catch(e => console.warn('Memoras: atualização falhou', e));
       void check();
       setInterval(check, 4 * 60 * 60 * 1000);

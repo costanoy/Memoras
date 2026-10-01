@@ -2,7 +2,8 @@
 // para o release v<versão> do GitHub. O app de Windows se atualiza a partir dele,
 // e os links do site (latest/download/...) passam a apontar para esta versão.
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const REPO = 'costanoy/Memoras';
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
@@ -13,6 +14,15 @@ const json = cmd => JSON.parse(execSync(cmd, { encoding: 'utf8' }));
 process.env.GH_TOKEN ||= execSync('gh auth token', { encoding: 'utf8' }).trim();
 
 run('npm run apk');
+
+// O APK tem que sair assinado com a mesma chave de sempre. Com outra chave, o Android
+// recusa instalar por cima e a pessoa teria de desinstalar, perdendo as anotações do aparelho.
+const APK_CERT = '7d7f2d84709cafd28244d82292ee27ef7006f6de77b8505fccea1081e03db1b2';
+const sdk = process.env.ANDROID_HOME || join(process.env.LOCALAPPDATA ?? '', 'Android', 'Sdk');
+const tools = readdirSync(join(sdk, 'build-tools')).sort().at(-1);
+const certs = execSync(`"${join(sdk, 'build-tools', tools, 'apksigner.bat')}" verify --print-certs release/Memoras.apk`, { encoding: 'utf8' });
+if (!certs.includes(APK_CERT)) throw new Error('O APK não está assinado com a chave do Memoras (~/.memoras). Publicação cancelada.');
+
 run('npm run build:desktop');
 // O envio ao GitHub às vezes falha de primeira; uma segunda tentativa costuma passar.
 try { run('npx electron-builder --win --publish always'); }
