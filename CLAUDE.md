@@ -3,6 +3,7 @@
 - Referência de design: `design_handoff_memoras/` (fidelidade alta, textos finais em pt-BR, sem travessões).
 - O branch `obsoleto-nao-usar` do GitHub guarda uma versão antiga (React + Firebase). É obsoleto: nunca copie, consulte nem restaure nada dele.
 - Versões do app de Windows saem pelos Releases de `costanoy/Memoras` (`npm run release`); o app instalado se atualiza por eles.
+- O `.env` (fora do Git) tem a URL e a chave publishable do Supabase. Sem ele o app sai sem contas, e o `npm run release` cancela.
 
 ## Nunca perder anotações numa atualização
 - As anotações ficam no IndexedDB `memoras`, preso ao endereço do app: `app://memoras` no Windows (`electron/main.cjs`) e `https://localhost` no Android (`capacitor.config.json`). Não mude esses endereços, o `appId` nem o nome do banco.

@@ -4,12 +4,19 @@
 import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadEnv } from 'vite';
 
 const REPO = 'costanoy/Memoras';
 const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const tag = 'v' + version;
 const run = cmd => execSync(cmd, { stdio: 'inherit', env: process.env });
 const json = cmd => JSON.parse(execSync(cmd, { encoding: 'utf8' }));
+
+// Sem a URL e a chave do Supabase no .env, o app sai sem contas nem sincronização (foi o que aconteceu até a 1.0.2).
+for (const mode of ['mobile', 'desktop']) {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) throw new Error('Faltam VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env: o app sairia sem contas. Publicação cancelada.');
+}
 
 process.env.GH_TOKEN ||= execSync('gh auth token', { encoding: 'utf8' }).trim();
 

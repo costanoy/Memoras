@@ -43,7 +43,7 @@ A versão do app (Windows e Android) vem do `version` do `package.json`. Suba es
 Sem configuração o app funciona inteiro, só no aparelho. Para ligar contas:
 
 1. Crie um projeto no Supabase e rode `supabase/schema.sql` no SQL Editor.
-2. Copie `.env.example` para `.env` e preencha a URL e a chave anônima.
+2. Copie `.env.example` para `.env` e preencha a URL e a chave anônima (ou a publishable). O `npm run release` não publica sem elas, para nenhuma versão sair sem contas.
 3. Em Authentication, URL Configuration, coloque o endereço do app em Site URL e Redirect URLs (o link de "Esqueci minha senha" volta para ele).
 
 ## Como os dados ficam
