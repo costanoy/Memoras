@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sem backup na nuvem do Google: sem conta, as anotações não saem do aparelho (política de privacidade).
+         No Android 12 ou mais novo, a transferência direta de um celular para outro continua funcionando. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
