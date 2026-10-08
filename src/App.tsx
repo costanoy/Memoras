@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { confirmDo, inApp, set, toastUndo, useApp } from './store';
 import { Auth } from './screens/Auth';
 import { Forgot, ForgotPin } from './screens/Forgot';
@@ -9,6 +10,13 @@ import { TitleBar } from './TitleBar';
 
 export function App() {
   const s = useApp(), scr = s.screen, c = s.confirm;
+  // Esc fecha a confirmação de apagar, como o Cancelar.
+  useEffect(() => {
+    if (!c) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') set({ confirm: null }); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [c]);
   return <>
     <div className="stage">
       <div className="deco haze" /><div className="deco b1" /><div className="deco b2" /><div className="deco b3" /><div className="deco b4" />
@@ -34,9 +42,9 @@ export function App() {
         <div className="modal" role="dialog" aria-modal="true">
           <div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{c.reset ? 'Apagar todo o diário deste aparelho?' : c.all ? 'Esvaziar a lixeira?' : 'Apagar para sempre?'}</div>
-            <div className="p" style={{ color: 'var(--ink3)' }}>Isso não pode ser desfeito, nem em outros aparelhos.</div>
+            <div className="p" style={{ color: 'var(--ink3)' }}>{c.reset ? 'Isso não pode ser desfeito.' : 'Isso não pode ser desfeito, nem em outros aparelhos.'}</div>
             <div className="row" style={{ gap: 10, marginTop: 6 }}>
-              <button className="soft press" style={{ flex: 1, height: 48, fontSize: 16 }} onClick={() => set({ confirm: null })}>Cancelar</button>
+              <button className="soft press" style={{ flex: 1, height: 48, fontSize: 16 }} autoFocus onClick={() => set({ confirm: null })}>Cancelar</button>
               <button className="gel red" style={{ flex: 1, height: 48, fontSize: 16, padding: 0 }} onClick={confirmDo}>Apagar</button>
             </div>
           </div>

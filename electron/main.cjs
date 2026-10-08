@@ -12,8 +12,32 @@ const ORIGIN = 'app://memoras';
 // e o IndexedDB fica preso a esta origem entre versões.
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
+// Links memoras:// (o do email de "Esqueci minha senha") abrem o app e seguem para a tela certa.
+const SCHEME = 'memoras';
+const linkIn = argv => argv.find(a => a.startsWith(SCHEME + '://'));
+let pendingLink = linkIn(process.argv);
+
 let win = null;
 const external = url => { if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url); };
+const sendLink = link => {
+  if (!win || win.webContents.isLoading()) pendingLink = link;
+  else win.webContents.send('link', link);
+};
+
+// Menu do botão direito com corretor, recortar, copiar e colar (o Electron não traz um pronto).
+function contextMenu(p) {
+  const items = p.dictionarySuggestions.slice(0, 4).map(w => ({ label: w, click: () => win?.webContents.replaceMisspelling(w) }));
+  if (p.misspelledWord) items.push({ label: 'Adicionar ao dicionário', click: () => win?.webContents.session.addWordToSpellCheckerDictionary(p.misspelledWord) }, { type: 'separator' });
+  if (p.isEditable) {
+    const f = p.editFlags;
+    items.push(
+      { role: 'undo', label: 'Desfazer', enabled: f.canUndo }, { role: 'redo', label: 'Refazer', enabled: f.canRedo }, { type: 'separator' },
+      { role: 'cut', label: 'Recortar', enabled: f.canCut }, { role: 'copy', label: 'Copiar', enabled: f.canCopy }, { role: 'paste', label: 'Colar', enabled: f.canPaste },
+      { type: 'separator' }, { role: 'selectAll', label: 'Selecionar tudo', enabled: f.canSelectAll },
+    );
+  } else if (p.selectionText.trim()) items.push({ role: 'copy', label: 'Copiar' });
+  return items;
+}
 
 function createWindow() {
   // Sem a moldura do Windows: o app desenha a própria barra de título, em vidro.
@@ -25,10 +49,17 @@ function createWindow() {
   });
   win.webContents.setWindowOpenHandler(({ url }) => { external(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(ORIGIN)) { e.preventDefault(); external(url); } });
+  win.webContents.on('context-menu', (_e, p) => {
+    const items = contextMenu(p);
+    if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
+  });
   const sendMax = () => win?.webContents.send('win-max', win.isMaximized());
   win.on('maximize', sendMax);
   win.on('unmaximize', sendMax);
-  win.webContents.on('did-finish-load', sendMax);
+  win.webContents.on('did-finish-load', () => {
+    sendMax();
+    if (pendingLink) { win.webContents.send('link', pendingLink); pendingLink = null; }
+  });
   win.on('closed', () => { win = null; });
   void win.loadURL(ORIGIN + '/');
 }
@@ -43,13 +74,18 @@ ipcMain.on('win', (e, action) => {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  if (app.isPackaged) app.setAsDefaultProtocolClient(SCHEME);
+  app.on('second-instance', (_e, argv) => {
+    const link = linkIn(argv);
+    if (win) { if (win.isMinimized()) win.restore(); win.focus(); }
+    if (link) sendLink(link);
+  });
   app.whenReady().then(() => {
     protocol.handle('app', req => {
       let p = decodeURIComponent(new URL(req.url).pathname);
       if (p === '/' || !path.extname(p)) p = '/index.html';
       const file = path.normalize(path.join(ROOT, p));
-      if (!file.startsWith(ROOT)) return new Response('', { status: 403 });
+      if (!file.startsWith(ROOT + path.sep)) return new Response('', { status: 403 });
       return net.fetch(pathToFileURL(file).toString());
     });
     Menu.setApplicationMenu(null);

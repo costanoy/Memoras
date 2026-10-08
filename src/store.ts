@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { kvDel, kvRead, kvSet, noteDel, notePut, notesRead, wipeAll } from './lib/db';
+import { dbHooks, kvDel, kvRead, kvSet, noteDel, notePut, notesRead, wipeAll } from './lib/db';
 import { hashSecret, normCode, randomCode, verifySecret } from './lib/crypto';
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
 import { playSound, type Sound } from './sounds';
@@ -125,6 +125,12 @@ export function toast(text: string, undo?: () => void) {
   set({ toast: { text, undo } });
   toastTimer = window.setTimeout(() => set({ toast: null }), 5000);
 }
+let lastWriteWarn = 0;
+dbHooks.writeFailed = () => {
+  if (Date.now() - lastWriteWarn < 15000) return;
+  lastWriteWarn = Date.now();
+  toast('Não deu para salvar neste aparelho. Verifique o espaço livre e tente de novo.');
+};
 export function toastUndo() {
   const u = state.toast?.undo;
   clearTimeout(toastTimer);

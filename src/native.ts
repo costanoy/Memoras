@@ -14,7 +14,8 @@ export async function saveTextFile(name: string, text: string) {
     a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
     a.download = name;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // O download (e a janela de salvar do Windows) ainda lê o arquivo depois do clique.
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     return;
   }
   const { uri } = await Filesystem.writeFile({ path: name, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 });

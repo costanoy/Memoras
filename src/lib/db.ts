@@ -24,7 +24,9 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
     tx.onerror = tx.onabort = () => rej(tx.error);
   }));
 }
-const quiet = (p: Promise<unknown>) => p.then(() => {}, e => console.error('Memoras: falha ao gravar', e));
+// Se o aparelho recusar uma gravação (sem espaço, por exemplo), o app avisa em vez de seguir como se tivesse salvo.
+export const dbHooks = { writeFailed: (_e: unknown) => {} };
+const quiet = (p: Promise<unknown>) => p.then(() => {}, e => { console.error('Memoras: falha ao gravar', e); dbHooks.writeFailed(e); });
 
 // Leitura que falha de verdade em vez de fingir que o banco está vazio (usada ao abrir o app).
 export const kvRead = <T>(k: string) => run<T | undefined>('kv', 'readonly', s => s.get(k));

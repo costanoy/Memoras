@@ -44,7 +44,8 @@ Sem configuração o app funciona inteiro, só no aparelho. Para ligar contas:
 
 1. Crie um projeto no Supabase e rode `supabase/schema.sql` no SQL Editor.
 2. Copie `.env.example` para `.env` e preencha a URL e a chave anônima (ou a publishable). O `npm run release` não publica sem elas, para nenhuma versão sair sem contas.
-3. Em Authentication, URL Configuration, coloque o endereço do app em Site URL e Redirect URLs (o link de "Esqueci minha senha" volta para ele).
+3. Em Authentication, URL Configuration: em Site URL, o endereço do site (para onde vai o link de confirmação do cadastro); em Redirect URLs, `memoras://senha`. É por esse endereço que o link de "Esqueci minha senha" abre o app instalado (registrado em `electron/main.cjs` e no `AndroidManifest.xml`). Para testar no navegador, acrescente também o endereço do servidor local.
+4. Para outras pessoas receberem os emails de confirmação e de nova senha, configure um SMTP próprio em Authentication, Emails, SMTP Settings. O email padrão do Supabase só envia para quem é membro do projeto.
 
 ## Como os dados ficam
 

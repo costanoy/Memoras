@@ -1,4 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { App as NativeApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { createClient, isAuthApiError } from '@supabase/supabase-js';
 import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomBytes, randomCode, seal, sealText, unb64, verifySecret } from './lib/crypto';
 import { notePut } from './lib/db';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
@@ -7,7 +9,12 @@ import { THEMES, type ThemeKey } from './themes';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-export const supabase = url && anon ? createClient(url, anon) : null;
+// PKCE: o link de "Esqueci minha senha" volta com um código que só o aparelho que pediu consegue usar.
+export const supabase = url && anon ? createClient(url, anon, { auth: { flowType: 'pkce' } }) : null;
+
+// Nos apps instalados o link do email abre o próprio app (registrado em electron/main.cjs e no AndroidManifest).
+const APP_LINK = 'memoras://senha';
+const installed = Capacitor.isNativePlatform() || 'memorasWin' in window;
 
 class AppError extends Error {}
 function need() {
@@ -22,6 +29,9 @@ export function friendly(e: unknown) {
   if (m.includes('already registered') || m.includes('already been registered')) return 'Este email já tem conta. Use a aba Entrar.';
   if (m.includes('not confirmed')) return 'Confirme seu email pelo link que enviamos e tente de novo.';
   if (m.includes('rate limit') || m.includes('security purposes')) return 'Muitas tentativas. Espere um pouco e tente de novo.';
+  if (m.includes('sending') || m.includes('not authorized')) return 'Não deu para enviar o email agora. Tente mais tarde.';
+  if (m.includes('signup') && (m.includes('disabled') || m.includes('not allowed'))) return 'A criação de contas está desligada no momento.';
+  if (m.includes('email') && (m.includes('invalid') || m.includes('validate'))) return 'Este email não é aceito. Confira e tente de novo.';
   return 'Não deu certo agora. Tente de novo.';
 }
 
@@ -83,6 +93,9 @@ export async function login(email: string, password: string): Promise<{ recKey?:
   let dk: Uint8Array;
   try { dk = await open(kek, vault.wrapped_pw); }
   catch { pending = { kek, auth }; return { needKey: true }; }
+  // Quem entra numa conta durante o primeiro uso recebe o nome e a cor da conta,
+  // em vez de espalhar para os outros aparelhos o que escolheu agora.
+  if (!get().cfg.onboarded) setCfg({ prefsTs: 0 });
   await adopt(userId, email, dk, vault.dk_id, auth);
   return {};
 }
@@ -94,8 +107,19 @@ export async function logout() {
 }
 
 export async function sendReset(email: string) {
-  const { error } = await need().auth.resetPasswordForEmail(email.trim(), { redirectTo: location.origin + location.pathname });
+  const { error } = await need().auth.resetPasswordForEmail(email.trim(), { redirectTo: installed ? APP_LINK : location.origin + location.pathname });
   if (error) throw error;
+}
+
+// O link do email chega aqui no Windows e no Android. Trocar o código pela sessão dispara o
+// PASSWORD_RECOVERY lá embaixo, que leva ao passo 2 do "Esqueci minha senha".
+const usedLinks = new Set<string>();
+async function openAppLink(link: string) {
+  if (!supabase || !link.startsWith(APP_LINK) || usedLinks.has(link)) return;
+  usedLinks.add(link);
+  const p = new URL(link).searchParams, code = p.get('code'), flowId = p.get('sb_flow_id');
+  const { error } = code ? await supabase.auth.exchangeCodeForSession(code, flowId ? { flowId } : undefined) : { error: true };
+  if (error) toast('Este link não vale mais. Peça um novo neste aparelho.');
 }
 
 async function sessionUser() {
@@ -182,8 +206,13 @@ export async function syncNow() {
   set({ sync: 'syncing' });
   try {
     const sb = supabase, key = await dkKey();
-    const { data: sess } = await sb.auth.getSession();
-    if (!sess.session) { await logout(); toast('Sua sessão terminou. Entre de novo para sincronizar.'); return; }
+    const { data: sess, error: se } = await sb.auth.getSession();
+    if (!sess.session) {
+      // Falha de rede ao renovar o acesso não encerra a sessão: tenta de novo na próxima vez.
+      // Só sai da conta quando o servidor recusa a sessão ou ela já não existe.
+      if (se && !(isAuthApiError(se) && se.status >= 400 && se.status < 500)) throw se;
+      await logout(); toast('Sua sessão terminou. Entre de novo para sincronizar.'); return;
+    }
 
     const { data: vault, error: ve } = await sb.from('vaults').select('dk_id,prefs').eq('user_id', acc.userId).maybeSingle();
     if (ve) throw ve;
@@ -205,12 +234,16 @@ export async function syncNow() {
       if (error) throw error;
     }
 
-    // Puxa o que mudou e junta com o que está aqui.
+    // Puxa o que mudou e junta com o que está aqui. O servidor carimba updated_at no começo da
+    // gravação, então algo de outro aparelho pode chegar depois do último pull com horário anterior:
+    // rever o último minuto pega esses casos (juntar de novo o que já está aqui não muda nada).
     const incoming: { id: string; c: NoteContent }[] = [];
     let lastPull = c.lastPull;
+    const lastT = c.lastPull ? Date.parse(c.lastPull) : NaN;
+    const since = Number.isNaN(lastT) ? c.lastPull : new Date(lastT - 60000).toISOString();
     for (let from = 0; ; from += 500) {
       let q = sb.from('notes').select('id,data,updated_at').eq('user_id', acc.userId).order('updated_at').order('id').range(from, from + 499);
-      if (c.lastPull) q = q.gte('updated_at', c.lastPull);
+      if (since) q = q.gte('updated_at', since);
       const { data, error } = await q;
       if (error) throw error;
       for (const r of data) {
@@ -276,3 +309,12 @@ supabase?.auth.onAuthStateChange((event, session) => {
   if (get().screen !== 'loading') set({ screen: 'forgot', fStep: 2, fEmail: session?.user.email ?? '' });
   else set({ fEmail: session?.user.email ?? '' });
 });
+
+// Links memoras:// que abrem o app: no Windows chegam pela ponte do Electron, no Android pelo plugin App.
+if (supabase) {
+  (window as unknown as { memorasWin?: { onLink?(cb: (url: string) => void): void } }).memorasWin?.onLink?.(l => void openAppLink(l));
+  if (Capacitor.isNativePlatform()) {
+    void NativeApp.addListener('appUrlOpen', e => void openAppLink(e.url));
+    void NativeApp.getLaunchUrl().then(r => { if (r?.url) void openAppLink(r.url); }, () => {});
+  }
+}

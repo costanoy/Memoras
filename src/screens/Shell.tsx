@@ -194,12 +194,11 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
 }
 
 function Search({ s }: { s: State }) {
-  const q = s.query.trim();
+  const q = s.query.trim(), nq = normMap(q).out;
   const results: { n: Note; before: string; match: string; after: string }[] = [];
-  if (q) {
-    const nq = normMap(q).out;
+  if (nq) {
     live(s).filter(n => n.status !== 'trashed').sort((a, b) => nd(b) - nd(a)).forEach(n => {
-      const src = [n.title, fullText(n)].join(' · '), m = normMap(src), idx = m.out.indexOf(nq);
+      const src = [n.title, fullText(n)].filter(Boolean).join(' · '), m = normMap(src), idx = m.out.indexOf(nq);
       if (idx < 0) return;
       const a = m.map[idx], b = m.map[idx + nq.length - 1] + 1, st = Math.max(0, a - 60);
       results.push({ n, before: (st > 0 ? '…' : '') + src.slice(st, a), match: src.slice(a, b), after: src.slice(b, b + 90) + (b + 90 < src.length ? '…' : '') });
