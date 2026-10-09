@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { installUpdate, useUpdate } from './updates';
 
 // Ponte do app de Windows (electron/preload.cjs). Fora dele, não existe.
 type WinApi = { minimize(): void; toggleMaximize(): void; close(): void; onMaximized(cb: (v: boolean) => void): void };
@@ -10,12 +11,15 @@ if (api) document.documentElement.classList.add('electron');
 // no lugar da moldura padrão. Arrastar move a janela; clique duplo maximiza.
 export function TitleBar() {
   const [max, setMax] = useState(false);
+  const u = useUpdate();
   useEffect(() => { api?.onMaximized(setMax); }, []);
   if (!api) return null;
   return (
     <div className="titlebar">
       <img src="/icon-512.png" alt="" width={20} height={20} />
       <span className="tbtitle">Memoras</span>
+      {/* Versão nova baixada: um clique fecha, instala e abre o app de novo. */}
+      {u?.state === 'ready' && <button className="tbupd" title={'Reiniciar e instalar a versão ' + u.version} onClick={installUpdate}>Atualizar para {u.version}</button>}
       <div className="tbtns">
         <button className="tbtn" aria-label="Minimizar" onClick={() => api.minimize()}>
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><line x1="2" y1="9" x2="10" y2="9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>

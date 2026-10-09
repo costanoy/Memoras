@@ -147,11 +147,19 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .ttl{flex:1;min-width:0;font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meta{flex:none;font-size:13px;color:var(--ink2)}
 .prev{font-size:14px;line-height:1.4;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.cal{flex:none;padding:12px;border-radius:20px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95)}
+.cal{flex:0 1 auto;min-height:0;overflow:auto;padding:12px;border-radius:20px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95)}
 .cal .arrow{width:32px;height:32px;padding:0;border-radius:50%;border:none;background:rgba(255,255,255,.7);color:var(--ink);font-size:18px}
 .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center}
 .calgrid span{font-size:12px;font-weight:700;color:var(--ink4);padding:2px 0}
 .day{position:relative;height:32px;border-radius:10px;border:none;padding:0;font-size:14px;color:var(--ink4);background:transparent;cursor:default}
+/* Em janelas baixas o calendário encolhe (e rola por dentro, se preciso) em vez de empurrar a barra de ícones para fora do painel. */
+.side .scroll{min-height:88px}
+@media (max-height:820px){
+  .side .panel{gap:10px}
+  .cal{padding:8px 10px}
+  .cal .arrow{width:28px;height:28px}
+  .day{height:28px}
+}
 .day.has{font-weight:700;color:var(--ink);cursor:pointer}
 .day.has::after{content:'';position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}
 .day.today{background:rgba(255,255,255,.95);box-shadow:inset 0 0 0 1.5px var(--acc)}
@@ -224,6 +232,8 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 /* O brilho branco atrás do título lembra o vidro do Windows 7. */
 .tbtitle{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--ink);text-shadow:0 0 8px rgba(255,255,255,.95), 0 0 16px rgba(255,255,255,.75)}
 .tbtns{margin-left:auto;display:flex;gap:4px;-webkit-app-region:no-drag}
+.tbupd{margin-left:auto;height:26px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;-webkit-app-region:no-drag;color:var(--gel-fg);background:var(--gel);border:1px solid var(--gel-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 0 12px var(--ring);text-shadow:0 1px 1px var(--gel-ts)}
+.tbupd + .tbtns{margin-left:8px}
 .tbtn{width:42px;height:26px;padding:0;border-radius:8px;display:grid;place-items:center;color:var(--ink);
   background:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.62) 49%,rgba(214,242,255,.5) 51%,rgba(255,255,255,.78) 100%);
   border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff, 0 2px 6px -2px rgba(0,50,100,.4);transition:filter .12s ease, box-shadow .12s ease, color .12s ease}

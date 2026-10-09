@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, ipcMain, net, protocol, shell } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const { autoUpdater } = require('electron-updater');
@@ -72,6 +73,32 @@ ipcMain.on('win', (e, action) => {
   else if (action === 'close') w.close();
 });
 
+// Atualizações: a versão nova baixa em segundo plano e o app mostra o andamento, com um botão
+// "Reiniciar e atualizar". Antes ela só entrava ao fechar o app, sem aviso nenhum na tela.
+const updOn = app.isPackaged && !process.env.MEMORAS_NO_UPDATE;
+const upd = { state: 'idle', version: '', percent: 0 };
+const setUpd = patch => { Object.assign(upd, patch); win?.webContents.send('upd', upd); };
+// Registro em atualizacao.log (pasta de dados do app), para entender um problema de atualização.
+const updLog = level => (...a) => {
+  try {
+    const f = path.join(app.getPath('userData'), 'atualizacao.log');
+    if (fs.existsSync(f) && fs.statSync(f).size > 200000) fs.writeFileSync(f, '');
+    fs.appendFileSync(f, new Date().toISOString() + ' ' + level + ' ' + a.map(x => x instanceof Error ? x.stack : String(x)).join(' ') + '\n');
+  } catch { /* sem registro, segue */ }
+};
+autoUpdater.logger = { info: updLog('info'), warn: updLog('aviso'), error: updLog('erro'), debug: () => {} };
+autoUpdater.on('checking-for-update', () => { if (upd.state !== 'ready') setUpd({ state: 'checking' }); });
+autoUpdater.on('update-not-available', () => setUpd({ state: 'latest' }));
+autoUpdater.on('update-available', i => setUpd({ state: 'downloading', version: i.version, percent: 0 }));
+autoUpdater.on('download-progress', p => setUpd({ state: 'downloading', percent: Math.round(p.percent) }));
+autoUpdater.on('update-downloaded', i => setUpd({ state: 'ready', version: i.version }));
+autoUpdater.on('error', () => { if (upd.state !== 'ready') setUpd({ state: 'error' }); });
+const checkUpd = () => { if (upd.state !== 'downloading' && upd.state !== 'ready') autoUpdater.checkForUpdates().catch(e => updLog('erro')(e)); };
+ipcMain.handle('upd-get', () => ({ ...upd, current: app.getVersion(), on: updOn }));
+ipcMain.on('upd-check', () => { if (updOn) checkUpd(); });
+// Fecha, instala em silêncio e abre o app de novo.
+ipcMain.on('upd-install', () => { if (upd.state === 'ready') autoUpdater.quitAndInstall(true, true); });
+
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   if (app.isPackaged) app.setAsDefaultProtocolClient(SCHEME);
@@ -91,11 +118,11 @@ else {
     Menu.setApplicationMenu(null);
     createWindow();
 
-    // Baixa a versão nova em segundo plano e instala ao fechar o app.
-    if (app.isPackaged && !process.env.MEMORAS_NO_UPDATE) {
-      const check = () => autoUpdater.checkForUpdatesAndNotify().catch(e => console.warn('Memoras: atualização falhou', e));
-      void check();
-      setInterval(check, 4 * 60 * 60 * 1000);
+    // Procura versão nova ao abrir e a cada 4 horas. Se a pessoa não reiniciar pelo botão,
+    // a versão baixada entra ao fechar o app, como antes.
+    if (updOn) {
+      checkUpd();
+      setInterval(checkUpd, 4 * 60 * 60 * 1000);
     }
   });
   app.on('window-all-closed', () => app.quit());

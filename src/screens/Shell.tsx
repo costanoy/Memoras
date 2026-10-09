@@ -6,6 +6,7 @@ import {
   set, setCfg, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, tasksOn, toast, trash, trashedDocs, typeNew, useApp, type Section, type State,
 } from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
+import { checkUpdate, installUpdate, useUpdate, type Upd } from '../updates';
 import { AutoArea, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
 import { AgendaDay, agendaLabel, AgendaSide, focusNewTask } from './Agenda';
 import { DocsEmpty, DocsList, DocView } from './Docs';
@@ -372,7 +373,33 @@ function Settings({ s }: { s: State }) {
             <button className={'soft press' + (busy ? ' off' : '')} style={{ alignSelf: 'flex-start' }} onClick={regen}>Gerar nova chave</button>
           </div>
         )}
+
+        <Updates />
+        <div className="small" style={{ textAlign: 'center', color: 'var(--ink3)', paddingTop: 2 }}>Memoras {__APP_VERSION__}</div>
       </div>
+    </div>
+  );
+}
+
+// Só no app de Windows: andamento da atualização e o botão para reiniciar e instalar.
+const UPD_TEXT: Record<Upd['state'], (u: Upd) => string> = {
+  idle: () => 'Procura versão nova ao abrir o app e a cada 4 horas.',
+  checking: () => 'Procurando versão nova…',
+  latest: () => 'Você está na versão mais recente.',
+  downloading: u => `Baixando a versão ${u.version}… ${u.percent}%`,
+  ready: u => `A versão ${u.version} está pronta. O Memoras fecha, atualiza e abre de novo em alguns segundos.`,
+  error: () => 'Não deu para procurar versão nova agora. Confira a internet e tente de novo.',
+};
+function Updates() {
+  const u = useUpdate();
+  if (!u?.on) return null;
+  return (
+    <div className="gcard setcard">
+      <div className="group">Atualizações</div>
+      <div className="small" role="status">{UPD_TEXT[u.state](u)}</div>
+      {u.state === 'ready'
+        ? <button className="gel" style={{ alignSelf: 'flex-start', height: 44, padding: '0 20px', fontSize: 15 }} onClick={installUpdate}>Reiniciar e atualizar</button>
+        : u.state !== 'checking' && u.state !== 'downloading' && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={checkUpdate}>Procurar agora</button>}
     </div>
   );
 }
