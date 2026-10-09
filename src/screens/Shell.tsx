@@ -3,7 +3,7 @@ import { docPreview, docTitle, todayKey } from '../lib/items';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
 import {
   activeSorted, archive, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
-  set, setCfg, setPrefs, setStatus, setTitle, sfx, startCreatePin, tasksOn, toast, trash, trashedDocs, typeNew, useApp, type Section, type State,
+  set, setCfg, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, tasksOn, toast, trash, trashedDocs, typeNew, useApp, type Section, type State,
 } from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { AutoArea, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
@@ -340,11 +340,11 @@ function Settings({ s }: { s: State }) {
         <div className="gcard setcard">
           <div className="group">PIN deste aparelho</div>
           <button className="press row" aria-pressed={s.cfg.pinOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
-            onClick={() => { if (s.cfg.pinOn) { setCfg({ pinOn: false }); toast('PIN desativado'); } else startCreatePin('settings'); }}>
+            onClick={() => s.cfg.pinOn ? startChangePin('off') : startCreatePin('settings')}>
             <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Pedir PIN ao abrir</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Independente da senha da conta.</span></span>
             <Toggle on={s.cfg.pinOn} />
           </button>
-          {s.cfg.pinOn && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => startCreatePin('settings')}>Trocar PIN</button>}
+          {s.cfg.pinOn && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => startChangePin('change')}>Trocar PIN</button>}
         </div>
 
         <div className="gcard setcard">

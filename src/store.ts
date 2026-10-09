@@ -41,7 +41,7 @@ export interface State {
   calOpen: boolean; calY: number; calM: number; day: number | null;
   toast: { text: string; undo?: () => void } | null;
   confirm: { id?: string; all?: boolean; reset?: boolean } | null;
-  pinMode: 'unlock' | 'create' | 'confirm'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
+  pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
   pinReturn: 'history' | 'settings'; pressedKey: string | null; unlocking: boolean;
   onStep: number; storeMode: 'local' | 'account'; obPin: boolean;
   authMode: 'signup' | 'login'; authReturn: 'onboard' | 'settings';
@@ -70,7 +70,7 @@ const initial = (): State => ({
   agDay: todayKey(), agY: now.getFullYear(), agM: now.getMonth(), agCal: false,
   calOpen: false, calY: now.getFullYear(), calM: now.getMonth(), day: null,
   toast: null, confirm: null,
-  pinMode: 'unlock', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinReturn: 'history', pressedKey: null, unlocking: false,
+  pinMode: 'unlock', pinAfter: 'change', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinReturn: 'history', pressedKey: null, unlocking: false,
   onStep: 1, storeMode: 'local', obPin: true,
   authMode: 'signup', authReturn: 'onboard',
   shownKey: '', recReturn: 'onboardPin', pkReturn: 'history', pkMsg: '',
@@ -354,16 +354,23 @@ export function commitPendingPin() { if (pendingPin) setCfg(pendingPin); pending
 async function submitPin(pin: string) {
   const s = state, c = s.cfg;
   if (s.screen !== 'pin') return;
-  if (s.pinMode === 'unlock') {
+  if (s.pinMode === 'unlock' || s.pinMode === 'verify') {
     if (await verifySecret(pin, c.pinSalt, c.pinHash)) {
-      const rm = reducedMotion();
       setCfg({ pinFails: 0 });
+      // PIN atual conferido: segue para trocar ou desligar.
+      if (s.pinMode === 'verify') {
+        if (s.pinAfter === 'off') { setCfg({ pinOn: false }); set({ pin: '', pinMode: 'unlock' }); go('settings'); toast('PIN desativado'); }
+        else set({ pin: '', pinMode: 'create' });
+        return;
+      }
+      const rm = reducedMotion();
       set({ unlocking: true, unlocked: true, pin: '' });
       sfx('unlock');
       setTimeout(() => go('history'), rm ? 0 : 60);
       setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
       return;
     }
+    // Errar o PIN atual conta igual a errar no desbloqueio, com a mesma pausa.
     const fails = c.pinFails + 1;
     if (fails >= 5) { setCfg({ pinFails: 0, lockUntil: Date.now() + 30000 }); pinFail(''); }
     else {
@@ -389,6 +396,8 @@ async function submitPin(pin: string) {
   } else pinFail('Os PINs não coincidem. Crie de novo.', { pinMode: 'create', pinTmp: '' });
 }
 export const startCreatePin = (ret: 'history' | 'settings') => go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: ret });
+// Trocar ou desligar o PIN nos ajustes pede o PIN atual antes.
+export const startChangePin = (after: 'change' | 'off') => go('pin', { pinMode: 'verify', pinAfter: after, pin: '', pinMsg: '', pinError: false, pinReturn: 'settings' });
 
 // Se o banco não abrir, o app não segue em frente: começar "vazio" levaria ao primeiro uso
 // e a pessoa poderia gravar por cima das configurações. Tenta de novo algumas vezes.

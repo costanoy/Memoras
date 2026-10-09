@@ -27,7 +27,7 @@ export function Pin() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const title = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
+  const title = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'verify' ? 'Digite o PIN atual' : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
   const msg = locked ? 'Muitas tentativas. Tente de novo em ' + Math.ceil((s.cfg.lockUntil - Date.now()) / 1000) + ' s.' : s.pinMsg;
 
   return (
