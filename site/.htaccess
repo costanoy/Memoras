@@ -8,3 +8,10 @@ ErrorDocument 404 /404.html
   ExpiresByType text/css "access plus 7 days"
   ExpiresByType application/javascript "access plus 7 days"
 </IfModule>
+
+# O sw.js só existe para desinstalar o service worker antigo; nunca guardar em cache.
+<Files "sw.js">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </IfModule>
+</Files>

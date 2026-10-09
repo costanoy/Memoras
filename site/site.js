@@ -16,6 +16,9 @@
     apply(t);
     try { localStorage.setItem(KEY, t); } catch (e) {}
   });
+  // Tira o service worker de quando o app esteve publicado neste endereço: ele abria o app no lugar das páginas do site.
+  if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }, function () {});
+  if (window.caches) caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); }, function () {});
   var y = document.querySelectorAll('[data-year]');
   for (var j = 0; j < y.length; j++) y[j].textContent = new Date().getFullYear();
 })();
