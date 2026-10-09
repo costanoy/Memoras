@@ -35,13 +35,20 @@ export function SyncPill({ state, spin }: { state: 'synced' | 'syncing' | 'local
   return <div className="syncpill">{dot}{state === 'synced' ? 'Sincronizado' : state === 'syncing' ? 'Sincronizando…' : 'Só neste aparelho'}</div>;
 }
 
-export function TabBar({ on, plus }: { on: 'history' | 'search'; plus?: CSSProperties }) {
-  const tabs: [string, string][] = [['history', 'Diário'], ['search', 'Busca'], ['new', ''], ['archive', 'Arquivo'], ['settings', 'Ajustes']];
+// Toque: um círculo de vidro que cresce e some (p de 0 a 1).
+export const Tap = ({ p, size = 44 }: { p: number; size?: number }) => p > 0 && p < 1 ? (
+  <span style={{ position: 'absolute', left: '50%', top: '50%', width: size, height: size, margin: -size / 2, borderRadius: '50%', background: 'rgba(255,255,255,.55)', border: '2px solid rgba(255,255,255,.95)', transform: `scale(${0.5 + p})`, opacity: 1 - p, pointerEvents: 'none' }} />
+) : null;
+
+// Abas do app: as três partes, o + e os ajustes.
+export function TabBar({ on, plus, tap }: { on: 'history' | 'docs' | 'agenda' | 'none'; plus?: CSSProperties; tap?: { k: string; p: number } }) {
+  const tabs: [string, string][] = [['history', 'Diário'], ['docs', 'Cadernos'], ['new', ''], ['agenda', 'Agenda'], ['settings', 'Ajustes']];
   return (
     <div className="tabbar">
       {tabs.map(([k, label]) => (
-        <div key={k} className={k === on ? 'on' : ''} style={{ flex: 1, height: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 12, fontWeight: 700, color: k === on ? 'var(--acc-d)' : 'var(--ink2)' }}>
+        <div key={k} className={k === on ? 'on' : ''} style={{ position: 'relative', flex: 1, height: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 12, fontWeight: 700, color: k === on ? 'var(--acc-d)' : 'var(--ink2)' }}>
           {k === 'new' ? <span className="plus" style={plus}>+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
+          {tap?.k === k && <Tap p={tap.p} size={52} />}
         </div>
       ))}
     </div>
@@ -60,6 +67,8 @@ export function History({ items, sync, spin = 0, calendar, children }: { items: 
               <div className="name" style={{ margin: 0, padding: 0 }}>Meu diário</div>
               <SyncPill state={sync} spin={spin} />
             </div>
+            <div className="round"><Icon name="search" sw={2.3} /></div>
+            <div className="round"><Icon name="archive" /></div>
             <div className="round"><Icon name="calendar" /></div>
           </div>
           {children}
@@ -205,6 +214,122 @@ export function Lock({ t }: { t: number }) {
           <div className="gloss" /><div className="hole" />
           <div className="keybar" style={{ animation: 'none', transform: `rotate(${turn}deg)` }} />
           <div className="sheen" style={{ animation: 'none', transform: `translateX(${sheen}px) skewX(-20deg)` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Cadernos: a lista e um caderno aberto para leitura.
+export const DOCS: Item[] = [
+  { group: '', title: 'Guia para a vida', time: '09:12', prev: 'Ouvir antes de responder · Cuidar do sono · Pedir ajuda quando precisar' },
+  { group: '', title: 'O que quero aprender', time: 'Ontem', prev: 'Violão · Inglês para conversar · Cozinhar pratos simples' },
+  { group: '', title: 'Quem eu quero ser', time: '26 de setembro', prev: 'Calmo, presente e gentil comigo mesmo nos dias difíceis.' },
+];
+
+export function DocsList({ tap = 0 }: { tap?: number }) {
+  return (
+    <div className="wrap m" style={wrap}>
+      <div className="side">
+        <div className="panel">
+          <div className="row" style={{ gap: 10, padding: '0 4px' }}>
+            <div className="h1" style={{ flex: 1 }}>Cadernos</div>
+            <div className="round"><Icon name="search" sw={2.3} /></div>
+          </div>
+          <div className="col" style={{ gap: 6, padding: '2px 0' }}>
+            {DOCS.map((d, i) => (
+              <div key={d.title} className="item" style={{ position: 'relative' }}>
+                <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{d.title}</span><span className="meta">{d.time}</span></span>
+                <span className="prev">{d.prev}</span>
+                {i === 0 && <Tap p={tap} size={70} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// show: quanto de cada bloco já apareceu (0 a 1).
+export function DocRead({ show, enter }: { show: number[]; enter: number }) {
+  const b = (i: number): CSSProperties => ({ opacity: show[i] ?? 0, transform: `translateY(${(1 - (show[i] ?? 0)) * 12}px)` });
+  return (
+    <div className="wrap m notab" style={wrap}>
+      <div className="main">
+        <div className="panel">
+          <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
+            <div className="round"><Icon name="back" sw={2.6} /></div>
+            <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Editado hoje às 09:12</div>
+              <div style={{ fontSize: 13, color: 'var(--ink2)' }}>Salvo</div>
+            </div>
+            <div className="pill"><Icon name="edit" size={18} /></div>
+            <div className="pill"><Icon name="trash" size={18} /></div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '0 12px 12px' }}>
+            <div className="sheet doc" style={{ animation: 'none', opacity: enter, transform: `translateY(${(1 - enter) * 30}px) scale(${0.97 + enter * 0.03})` }}>
+              <div className="title" style={b(0)}>Guia para a vida</div>
+              <h2 style={b(1)}>Como quero agir</h2>
+              <ul style={b(2)}><li>Ouvir antes de responder</li><li>Cuidar do sono</li><li>Pedir ajuda quando precisar</li></ul>
+              <h2 style={b(3)}>O que importa</h2>
+              <p style={b(4)}>Ser gentil comigo mesmo nos dias difíceis.</p>
+              <h3 style={b(5)}>Toda manhã</h3>
+              <ol style={b(6)}><li>Beber água</li><li>Caminhar 20 minutos</li><li>Escrever no diário</li></ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Agenda: o dia com tarefas de caixinha e observações.
+export const TASKS = ['Responder emails do trabalho', 'Academia às 18h', 'Ler 20 páginas', 'Ligar para a mãe'];
+
+// done: quanto cada tarefa já foi marcada (0 a 1); out: a tarefa que vai para amanhã saindo (0 a 1).
+export function AgendaDay({ done, out, press }: { done: number[]; out: number; press: number }) {
+  const ndone = done.filter(d => d >= 0.5).length, total = out >= 1 ? 3 : 4;
+  return (
+    <div className="wrap m" style={wrap}>
+      <div className="main">
+        <div className="panel">
+          <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
+            <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Hoje, 30 de setembro</div>
+              <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{total - ndone === 0 ? 'Tudo feito' : (total - ndone) + (total - ndone === 1 ? ' tarefa a fazer' : ' tarefas a fazer')}</div>
+            </div>
+            <div className="round"><Icon name="back" sw={2.6} /></div>
+            <div className="round" style={{ transform: 'scaleX(-1)' }}><Icon name="back" sw={2.6} /></div>
+            <div className="round"><Icon name="calendar" /></div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '0 12px 12px' }}>
+            <div className="sheet" style={{ animation: 'none' }}>
+              <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
+                <div className="group">Tarefas</div>
+                <span className="meta">{ndone} de {total} feitas</span>
+              </div>
+              <div className="col" style={{ marginTop: 8 }}>
+                {TASKS.map((text, i) => {
+                  const d = done[i] ?? 0, isOut = i === 2, o = isOut ? out : 0;
+                  if (isOut && out >= 1) return null;
+                  return (
+                    <div key={text} className={'task' + (d >= 0.5 ? ' done' : '')} style={{ opacity: 1 - o, transform: `translateX(${o * 120}px)`, maxHeight: 48 * (1 - o * o) + 1, overflow: 'hidden' }}>
+                      <div className={'tick' + (d >= 0.5 ? ' on' : '')} style={{ position: 'relative', transform: `scale(${1 + Math.sin(Math.min(d, 1) * Math.PI) * 0.25})` }}>
+                        <i>{d >= 0.5 ? '✓' : ''}</i><Tap p={d} size={40} />
+                      </div>
+                      <div className="tasktext" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{text}</div>
+                      {d < 0.5 && <div className="mini" style={{ display: 'grid', placeItems: 'center', position: 'relative' }}>Amanhã{isOut && <Tap p={press} size={46} />}</div>}
+                      <div className="mini x" style={{ display: 'grid', placeItems: 'center' }}>×</div>
+                    </div>
+                  );
+                })}
+                <div className="task add"><span className="tick ghost" style={{ display: 'grid', placeItems: 'center' }}><Icon name="plus" size={14} sw={3} /></span><div className="tasktext" style={{ color: '#6d8898' }}>Adicionar tarefa</div></div>
+              </div>
+              <div className="group" style={{ marginTop: 30 }}>Observações</div>
+              <div className="segtext" style={{ marginTop: 10 }}>Dia corrido, mas quero terminar com calma.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

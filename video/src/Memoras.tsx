@@ -4,8 +4,8 @@ import '@fontsource-variable/source-sans-3';
 import '@fontsource/source-code-pro/600.css';
 import '../../src/styles.css';
 import { THEMES, type ThemeKey } from '../../src/themes';
-import { Calendar, Editor, History, Lock, NOTES, Pin, Search, StatusBar, TabBar } from './Screens';
-import { T, between, f, prog } from './time';
+import { AgendaDay, Calendar, DocRead, DocsList, Editor, History, Lock, NOTES, Pin, Search, StatusBar, TabBar } from './Screens';
+import { MUSIC_REPEAT, T, between, f, prog } from './time';
 
 const TYPED = 'Hoje acordei antes do despertador e fui caminhar. O céu estava limpo e deu para ouvir os pássaros.';
 const SEG1 = 'Saí cedo, antes do café. O parque estava quase vazio e o lago tinha uma névoa fina.';
@@ -39,7 +39,8 @@ function Bubbles() {
 // Frase grande no topo de cada cena, num cartão de vidro para ler em qualquer cor.
 const LINES: [number, number, string][] = [
   [4, 8, 'Escreva rápido.'], [8, 12, 'Releia depois.'], [12, 16, 'Cada momento no seu horário.'],
-  [16, 20, 'Tudo privado.'], [20, 24, 'Criptografado antes de sair do aparelho.'], [24, 28, 'Do seu jeito.'],
+  [16, 20, 'Cadernos para reler sempre.'], [20, 24, 'Planeje cada dia.'],
+  [24, 28, 'Tudo privado.'], [28, 32, 'Criptografado antes de sair do aparelho.'], [32, 36, 'Do seu jeito.'],
 ];
 function Headline() {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
@@ -71,7 +72,7 @@ function Intro() {
         </div>
       </div>
       <div style={{ fontSize: 140, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--ink)', opacity: word, transform: `translateY(${(1 - word) * 40}px)` }}>Memoras</div>
-      <div style={{ fontSize: 50, fontWeight: 600, color: 'var(--ink3)', opacity: tag, transform: `translateY(${(1 - tag) * 30}px)` }}>Seu diário pessoal. Só seu.</div>
+      <div style={{ fontSize: 50, fontWeight: 600, color: 'var(--ink3)', opacity: tag, transform: `translateY(${(1 - tag) * 30}px)` }}>Diário, cadernos e agenda. Só seus.</div>
     </AbsoluteFill>
   );
 }
@@ -120,10 +121,10 @@ function PhoneScreen() {
   if (t < T.times) {
     const q = 'passaros', n = Math.round(interpolate(frame, [f(T.queryFrom), f(T.queryTo)], [0, q.length], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
     const r = spring({ frame: frame - f(T.result), fps, config: { damping: 14 } });
-    return <><Search query={q.slice(0, n)} caret={caret} result={r} /><TabBar on="search" /></>;
+    return <><Search query={q.slice(0, n)} caret={caret} result={r} /><TabBar on="none" /></>;
   }
   // 12 a 16 s: trechos com horários
-  if (t < T.pin) {
+  if (t < T.docs) {
     const s2 = spring({ frame: frame - f(T.seg2), fps, config: { damping: 14 } });
     const s3 = spring({ frame: frame - f(T.seg3), fps, config: { damping: 14 } });
     return <Editor title="Caminhada no parque" caret={caret} segs={[
@@ -132,7 +133,26 @@ function PhoneScreen() {
       { time: '21:05', text: SEG3, show: s3, caret: s3 > 0.5 },
     ]} />;
   }
-  // 16 a 20 s: PIN e desbloqueio
+  // 16 a 20 s: Cadernos, para reler
+  if (t < T.agenda) {
+    if (t < T.docOpen) return <>
+      <DocsList tap={prog(frame, T.docOpen - 0.35, T.docOpen + 0.05, (x: number) => x)} />
+      <TabBar on="docs" tap={{ k: 'docs', p: prog(frame, T.docsTap - 0.05, T.docsTap + 0.4, (x: number) => x) }} />
+    </>;
+    const enter = spring({ frame: frame - f(T.docOpen), fps, config: { damping: 16 } });
+    return <DocRead enter={enter} show={T.docBlocks.map(b => spring({ frame: frame - f(b), fps, config: { damping: 15 } }))} />;
+  }
+  // 20 a 24 s: Agenda, o plano do dia
+  if (t < T.pin) {
+    const tick = (at: number) => prog(frame, at - 0.05, at + 0.35, (x: number) => x);
+    const toast = prog(frame, T.toast, T.toast + 0.3) * (1 - prog(frame, T.pin - 0.3, T.pin));
+    return <>
+      <AgendaDay done={[tick(T.checks[0]), tick(T.checks[1]), 0, tick(T.checks[2])]} out={prog(frame, T.move + 0.15, T.move + 0.6)} press={tick(T.move)} />
+      <TabBar on="agenda" tap={{ k: 'agenda', p: prog(frame, T.agendaTap - 0.05, T.agendaTap + 0.4, (x: number) => x) }} />
+      {toast > 0 && <div className="toast up undo" style={{ opacity: toast, transform: `translateX(-50%) translateY(${(1 - toast) * 20}px)` }}><span>Tarefa passada para amanhã</span><span style={{ display: 'grid', placeItems: 'center', height: 36, padding: '0 16px', borderRadius: 999, fontSize: 15, fontWeight: 700, color: '#0c2b40', background: 'linear-gradient(180deg,#e2ffab 0%,#a6e756 50%,#8fd83e 100%)' }}>Desfazer</span></div>}
+    </>;
+  }
+  // 24 a 28 s: PIN e desbloqueio
   if (t < T.encrypt) {
     const filled = T.keys.filter(k => t >= k).length;
     const hitKey = T.keys.findIndex(k => t >= k && t < k + 0.14);
@@ -144,7 +164,7 @@ function PhoneScreen() {
       {t < T.afterUnlock + 0.2 && <Lock t={t - T.unlock} />}
     </>;
   }
-  // 20 a 24 s: o texto vira código e sobe para a nuvem
+  // 28 a 32 s: o texto vira código e sobe para a nuvem
   if (t < T.syncing) {
     const sc = prog(frame, T.scrambleFrom, T.scrambleTo, (x: number) => x);
     const fly = prog(frame, T.scrambleTo, T.flyTo);
@@ -164,7 +184,7 @@ function PhoneScreen() {
       <TabBar on="history" />
     </>;
   }
-  // 24 a 28 s: as cores trocando na batida
+  // 32 a 36 s: as cores trocando na batida
   return <><History items={NOTES} sync="synced" /><TabBar on="history" /></>;
 }
 
@@ -210,18 +230,24 @@ function Outro() {
 const SFX: [number, string, number][] = [
   [3.7, 'video-whoosh', 0.35], [T.tapPlus, 'new-note', 0.3], [T.typeFrom, 'video-typing', 0.6],
   [7.85, 'video-whoosh', 0.3], [T.dayTap, 'pin-key', 0.5], [11.85, 'video-whoosh', 0.3],
+  [15.85, 'video-whoosh', 0.3], [T.docsTap, 'pin-key', 0.45], [T.docOpen - 0.05, 'new-note', 0.22],
+  [19.85, 'video-whoosh', 0.3], [T.agendaTap, 'pin-key', 0.45], ...T.checks.map(c => [c, 'pin-key', 0.6] as [number, string, number]), [T.move, 'video-whoosh', 0.25],
   ...T.keys.map(k => [k, 'pin-key', 0.7] as [number, string, number]), [T.unlock, 'unlock', 0.9],
-  [19.85, 'video-whoosh', 0.3], [T.scrambleFrom, 'video-encrypt', 0.35],
+  [27.85, 'video-whoosh', 0.3], [T.scrambleFrom, 'video-encrypt', 0.35],
   ...Array.from({ length: 8 }, (_, i) => [T.colors + i * 0.5, 'video-color', 0.8] as [number, string, number]),
   [T.outro, 'video-logo', 0.6],
 ];
+
+const XF = 6;
 
 export function Memoras() {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ ...themeVars(themeAt(frame)), background: 'var(--bg)', fontFamily: "'Source Sans 3 Variable', sans-serif", color: 'var(--ink)', overflow: 'hidden' }}>
       <Bubbles />
-      <Audio src={staticFile('audio/musica.wav')} volume={0.85} />
+      {/* A frase de batida (8 a 16 s da música) toca duas vezes; a emenda tem 6 quadros de transição, que terminam antes da virada. */}
+      <Sequence durationInFrames={f(MUSIC_REPEAT.at)}><Audio src={staticFile('audio/musica.wav')} volume={v => 0.85 * Math.max(0, Math.min(1, (f(MUSIC_REPEAT.at) - 1 - v) / XF))} /></Sequence>
+      <Sequence from={f(MUSIC_REPEAT.at) - XF}><Audio src={staticFile('audio/musica.wav')} trimBefore={f(MUSIC_REPEAT.from) - XF} volume={v => 0.85 * Math.min(1, v / XF)} /></Sequence>
       {SFX.map(([at, name, volume], i) => (
         <Sequence key={i} from={f(at)} durationInFrames={f(3.2)}><Audio src={staticFile(`audio/${name}.mp3`)} volume={volume} /></Sequence>
       ))}
