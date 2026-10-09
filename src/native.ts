@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { get, go, set } from './store';
+import { finishDoc, get, go, HOME, set } from './store';
 
 export const isNative = Capacitor.isNativePlatform();
 
@@ -27,8 +27,8 @@ export function openExternal(url: string) {
   else location.href = url;
 }
 
-// Botão voltar do Android: nunca fecha o app. Dentro do diário leva ao histórico,
-// que é a tela principal; nos fluxos faz o mesmo que o "Voltar" de cada tela.
+// Botão voltar do Android: nunca fecha o app. Leva à tela inicial da parte aberta
+// (o histórico é a principal); nos fluxos faz o mesmo que o "Voltar" de cada tela.
 export function setupBackButton() {
   if (!isNative) return;
   void App.addListener('backButton', () => {
@@ -36,7 +36,9 @@ export function setupBackButton() {
     if (s.confirm) return set({ confirm: null });
     switch (s.screen) {
       case 'history': return set({ day: null, calOpen: false });
-      case 'editor': case 'search': case 'archive': case 'settings': return go('history');
+      case 'editor': case 'docs': case 'agenda': return go('history');
+      case 'doc': if (s.docEdit) return finishDoc(); return go('docs');
+      case 'search': case 'archive': case 'settings': return go(HOME[s.section]);
       case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : undefined;
       case 'auth': return s.authReturn === 'onboard' ? go('onboard', { onStep: 3 }) : go('settings');
       case 'forgot': return go('auth', { authMode: 'login', fStep: 1 });

@@ -1,16 +1,19 @@
+import type { Item } from './items';
 import type { Note } from './notes';
 
 // As anotações moram aqui, no banco "memoras" do aparelho. Para não perdê-las numa atualização:
 // - nunca troque o nome do banco nem apague stores;
 // - para mudar a estrutura, suba DB_VERSION e acrescente um passo em onupgradeneeded que só
 //   cria coisas novas ou converte dados, sem nunca apagar o que existe.
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbp: Promise<IDBDatabase> | null = null;
 function db() {
   return dbp ??= new Promise<IDBDatabase>((res, rej) => {
     const r = indexedDB.open('memoras', DB_VERSION);
     r.onupgradeneeded = e => {
       if (e.oldVersion < 1) { r.result.createObjectStore('kv'); r.result.createObjectStore('notes', { keyPath: 'id' }); }
+      // Versão 2: Cadernos e Agenda.
+      if (e.oldVersion < 2) r.result.createObjectStore('items', { keyPath: 'id' });
     };
     r.onsuccess = () => res(r.result);
     r.onerror = () => { dbp = null; rej(r.error); };
@@ -35,4 +38,7 @@ export const kvSet = (k: string, v: unknown) => quiet(run('kv', 'readwrite', s =
 export const notePut = (n: Note) => quiet(run('notes', 'readwrite', s => s.put(n)));
 export const kvDel = (k: string) => quiet(run('kv', 'readwrite', s => s.delete(k)));
 export const noteDel = (id: string) => quiet(run('notes', 'readwrite', s => s.delete(id)));
-export const wipeAll = () => Promise.all([quiet(run('kv', 'readwrite', s => s.clear())), quiet(run('notes', 'readwrite', s => s.clear()))]);
+export const itemsRead = () => run<Item[]>('items', 'readonly', s => s.getAll());
+export const itemPut = (i: Item) => quiet(run('items', 'readwrite', s => s.put(i)));
+export const itemDel = (id: string) => quiet(run('items', 'readwrite', s => s.delete(id)));
+export const wipeAll = () => Promise.all(['kv', 'notes', 'items'].map(st => quiet(run(st, 'readwrite', s => s.clear()))));

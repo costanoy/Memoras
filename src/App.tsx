@@ -32,7 +32,7 @@ export function App() {
       {inApp(scr) && <Shell />}
 
       {s.toast && (
-        <div className={'toast' + (s.mobile && inApp(scr) && scr !== 'editor' ? ' up' : '') + (s.toast.undo ? ' undo' : '')} role="status">
+        <div className={'toast' + (s.mobile && inApp(scr) && scr !== 'editor' && scr !== 'doc' ? ' up' : '') + (s.toast.undo ? ' undo' : '')} role="status">
           <span>{s.toast.text}</span>
           {s.toast.undo && <button className="gel" onClick={toastUndo}>Desfazer</button>}
         </div>

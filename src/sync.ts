@@ -2,7 +2,8 @@ import { App as NativeApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { createClient, isAuthApiError } from '@supabase/supabase-js';
 import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomBytes, randomCode, seal, sealText, unb64, verifySecret } from './lib/crypto';
-import { notePut } from './lib/db';
+import { itemPut, notePut } from './lib/db';
+import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Item, type ItemContent } from './lib/items';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
 import { get, hooks, set, setCfg, toast } from './store';
 import { THEMES, type ThemeKey } from './themes';
@@ -49,8 +50,9 @@ async function dkKey() {
 async function adopt(userId: string, email: string, dk: Uint8Array, dkId: string, auth: string) {
   const pw = await hashSecret(auth);
   setCfg({ account: { email, userId, dkId, pwSalt: pw.salt, pwHash: pw.hash }, dk: b64(dk), lastPull: null });
-  set(s => ({ notes: s.notes.map(n => ({ ...n, syncedRev: -1 })), sync: 'syncing' }));
+  set(s => ({ notes: s.notes.map(n => ({ ...n, syncedRev: -1 })), items: s.items.map(i => ({ ...i, syncedRev: -1 })), sync: 'syncing' }));
   get().notes.forEach(n => void notePut(n));
+  get().items.forEach(i => void itemPut(i));
   void syncNow();
 }
 
@@ -238,6 +240,7 @@ export async function syncNow() {
     // gravação, então algo de outro aparelho pode chegar depois do último pull com horário anterior:
     // rever o último minuto pega esses casos (juntar de novo o que já está aqui não muda nada).
     const incoming: { id: string; c: NoteContent }[] = [];
+    const incomingItems: { id: string; c: ItemContent }[] = [];
     let lastPull = c.lastPull;
     const lastT = c.lastPull ? Date.parse(c.lastPull) : NaN;
     const since = Number.isNaN(lastT) ? c.lastPull : new Date(lastT - 60000).toISOString();
@@ -247,7 +250,12 @@ export async function syncNow() {
       const { data, error } = await q;
       if (error) throw error;
       for (const r of data) {
-        try { incoming.push({ id: r.id, c: content(JSON.parse(await openText(key, r.data))) }); }
+        try {
+          // Cadernos e Agenda trazem "kind"; anotações do diário, não. Tipo desconhecido fica de fora.
+          const obj = JSON.parse(await openText(key, r.data));
+          if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it }); }
+          else incoming.push({ id: r.id, c: content(obj) });
+        }
         catch { console.warn('Memoras: anotação ilegível ignorada', r.id); }
         if (!lastPull || r.updated_at > lastPull) lastPull = r.updated_at;
       }
@@ -269,6 +277,28 @@ export async function syncNow() {
       });
       touched.forEach(n => void notePut(n));
     }
+    if (incomingItems.length) {
+      const touched: Item[] = [];
+      set(s => {
+        const byId = new Map(s.items.map(i => [i.id, i]));
+        for (const r of incomingItems) {
+          const local = byId.get(r.id), bt = baseText(r.c);
+          const synced = (c: ItemContent, rev: number, syncedRev: number) => ({ ...c, rev, syncedRev, pushed: true, ...(bt !== null ? { base: bt } : {}) });
+          let n: Item;
+          if (!local) n = { id: r.id, ...synced(r.c, 0, 0) } as Item;
+          else {
+            const { merged, copy } = mergeItem(local, r.c);
+            const rev = sameItem(merged, local) ? local.rev : local.rev + 1;
+            n = { ...local, ...synced(merged, rev, sameItem(merged, r.c) ? rev : -1) } as Item;
+            // Texto mudado nos dois aparelhos: o de lá vira uma cópia, para nada se perder.
+            if (copy) { const cp = { ...copy, id: uid(), rev: 1, syncedRev: -1, pushed: false, ...(baseText(copy) !== null ? { base: null } : {}) } as Item; byId.set(cp.id, cp); touched.push(cp); }
+          }
+          byId.set(r.id, n); touched.push(n);
+        }
+        return { items: [...byId.values()] };
+      });
+      touched.forEach(i => void itemPut(i));
+    }
 
     // Envia o que mudou aqui, já cifrado.
     const dirty = get().notes.filter(n => n.rev !== n.syncedRev && (n.deleted || n.pushed || !isEmpty(n)));
@@ -280,6 +310,22 @@ export async function syncNow() {
       const sent = new Map(chunk.map(n => [n.id, n.rev]));
       set(s => ({ notes: s.notes.map(n => sent.has(n.id) ? { ...n, syncedRev: sent.get(n.id)!, pushed: true } : n) }));
       get().notes.forEach(n => { if (sent.has(n.id)) void notePut(n); });
+    }
+    const dirtyItems = get().items.filter(i => i.rev !== i.syncedRev && (i.deleted || i.pushed || !isBlankItem(i)));
+    for (let i = 0; i < dirtyItems.length; i += 100) {
+      const chunk = dirtyItems.slice(i, i + 100);
+      const rows = await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })));
+      const { error } = await sb.from('notes').upsert(rows);
+      if (error) throw error;
+      const sent = new Map(chunk.map(it => [it.id, it]));
+      set(s => ({
+        items: s.items.map(it => {
+          const x = sent.get(it.id); if (!x) return it;
+          const bt = baseText(x);
+          return { ...it, syncedRev: x.rev, pushed: true, ...(bt !== null ? { base: bt } : {}) } as Item;
+        }),
+      }));
+      get().items.forEach(it => { if (sent.has(it.id)) void itemPut(it); });
     }
 
     if (lastPull !== c.lastPull) setCfg({ lastPull });

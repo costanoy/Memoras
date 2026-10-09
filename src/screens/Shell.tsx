@@ -1,43 +1,30 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, monthYear, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
-import { activeSorted, archive, editSeg, go, live, newNote, openNew, openNote, reducedMotion, set, setCfg, setPrefs, setStatus, setTitle, sfx, startCreatePin, toast, trash, typeNew, useApp, type State } from '../store';
+import { docPreview, docTitle, todayKey } from '../lib/items';
+import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
+import {
+  activeSorted, archive, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
+  set, setCfg, setPrefs, setStatus, setTitle, sfx, startCreatePin, tasksOn, toast, trash, trashedDocs, typeNew, useApp, type Section, type State,
+} from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
-import { Icon, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
-
-const DOW = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+import { AutoArea, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
+import { AgendaDay, agendaLabel, AgendaSide, focusNewTask } from './Agenda';
+import { DocsEmpty, DocsList, DocView } from './Docs';
 
 function Calendar({ s, act }: { s: State; act: Note[] }) {
-  const first = new Date(s.calY, s.calM, 1), dim = new Date(s.calY, s.calM + 1, 0).getDate();
-  const move = (d: number) => { const m = new Date(s.calY, s.calM + d, 1); set({ calY: m.getFullYear(), calM: m.getMonth() }); };
-  return (
-    <div className="cal">
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-        <button className="arrow press" aria-label="Mês anterior" onClick={() => move(-1)}>‹</button>
-        <span style={{ fontSize: 15, fontWeight: 700 }}>{monthYear(s.calY, s.calM)}</span>
-        <button className="arrow press" aria-label="Próximo mês" onClick={() => move(1)}>›</button>
-      </div>
-      <div className="calgrid">
-        {DOW.map((w, i) => <span key={i}>{w}</span>)}
-        {Array.from({ length: first.getDay() }, (_, i) => <i key={'e' + i} />)}
-        {Array.from({ length: dim }, (_, i) => {
-          const t = new Date(s.calY, s.calM, i + 1).getTime();
-          const has = act.some(n => same(nd(n), t)), sel = !!s.day && same(s.day, t);
-          return (
-            <button key={i} className={'day' + (has ? ' has press' : '') + (same(t, Date.now()) ? ' today' : '') + (sel ? ' sel' : '')} tabIndex={has ? 0 : -1} aria-pressed={sel}
-              onClick={() => has && set({ day: sel ? null : t, screen: s.mobile || (s.screen !== 'editor' && s.screen !== 'history') ? 'history' : s.screen })}>
-              {i + 1}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <MonthCal y={s.calY} m={s.calM} onMove={(calY, calM) => set({ calY, calM })} has={t => act.some(n => same(nd(n), t))} isSel={t => !!s.day && same(s.day, t)}
+    onPick={t => { const sel = !!s.day && same(s.day, t); set({ day: sel ? null : t, screen: s.mobile || (s.screen !== 'editor' && s.screen !== 'history') ? 'history' : s.screen }); }} />;
 }
+
+const SECTIONS: [Section, string][] = [['diario', 'Diário'], ['cadernos', 'Cadernos'], ['agenda', 'Agenda']];
+// Entrar em Cadernos no computador já abre o caderno mais recente, como o diário faz.
+const goSection = (s: State, k: Section) => k === 'cadernos'
+  ? go('docs', { docSel: docsOf(s).some(d => d.id === s.docSel) ? s.docSel : !s.mobile ? docsOf(s)[0]?.id ?? null : null, docEdit: false })
+  : go(HOME[k]);
 
 const NAV = [['search', 'Busca'], ['archive', 'Arquivo'], ['trash', 'Lixeira'], ['settings', 'Ajustes'], ['calendar', 'Calendário']] as const;
 
 function Side({ s }: { s: State }) {
-  const act = activeSorted(s), acc = s.cfg.account, scr = s.screen, isTrash = s.shelf === 'trash';
+  const act = activeSorted(s), acc = s.cfg.account, scr = s.screen, isTrash = s.shelf === 'trash', sec = s.section;
   const list = s.day ? act.filter(n => same(nd(n), s.day!)) : act;
   const groups: { label: string; items: Note[] }[] = [];
   list.forEach(n => {
@@ -51,24 +38,44 @@ function Side({ s }: { s: State }) {
   return (
     <div className="side">
       <div className="panel">
-        <div className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '0 4px' }}>
-          <div className="col" style={{ flex: 1, minWidth: 0, gap: 6 }}>
-            <input className="name" value={s.cfg.diaryName} aria-label="Nome do diário" title="Clique para renomear" placeholder="Nome do diário"
-              onChange={e => setPrefs({ diaryName: e.target.value })}
-              onBlur={() => { if (!s.cfg.diaryName.trim()) setPrefs({ diaryName: 'Meu diário' }); }}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.currentTarget.blur(); } }} />
-            <button className="syncpill press" onClick={() => acc ? (s.sync === 'error' || s.sync === 'synced') && void syncNow() : go('settings')}>
-              <SyncDot />{syncLabel(!!acc, s.sync)}
-            </button>
+        {s.mobile && sec === 'cadernos' ? (
+          <div className="row" style={{ gap: 10, padding: '0 4px' }}>
+            <div className="h1" style={{ flex: 1, minWidth: 0 }}>Cadernos</div>
+            <button className="round press" aria-label="Busca" onClick={() => go('search')}><Icon name="search" sw={2.3} /></button>
           </div>
-          {s.mobile && (
-            <button className="round press" aria-label="Calendário" aria-pressed={s.calOpen} onClick={() => set({ calOpen: !s.calOpen })}
-              style={s.calOpen ? { background: 'rgba(255,255,255,.95)', color: 'var(--acc-d)' } : undefined}>
-              <Icon name="calendar" />
-            </button>
-          )}
-        </div>
+        ) : (
+          <div className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '0 4px' }}>
+            <div className="col" style={{ flex: 1, minWidth: 0, gap: 6 }}>
+              <input className="name" value={s.cfg.diaryName} aria-label="Nome do diário" title="Clique para renomear" placeholder="Nome do diário"
+                onChange={e => setPrefs({ diaryName: e.target.value })}
+                onBlur={() => { if (!s.cfg.diaryName.trim()) setPrefs({ diaryName: 'Meu diário' }); }}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.currentTarget.blur(); } }} />
+              <button className="syncpill press" onClick={() => acc ? (s.sync === 'error' || s.sync === 'synced') && void syncNow() : go('settings')}>
+                <SyncDot /><span className="lbl">{syncLabel(!!acc, s.sync)}</span>
+              </button>
+            </div>
+            {/* No celular, Busca e Arquivo ficam aqui em cima; as abas são das três partes do app. */}
+            {s.mobile && <>
+              <button className="round press" aria-label="Busca" onClick={() => go('search')}><Icon name="search" sw={2.3} /></button>
+              <button className="round press" aria-label="Arquivo" onClick={() => go('archive')}><Icon name="archive" /></button>
+              <button className="round press" aria-label="Calendário" aria-pressed={s.calOpen} onClick={() => set({ calOpen: !s.calOpen })}
+                style={s.calOpen ? { background: 'rgba(255,255,255,.95)', color: 'var(--acc-d)' } : undefined}>
+                <Icon name="calendar" />
+              </button>
+            </>}
+          </div>
+        )}
 
+        {!s.mobile && (
+          <div className="seg2 sections" role="group" aria-label="Partes do Memoras">
+            {SECTIONS.map(([k, label]) => <button key={k} className={'press' + (sec === k ? ' on' : '')} aria-pressed={sec === k} onClick={() => goSection(s, k)}>{label}</button>)}
+          </div>
+        )}
+
+        {sec === 'cadernos' && <DocsList s={s} />}
+        {sec === 'agenda' && !s.mobile && <AgendaSide s={s} />}
+
+        {sec === 'diario' && <>
         {!acc && s.cfg.invite && (
           <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 18, background: 'rgba(255,255,255,.72)', border: '1px solid #fff' }}>
             <div className="col" style={{ flex: 1, gap: 4, fontSize: 14, lineHeight: 1.4, color: 'var(--ink2)' }}>
@@ -116,13 +123,14 @@ function Side({ s }: { s: State }) {
         </div>
 
         {s.calOpen && <Calendar s={s} act={act} />}
+        </>}
 
         {!s.mobile && (
           <div className="nav">
-            {NAV.map(([k, label]) => {
+            {NAV.filter(([k]) => k !== 'calendar' || sec === 'diario').map(([k, label]) => {
               const on = k === 'calendar' ? s.calOpen : k === 'trash' ? scr === 'archive' && isTrash : k === 'archive' ? scr === 'archive' && !isTrash : scr === k;
               const open = on && !(k === 'calendar' && navOther);
-              const click = () => k === 'calendar' ? set({ calOpen: !s.calOpen }) : on ? go('history') : k === 'trash' || k === 'archive' ? go('archive', { shelf: k }) : go(k);
+              const click = () => k === 'calendar' ? set({ calOpen: !s.calOpen }) : on ? go(HOME[sec]) : k === 'trash' || k === 'archive' ? go('archive', { shelf: k }) : go(k);
               return (
                 <button key={k} className={(on ? 'on' : '') + (open ? ' open' : '')} title={label} aria-label={label} aria-pressed={on} onClick={click}>
                   <Icon name={k} sw={k === 'search' ? 2.3 : 2.2} />{open && <span>{label}</span>}
@@ -134,14 +142,6 @@ function Side({ s }: { s: State }) {
       </div>
     </div>
   );
-}
-
-function Area({ value, placeholder, onChange }: { value: string; placeholder: string; onChange: (v: string) => void }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const fit = () => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } };
-  useLayoutEffect(fit, [value]);
-  useEffect(() => { window.addEventListener('resize', fit); return () => window.removeEventListener('resize', fit); }, []);
-  return <textarea ref={ref} className="segtext" rows={1} value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)} />;
 }
 
 function Editor({ s, cur }: { s: State; cur: Note }) {
@@ -179,12 +179,12 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
         {[...segs, ...(needNew ? [null] : [])].map(g => g ? (
           <div key={g.id} className="col" style={{ marginTop: 22, gap: 4 }}>
             <div className="segtime">{fmtT(g.t)}</div>
-            <Area value={g.text} placeholder="" onChange={v => { touched.current.add(g.id); editSeg(cur.id, g.id, v); }} />
+            <AutoArea value={g.text} placeholder="" onChange={v => { touched.current.add(g.id); editSeg(cur.id, g.id, v); }} />
           </div>
         ) : (
           <div key={pending.current} className="col" style={{ marginTop: 22, gap: 4 }}>
             <div className="segtime" hidden />
-            <Area value="" placeholder={segs.length ? 'Continue escrevendo…' : 'Escreva o que quiser…'}
+            <AutoArea value="" placeholder={segs.length ? 'Continue escrevendo…' : 'Escreva o que quiser…'}
               onChange={v => { if (!v) return; const id = pending.current; touched.current.add(id); pending.current = uid(); typeNew(cur.id, id, v); }} />
           </div>
         ))}
@@ -193,17 +193,34 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
   </>;
 }
 
+// Texto do caderno sem as marcas de título e de lista, para a busca mostrar o trecho limpo.
+const plain = (body: string) => body.replace(/^\s*(#{1,3}|[-*•]|\d+[.)])\s+/gm, '').split('\n').map(l => l.trim()).filter(Boolean).join(' · ');
+
 function Search({ s }: { s: State }) {
   const q = s.query.trim(), nq = normMap(q).out;
-  const results: { n: Note; before: string; match: string; after: string }[] = [];
+  const results: { key: string; title: string; meta: string; tag?: string; open: () => void; before: string; match: string; after: string }[] = [];
+  const hit = (src: string) => {
+    const m = normMap(src), idx = m.out.indexOf(nq);
+    if (idx < 0) return null;
+    const a = m.map[idx], b = m.map[idx + nq.length - 1] + 1, st = Math.max(0, a - 60);
+    return { before: (st > 0 ? '…' : '') + src.slice(st, a), match: src.slice(a, b), after: src.slice(b, b + 90) + (b + 90 < src.length ? '…' : '') };
+  };
   if (nq) {
     live(s).filter(n => n.status !== 'trashed').sort((a, b) => nd(b) - nd(a)).forEach(n => {
-      const src = [n.title, fullText(n)].filter(Boolean).join(' · '), m = normMap(src), idx = m.out.indexOf(nq);
-      if (idx < 0) return;
-      const a = m.map[idx], b = m.map[idx + nq.length - 1] + 1, st = Math.max(0, a - 60);
-      results.push({ n, before: (st > 0 ? '…' : '') + src.slice(st, a), match: src.slice(a, b), after: src.slice(b, b + 90) + (b + 90 < src.length ? '…' : '') });
+      const r = hit([n.title, fullText(n)].filter(Boolean).join(' · '));
+      if (r) results.push({ key: n.id, title: dispTitle(n), meta: dayLabel(nd(n)), tag: n.status === 'archived' ? 'Arquivada' : undefined, open: () => openNote(n.id), ...r });
+    });
+    docsOf(s).forEach(d => {
+      const r = hit([d.title, plain(d.body)].filter(Boolean).join(' · '));
+      if (r) results.push({ key: d.id, title: docTitle(d), meta: '', tag: 'Caderno', open: () => openDoc(d.id), ...r });
+    });
+    [...plannedDays(s)].sort().reverse().forEach(k => {
+      const r = hit([...tasksOn(s, k).map(t => t.text), ...dayNotesOn(s, k).map(n => n.text)].filter(Boolean).join(' · '));
+      if (r) results.push({ key: 'dia:' + k, title: agendaLabel(k), meta: '', tag: 'Agenda', open: () => openDay(k), ...r });
     });
   }
+  const onlyNotes = results.every(r => !r.tag || r.tag === 'Arquivada');
+  const count = results.length === 1 ? (onlyNotes ? '1 anotação' : '1 resultado') : results.length + (onlyNotes ? ' anotações' : ' resultados');
   return <>
     <div className="col" style={{ padding: '22px 20px 12px', gap: 14, flex: 'none' }}>
       <div className="h1">Busca</div>
@@ -211,14 +228,14 @@ function Search({ s }: { s: State }) {
         <Icon name="search" sw={2.4} />
         <input value={s.query} placeholder="Buscar nas anotações" aria-label="Buscar nas anotações" autoFocus={!s.mobile} onChange={e => set({ query: e.target.value })} />
       </label>
-      {results.length > 0 && <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink4)', padding: '0 6px' }}>{results.length === 1 ? '1 anotação' : results.length + ' anotações'}</div>}
+      {results.length > 0 && <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink4)', padding: '0 6px' }}>{count}</div>}
     </div>
     <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
       {results.map(r => (
-        <button key={r.n.id} className="gcard press" style={{ gap: 4, padding: '14px 16px' }} onClick={() => openNote(r.n.id)}>
-          <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{dispTitle(r.n)}</span><span className="meta">{dayLabel(nd(r.n))}</span></span>
+        <button key={r.key} className="gcard press" style={{ gap: 4, padding: '14px 16px' }} onClick={r.open}>
+          <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{r.title}</span><span className="meta">{r.meta}</span></span>
           <span style={{ fontSize: 15, lineHeight: 1.5, color: 'var(--ink3)' }}>{r.before}<mark>{r.match}</mark>{r.after}</span>
-          {r.n.status === 'archived' && <span className="tag">Arquivada</span>}
+          {r.tag && <span className="tag">{r.tag}</span>}
         </button>
       ))}
       {q && !results.length && (
@@ -235,11 +252,12 @@ function Search({ s }: { s: State }) {
 function Shelf({ s }: { s: State }) {
   const isTrash = s.shelf === 'trash';
   const rows = live(s).filter(n => n.status === (isTrash ? 'trashed' : 'archived')).sort((a, b) => nd(b) - nd(a));
+  const docRows = isTrash ? trashedDocs(s) : [];
   return <>
     <div className="col" style={{ padding: '22px 20px 12px', gap: 14, flex: 'none' }}>
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
         <div className="h1">{isTrash ? 'Lixeira' : 'Arquivo'}</div>
-        {isTrash && rows.length > 0 && <button className="glassbtn press danger" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => set({ confirm: { all: true } })}>Esvaziar lixeira</button>}
+        {isTrash && rows.length + docRows.length > 0 && <button className="glassbtn press danger" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => set({ confirm: { all: true } })}>Esvaziar lixeira</button>}
       </div>
       {s.mobile && (
         <div className="seg2" style={{ boxShadow: 'none' }}>
@@ -262,7 +280,19 @@ function Shelf({ s }: { s: State }) {
           </div>
         </div>
       ))}
-      {!rows.length && (
+      {docRows.map(d => (
+        <div key={d.id} className="gcard" style={{ gap: 10, padding: '14px 16px' }}>
+          <div className="col" style={{ gap: 3 }}>
+            <span className="row" style={{ gap: 8, alignItems: 'baseline' }}><span className="ttl">{docTitle(d)}</span><span className="tag" style={{ alignSelf: 'center' }}>Caderno</span></span>
+            <span className="prev">{docPreview(d.body) || 'Sem texto ainda'}</span>
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button className="soft press" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700 }} onClick={() => restoreDoc(d.id)}>Restaurar</button>
+            <button className="soft danger press" style={{ height: 40, padding: '0 16px', fontSize: 14 }} onClick={() => set({ confirm: { id: d.id } })}>Apagar para sempre</button>
+          </div>
+        </div>
+      ))}
+      {!rows.length && !docRows.length && (
         <div className="empty">
           <div className="orb" style={{ width: 64, height: 64 }} />
           <div style={{ fontSize: 19, fontWeight: 700 }}>{isTrash ? 'Lixeira vazia' : 'Nada arquivado'}</div>
@@ -347,27 +377,31 @@ function Settings({ s }: { s: State }) {
   );
 }
 
-const TABS = [['history', 'Diário'], ['search', 'Busca'], ['new', 'Nova anotação'], ['archive', 'Arquivo'], ['settings', 'Ajustes']] as const;
+// Abas do celular: as três partes do app, o + e os ajustes.
+const TABS = [['history', 'Diário'], ['docs', 'Cadernos'], ['new', ''], ['agenda', 'Agenda'], ['settings', 'Ajustes']] as const;
+const NEW_LABEL: Record<Section, string> = { diario: 'Nova anotação', cadernos: 'Novo caderno', agenda: 'Nova tarefa' };
+const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', agenda: 'agenda', settings: 'settings' };
 
 // O "+" do celular: o botão gira e uma bolha de gel cresce a partir dele até
-// cobrir a tela; a anotação nova abre por baixo e a bolha se desfaz.
+// cobrir a tela; o item novo abre por baixo e a bolha se desfaz.
 function usePlusBurst() {
-  const [burst, setBurst] = useState<{ x: number; y: number; scale: number } | null>(null);
+  const [burst, setBurst] = useState<{ x: number; y: number; scale: number; run: () => void } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!burst || !el) return;
     const grow = el.animate([{ transform: 'scale(1)', opacity: 0.95 }, { transform: `scale(${burst.scale})`, opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
-    const t = setTimeout(openNew, 230);
+    const t = setTimeout(burst.run, 230);
     grow.onfinish = () => { el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' }).onfinish = () => setBurst(null); };
     return () => clearTimeout(t);
   }, [burst]);
-  const start = (btn: HTMLElement) => {
-    if (reducedMotion()) return newNote();
+  // run: abre o item novo sem som (o som toca no toque); plain: o mesmo, com som, sem animação.
+  const start = (btn: HTMLElement, run: () => void, plain: () => void) => {
+    if (reducedMotion()) return plain();
     sfx('new-note');
     const r = btn.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
     const far = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    setBurst({ x, y, scale: far / 26 + 1 });
+    setBurst({ x, y, scale: far / 26 + 1, run });
   };
   const el = burst && <div ref={ref} className="burst" style={{ left: burst.x - 26, top: burst.y - 26 }} />;
   return { start, el, busy: !!burst };
@@ -376,15 +410,23 @@ function usePlusBurst() {
 export function Shell() {
   const s = useApp(), scr = s.screen;
   const cur = s.notes.find(n => n.id === s.sel && !n.deleted && n.status !== 'trashed');
+  const curDoc = s.items.find(i => i.kind === 'doc' && i.id === s.docSel && !i.deleted && i.status === 'active');
   const showEditor = !!cur && (scr === 'editor' || (!s.mobile && scr === 'history'));
-  const historyOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur));
-  // Enquanto escreve no celular, o menu inferior sai de cena.
-  const tabbar = s.mobile && !showEditor;
+  const showDoc = curDoc?.kind === 'doc' && (scr === 'doc' || (!s.mobile && scr === 'docs'));
+  // No celular, as listas (diário e cadernos) ocupam a tela sozinhas.
+  const listOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur) || scr === 'docs' || (scr === 'doc' && !curDoc));
+  // Enquanto escreve ou lê no celular, o menu inferior sai de cena.
+  const tabbar = s.mobile && !showEditor && !showDoc;
   const plus = usePlusBurst();
+  const add = (btn: HTMLElement) => {
+    if (s.section === 'cadernos') plus.start(btn, () => newDoc(true), () => newDoc());
+    else if (s.section === 'agenda') { focusNewTask(); openDay(todayKey()); }
+    else plus.start(btn, openNew, newNote);
+  };
   return <>
     <div className={'wrap' + (s.mobile ? ' m' : '') + (s.mobile && !tabbar ? ' notab' : '')}>
-      {(!s.mobile || historyOnly) && <Side s={s} />}
-      {!historyOnly && (
+      {(!s.mobile || listOnly) && <Side s={s} />}
+      {!listOnly && (
         <div className="main">
           <div className="panel">
             {showEditor && <Editor key={cur.id} s={s} cur={cur} />}
@@ -396,6 +438,9 @@ export function Shell() {
                 <button className="gel" style={{ marginTop: 6, height: 50, padding: '0 26px' }} onClick={newNote}>Nova anotação</button>
               </div>
             )}
+            {showDoc && curDoc.kind === 'doc' && <DocView key={curDoc.id} s={s} d={curDoc} />}
+            {!showDoc && (scr === 'docs' || scr === 'doc') && <DocsEmpty />}
+            {scr === 'agenda' && <AgendaDay s={s} />}
             {scr === 'search' && <Search s={s} />}
             {scr === 'archive' && <Shelf s={s} />}
             {scr === 'settings' && <Settings s={s} />}
@@ -406,8 +451,8 @@ export function Shell() {
     {tabbar && (
       <div className="tabbar">
         {TABS.map(([k, label]) => (
-          <button key={k} className={'press' + (k === scr || (k === 'history' && scr === 'editor') ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={label}
-            onClick={e => k === 'new' ? !plus.busy && plus.start(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : go(k)}>
+          <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label}
+            onClick={e => k === 'new' ? !plus.busy && add(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : k === 'docs' ? goSection(s, 'cadernos') : go(k)}>
             {k === 'new' ? <span className="plus">+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
           </button>
         ))}

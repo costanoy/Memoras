@@ -9,6 +9,7 @@
 ## Nunca perder anotações numa atualização
 - As anotações ficam no IndexedDB `memoras`, preso ao endereço do app: `app://memoras` no Windows (`electron/main.cjs`) e `https://localhost` no Android (`capacitor.config.json`). Não mude esses endereços, o `appId` nem o nome do banco.
 - Mudança de estrutura do banco: suba `DB_VERSION` em `src/lib/db.ts` e só acrescente passos de migração; nunca apague stores.
+- Cadernos e Agenda (`src/lib/items.ts`) vão para o servidor na tabela `notes`, com `kind` dentro do texto cifrado. Nunca dê a eles um campo `segs`: é por não terem `segs` que as versões antigas (até a 1.0.4) os ignoram sem quebrar.
 - A cada versão nova, o app guarda uma cópia dos dados anteriores no próprio aparelho (`backup:<versão>`, as 3 últimas).
 - O APK precisa sair sempre com a chave de `~/.memoras`; o `npm run release` confere a assinatura e cancela se for outra.
 - No Windows, a atualização chama o desinstalador antigo com `--updated`, que não apaga os dados (testado em 01/10/2026 com uma cópia "MemorasTeste").
