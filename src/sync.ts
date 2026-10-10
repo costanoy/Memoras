@@ -15,6 +15,8 @@ export const supabase = url && anon ? createClient(url, anon, { auth: { flowType
 
 // Nos apps instalados o link do email abre o próprio app (registrado em electron/main.cjs e no AndroidManifest).
 const APP_LINK = 'memoras://senha';
+// Depois de confirmar o cadastro, o link do email abre esta página do site.
+const CONFIRMED_PAGE = 'https://memoras.cyberhat.com.br/confirmado.html';
 const installed = Capacitor.isNativePlatform() || 'memorasWin' in window;
 
 class AppError extends Error {}
@@ -70,7 +72,7 @@ export async function signUp(email: string, password: string): Promise<{ recKey?
   const sb = need();
   email = email.trim();
   const { auth, kek } = await derive(email, password);
-  const { data, error } = await sb.auth.signUp({ email, password: auth });
+  const { data, error } = await sb.auth.signUp({ email, password: auth, options: { emailRedirectTo: CONFIRMED_PAGE } });
   if (error) throw error;
   if (!data.session || !data.user) return { confirm: true };
   const v = await createVault(data.user.id, kek);

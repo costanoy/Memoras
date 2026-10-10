@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email confirmado · Memoras</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1fd0c8">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<script>try{var t=localStorage.getItem('memoras-site-cor');if(t&&t!=='turquesa')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"><div class="haze"></div><div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div></div>
+
+<header class="top wrap">
+  <div class="bar glass">
+    <a class="brand" href="/" aria-label="Memoras, início"><img src="/img/memoras-icon-80.png" alt="" width="40" height="40">Memoras</a>
+  </div>
+</header>
+
+<main class="doc wrap">
+  <article class="glass2" id="ok">
+    <h1>Seu email foi confirmado!</h1>
+    <p class="intro">Sua conta do Memoras está pronta. Volte ao app e entre com seu email e senha.</p>
+    <p style="margin-top:24px"><button type="button" class="btn btn-gel btn-sm" data-close>Fechar esta guia</button></p>
+    <p class="intro" data-closed hidden>O navegador não deixou fechar sozinho. Pode fechar esta guia.</p>
+  </article>
+  <article class="glass2" id="fail" hidden>
+    <h1>Este link não vale mais</h1>
+    <p class="intro">Ele já foi usado ou passou do prazo. Se você já confirmou antes, é só entrar no Memoras. Se o app pedir a confirmação, cadastre de novo com o mesmo email para receber outro link.</p>
+    <p style="margin-top:24px"><button type="button" class="btn btn-gel btn-sm" data-close>Fechar esta guia</button></p>
+    <p class="intro" data-closed hidden>O navegador não deixou fechar sozinho. Pode fechar esta guia.</p>
+  </article>
+</main>
+<script>
+(function () {
+  // O Supabase devolve o erro na consulta ou depois do #, conforme o fluxo.
+  var p = location.search + '&' + location.hash.slice(1);
+  if (/(^|[?&])error(_code)?=/.test(p)) { document.getElementById('ok').hidden = true; document.getElementById('fail').hidden = false; }
+  // Tira o código do endereço: ele não serve para nada aqui.
+  if (location.search || location.hash) history.replaceState(null, '', location.pathname);
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('[data-close]')) return;
+    window.close();
+    // Alguns navegadores só deixam fechar guias abertas por script.
+    setTimeout(function () {
+      var m = document.querySelectorAll('[data-closed]');
+      for (var i = 0; i < m.length; i++) m[i].hidden = false;
+    }, 300);
+  });
+})();
+</script>
+</body>
+</html>

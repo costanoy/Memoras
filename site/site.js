@@ -1,4 +1,6 @@
 (function () {
+  // Links de confirmação de cadastro de versões antigas do app chegam aqui com ?code= ou com erro: leva para o aviso.
+  if (/[?&#](code|error|error_code)=/.test(location.search + location.hash) && !/confirmado/.test(location.pathname)) { location.replace('/confirmado.html' + location.search + location.hash); return; }
   var KEY = 'memoras-site-cor';
   var root = document.documentElement;
   function apply(t) {
