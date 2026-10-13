@@ -342,7 +342,7 @@ function Settings({ s }: { s: State }) {
           <div className="group">PIN deste aparelho</div>
           <button className="press row" aria-pressed={s.cfg.pinOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
             onClick={() => s.cfg.pinOn ? startChangePin('off') : startCreatePin('settings')}>
-            <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Pedir PIN ao abrir</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Independente da senha da conta.</span></span>
+            <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Pedir PIN ao abrir</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Pede de novo depois de 1 minuto fora do app. Independente da senha da conta.</span></span>
             <Toggle on={s.cfg.pinOn} />
           </button>
           {s.cfg.pinOn && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => startChangePin('change')}>Trocar PIN</button>}

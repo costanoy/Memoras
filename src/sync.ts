@@ -5,7 +5,7 @@ import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomByt
 import { itemPut, notePut } from './lib/db';
 import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Item, type ItemContent } from './lib/items';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
-import { get, hooks, set, setCfg, toast } from './store';
+import { get, hooks, isLocked, set, setCfg, toast } from './store';
 import { THEMES, type ThemeKey } from './themes';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -38,6 +38,13 @@ export function friendly(e: unknown) {
   return 'Não deu certo agora. Tente de novo.';
 }
 
+// Com o app travado pelo PIN, nenhuma outra conta entra: o diário deste aparelho seria enviado
+// para ela. Só a própria conta pode ser reaberta, pelo "Esqueci o PIN" e "Esqueci minha senha".
+function lockedGuard(userId?: string) {
+  const acc = get().cfg.account;
+  if (isLocked() && (!acc || !userId || userId !== acc.userId)) throw new AppError('Digite o PIN deste aparelho antes de entrar numa conta.');
+}
+
 // Entre trocar a senha e reabrir as anotações, a chave derivada da senha nova fica só na memória.
 let pending: { kek: CryptoKey; auth: string } | null = null;
 
@@ -50,6 +57,7 @@ async function dkKey() {
 }
 
 async function adopt(userId: string, email: string, dk: Uint8Array, dkId: string, auth: string) {
+  lockedGuard(userId);
   const pw = await hashSecret(auth);
   setCfg({ account: { email, userId, dkId, pwSalt: pw.salt, pwHash: pw.hash }, dk: b64(dk), lastPull: null });
   set(s => ({ notes: s.notes.map(n => ({ ...n, syncedRev: -1 })), items: s.items.map(i => ({ ...i, syncedRev: -1 })), sync: 'syncing' }));
@@ -70,6 +78,7 @@ async function createVault(userId: string, kek: CryptoKey) {
 
 export async function signUp(email: string, password: string): Promise<{ recKey?: string; confirm?: boolean }> {
   const sb = need();
+  lockedGuard();
   email = email.trim();
   const { auth, kek } = await derive(email, password);
   const { data, error } = await sb.auth.signUp({ email, password: auth, options: { emailRedirectTo: CONFIRMED_PAGE } });
@@ -82,6 +91,7 @@ export async function signUp(email: string, password: string): Promise<{ recKey?
 
 export async function login(email: string, password: string): Promise<{ recKey?: string; needKey?: boolean }> {
   const sb = need();
+  lockedGuard();
   email = email.trim();
   const { auth, kek } = await derive(email, password);
   const { data, error } = await sb.auth.signInWithPassword({ email, password: auth });
@@ -111,7 +121,9 @@ export async function logout() {
 }
 
 export async function sendReset(email: string) {
-  const { error } = await need().auth.resetPasswordForEmail(email.trim(), { redirectTo: installed ? APP_LINK : location.origin + location.pathname });
+  const sb = need(), acc = get().cfg.account;
+  if (isLocked() && (!acc || acc.email.toLowerCase() !== email.trim().toLowerCase())) throw new AppError('Com o app travado, só dá para recuperar a senha da conta deste aparelho.');
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: installed ? APP_LINK : location.origin + location.pathname });
   if (error) throw error;
 }
 
@@ -142,6 +154,7 @@ export async function setNewPassword(password: string) {
 
 export async function reopenWithKey(code: string): Promise<{ recKey?: string }> {
   const sb = need(), u = await sessionUser();
+  lockedGuard(u.id);
   if (!pending) throw new AppError('Entre com a senha nova para continuar.');
   const { data: vault, error } = await sb.from('vaults').select('dk_id,wrapped_rk').eq('user_id', u.id).maybeSingle();
   if (error) throw error;
@@ -159,6 +172,7 @@ export async function reopenWithKey(code: string): Promise<{ recKey?: string }> 
 // Sem a chave: o que está no servidor não abre mais. O que está neste aparelho continua.
 export async function startFresh(): Promise<{ recKey: string }> {
   const sb = need(), u = await sessionUser();
+  lockedGuard(u.id);
   if (!pending) throw new AppError('Entre com a senha nova para continuar.');
   const { error } = await sb.from('notes').delete().eq('user_id', u.id);
   if (error) throw error;
@@ -353,6 +367,8 @@ export function startSync() {
 // O link de redefinição de senha abre o app já no passo 2.
 supabase?.auth.onAuthStateChange((event, session) => {
   if (event !== 'PASSWORD_RECOVERY') return;
+  // App travado: só segue o link da conta deste aparelho.
+  if (isLocked() && session?.user.id !== get().cfg.account?.userId) return;
   hooks.recoveryPending = true;
   if (get().screen !== 'loading') set({ screen: 'forgot', fStep: 2, fEmail: session?.user.email ?? '' });
   else set({ fEmail: session?.user.email ?? '' });

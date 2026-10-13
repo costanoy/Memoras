@@ -17,7 +17,7 @@ export interface Cfg {
   onboarded: boolean;
   diaryName: string; theme: ThemeKey; prefsTs: number;
   pinOn: boolean; pinHash: string; pinSalt: string; pinKeyHash: string; pinKeySalt: string;
-  pinFails: number; lockUntil: number;
+  pinFails: number; lockUntil: number; pinLocks: number;
   invite: boolean;
   sounds: boolean;
   account: Account | null; dk: string | null; lastPull: string | null;
@@ -43,6 +43,7 @@ export interface State {
   confirm: { id?: string; all?: boolean; reset?: boolean } | null;
   pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
   pinReturn: 'history' | 'settings'; pressedKey: string | null; unlocking: boolean;
+  resume: Screen | null;
   onStep: number; storeMode: 'local' | 'account'; obPin: boolean;
   authMode: 'signup' | 'login'; authReturn: 'onboard' | 'settings';
   shownKey: string; recReturn: 'onboardPin' | 'settings'; pkReturn: 'history' | 'settings'; pkMsg: string;
@@ -51,7 +52,7 @@ export interface State {
 
 const defaultCfg: Cfg = {
   onboarded: false, diaryName: 'Meu diário', theme: 'turquesa', prefsTs: 0,
-  pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0,
+  pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0, pinLocks: 0,
   invite: true, sounds: true, account: null, dk: null, lastPull: null,
 };
 
@@ -70,7 +71,7 @@ const initial = (): State => ({
   agDay: todayKey(), agY: now.getFullYear(), agM: now.getMonth(), agCal: false,
   calOpen: false, calY: now.getFullYear(), calM: now.getMonth(), day: null,
   toast: null, confirm: null,
-  pinMode: 'unlock', pinAfter: 'change', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinReturn: 'history', pressedKey: null, unlocking: false,
+  pinMode: 'unlock', pinAfter: 'change', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinReturn: 'history', pressedKey: null, unlocking: false, resume: null,
   onStep: 1, storeMode: 'local', obPin: true,
   authMode: 'signup', authReturn: 'onboard',
   shownKey: '', recReturn: 'onboardPin', pkReturn: 'history', pkMsg: '',
@@ -127,20 +128,50 @@ function cleaned(notes: Note[], keep: string | null) {
   return out;
 }
 
-export function go(screen: Screen, extra: Partial<State> = {}) {
-  if (inApp(screen) && state.cfg.pinOn && !state.unlocked) {
+// Com PIN ligado e ainda não digitado, o app está travado.
+export const isLocked = () => state.cfg.pinOn && !state.unlocked;
+// Telas que abrem com o app travado: o PIN e o "Esqueci o PIN", que pode passar pela recuperação
+// da senha da própria conta. Login e cadastro, nunca: entrar em outra conta mandaria o diário
+// deste aparelho para ela (sync.ts também recusa).
+const WHILE_LOCKED: Screen[] = ['loading', 'pin', 'forgotPin', 'forgot', 'recovery'];
+
+export function go(target: Screen, extra: Partial<State> = {}) {
+  let screen = target;
+  if (isLocked() && (screen === 'pin' || !WHILE_LOCKED.includes(screen))) {
+    // Depois do PIN, segue para onde ia.
+    if (screen !== 'pin') extra = { ...extra, resume: screen };
     screen = 'pin';
     extra = { ...extra, pinMode: 'unlock', pin: '', pinMsg: '', pinError: false };
   }
   // Quem chega ao diário por outro caminho (login, link de senha) não revê o primeiro uso.
   if (inApp(screen) && !state.cfg.onboarded) setCfg({ onboarded: true });
   const sel = extra.sel !== undefined ? extra.sel : state.sel;
-  const keep = screen === 'editor' || (screen === 'history' && !state.mobile) ? sel : null;
+  const keep = target === 'editor' || (target === 'history' && !state.mobile) ? sel : null;
   const docSel = extra.docSel !== undefined ? extra.docSel : state.docSel;
-  const keepDoc = screen === 'doc' || (screen === 'docs' && !state.mobile) ? docSel : null;
+  const keepDoc = target === 'doc' || (target === 'docs' && !state.mobile) ? docSel : null;
   const section = SECTION[screen];
   set({ screen, confirm: null, ...(section ? { section } : {}), ...extra, notes: cleaned(state.notes, keep), items: cleanItems(state.items, keepDoc) });
 }
+
+// Com PIN, o app volta a pedir o PIN depois de 1 minuto fora da tela: em outro app, com o
+// celular ou o computador bloqueado, ou com a janela minimizada. Ao digitar, volta para onde estava.
+const RELOCK_AFTER = 60_000;
+let awaySince = 0;
+export function appAway() { if (!awaySince) awaySince = Date.now(); }
+export function appBack() {
+  const away = awaySince ? Date.now() - awaySince : 0;
+  awaySince = 0;
+  // Relógio que voltou atrás enquanto o app estava fora: na dúvida, trava.
+  if (away >= RELOCK_AFTER || away < 0) relock();
+}
+export function relock() {
+  const s = state;
+  if (!s.cfg.pinOn || !s.unlocked || s.screen === 'loading' || s.screen === 'forgotPin' || (s.screen === 'pin' && s.pinMode === 'unlock')) return;
+  // Trocando o PIN nos ajustes: depois de desbloquear, volta aos ajustes.
+  const resume = s.screen === 'pin' ? s.pinReturn : s.screen;
+  set({ unlocked: false, screen: 'pin', resume, pinMode: 'unlock', pin: '', pinTmp: '', pinMsg: '', pinError: false, confirm: null, toast: null });
+}
+document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' ? appAway() : appBack());
 
 // Caderno novo deixado vazio também some sem passar pela lixeira.
 function cleanItems(items: Item[], keep: string | null) {
@@ -331,9 +362,18 @@ export function flashKey(k: string) {
   set({ pressedKey: k });
   flashTimer = window.setTimeout(() => set({ pressedKey: null }), 130);
 }
+// Pausa depois de 5 erros seguidos: 30 s na primeira vez e cada vez mais longa, até 15 min,
+// enquanto ninguém acertar o PIN. Nunca apaga nada.
+const LOCK_S = [30, 60, 120, 300, 900];
+const MAX_LOCK = LOCK_S[LOCK_S.length - 1] * 1000;
+// Quanto falta da pausa. Se o relógio do aparelho voltou atrás, nunca passa da pausa mais longa.
+export const lockLeft = () => Math.min(Math.max(0, state.cfg.lockUntil - Date.now()), MAX_LOCK);
+export function fixLockClock() { if (state.cfg.lockUntil - Date.now() > MAX_LOCK) setCfg({ lockUntil: Date.now() + MAX_LOCK }); }
+
 export function pressKey(d: string) {
   const s = state;
-  if (s.unlocking || s.cfg.lockUntil > Date.now()) return;
+  fixLockClock();
+  if (s.unlocking || lockLeft() > 0) return;
   if (d === 'del') { if (s.pin) sfx('pin-key'); set({ pin: s.pin.slice(0, -1) }); return; }
   if (s.pin.length >= 4) return;
   sfx('pin-key');
@@ -356,23 +396,28 @@ async function submitPin(pin: string) {
   if (s.screen !== 'pin') return;
   if (s.pinMode === 'unlock' || s.pinMode === 'verify') {
     if (await verifySecret(pin, c.pinSalt, c.pinHash)) {
-      setCfg({ pinFails: 0 });
+      setCfg({ pinFails: 0, pinLocks: 0 });
       // PIN atual conferido: segue para trocar ou desligar.
       if (s.pinMode === 'verify') {
         if (s.pinAfter === 'off') { setCfg({ pinOn: false }); set({ pin: '', pinMode: 'unlock' }); go('settings'); toast('PIN desativado'); }
         else set({ pin: '', pinMode: 'create' });
         return;
       }
-      const rm = reducedMotion();
-      set({ unlocking: true, unlocked: true, pin: '' });
+      const rm = reducedMotion(), r = s.resume;
+      const to = r && r !== 'pin' && r !== 'forgotPin' && r !== 'loading' ? r : 'history';
+      set({ unlocking: true, unlocked: true, pin: '', resume: null });
       sfx('unlock');
-      setTimeout(() => go('history'), rm ? 0 : 60);
+      setTimeout(() => go(to), rm ? 0 : 60);
       setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
       return;
     }
     // Errar o PIN atual conta igual a errar no desbloqueio, com a mesma pausa.
     const fails = c.pinFails + 1;
-    if (fails >= 5) { setCfg({ pinFails: 0, lockUntil: Date.now() + 30000 }); pinFail(''); }
+    if (fails >= 5) {
+      const locks = c.pinLocks + 1;
+      setCfg({ pinFails: 0, pinLocks: locks, lockUntil: Date.now() + LOCK_S[Math.min(locks, LOCK_S.length) - 1] * 1000 });
+      pinFail('');
+    }
     else {
       setCfg({ pinFails: fails });
       pinFail(fails >= 3 ? 'PIN incorreto. ' + (5 - fails) + (5 - fails === 1 ? ' tentativa' : ' tentativas') + ' antes de uma pausa.' : 'PIN incorreto. Tente de novo.');
@@ -382,7 +427,7 @@ async function submitPin(pin: string) {
   } else if (pin === s.pinTmp) {
     const h = await hashSecret(pin);
     const msg = c.pinOn && s.pinReturn === 'settings' ? 'PIN alterado' : 'PIN ativado';
-    const next: Partial<Cfg> = { pinOn: true, pinHash: h.hash, pinSalt: h.salt, pinFails: 0, lockUntil: 0 };
+    const next: Partial<Cfg> = { pinOn: true, pinHash: h.hash, pinSalt: h.salt, pinFails: 0, lockUntil: 0, pinLocks: 0 };
     set({ pin: '', pinTmp: '', pinMode: 'unlock' });
     if (!c.account) {
       const key = randomCode('PIN', 3), kh = await hashSecret(normCode(key));

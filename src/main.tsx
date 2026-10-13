@@ -5,12 +5,13 @@ import '@fontsource/source-code-pro/600.css';
 import './styles.css';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { setupBackButton } from './native';
+import { setupBackButton, watchAway } from './native';
 import { preloadSounds } from './sounds';
 import { init } from './store';
 import { startSync } from './sync';
 
 createRoot(document.getElementById('root')!).render(<App />);
 setupBackButton();
+watchAway();
 preloadSounds();
 void init().then(startSync);

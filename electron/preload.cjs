@@ -1,4 +1,5 @@
-// Ponte mínima com o app: os botões da barra de título, os links memoras:// e as atualizações.
+// Ponte mínima com o app: os botões da barra de título, os links memoras://, o aviso de
+// computador bloqueado e as atualizações.
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('memorasWin', {
@@ -8,6 +9,8 @@ contextBridge.exposeInMainWorld('memorasWin', {
   onMaximized: cb => ipcRenderer.on('win-max', (_e, maximized) => cb(maximized)),
   // Links memoras:// recebidos pelo app (ver electron/main.cjs).
   onLink: cb => ipcRenderer.on('link', (_e, url) => cb(url)),
+  // Computador bloqueado ou em suspensão (true) e de volta (false), para o PIN.
+  onAway: cb => ipcRenderer.on('away', (_e, away) => cb(away)),
   // Atualizações: andamento, procurar agora e reiniciar para instalar.
   update: {
     get: () => ipcRenderer.invoke('upd-get'),

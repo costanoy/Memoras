@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { normCode, verifySecret } from '../lib/crypto';
-import { go, set, setCfg, startCreatePin, toast, useApp } from '../store';
+import { go, isLocked, set, setCfg, startCreatePin, toast, useApp } from '../store';
 import { friendly, reopenWithKey, sendReset, setNewPassword, startFresh, verifyAccount } from '../sync';
 
 const CTA = ['Enviar link de redefinição', 'Salvar nova senha', 'Reabrir anotações', 'Ir para o diário'];
 
 export function Forgot() {
   const s = useApp(), step = s.fStep;
-  const [email, setEmail] = useState(s.fEmail);
+  // Vindo do "Esqueci o PIN", com o app travado: só a senha da conta deste aparelho.
+  const locked = isLocked(), fixed = locked ? s.cfg.account?.email ?? null : null;
+  const [typed, setEmail] = useState(s.fEmail);
+  const email = fixed ?? typed;
   const [pass, setPass] = useState('');
   const [key, setKey] = useState('');
   const [noKey, setNoKey] = useState(false);
@@ -45,7 +48,7 @@ export function Forgot() {
             <span><strong>1. Nova senha:</strong> para voltar a entrar na conta.</span>
             <span><strong>2. Chave de recuperação:</strong> para reabrir suas anotações. A senha nova sozinha não abre o diário.</span>
           </div>
-          <input className="field" type="email" autoComplete="email" aria-label="Seu email" placeholder="Seu email" value={email} onChange={e => { setEmail(e.target.value); setErr(''); setSent(false); }} />
+          <input className="field" type="email" autoComplete="email" aria-label="Seu email" placeholder="Seu email" value={email} readOnly={!!fixed} onChange={e => { setEmail(e.target.value); setErr(''); setSent(false); }} />
           {sent && <div className="small" role="status">Enviamos um link para {s.fEmail}. Abra o link neste aparelho para continuar.</div>}
         </>}
         {step === 2 && <>
@@ -68,7 +71,9 @@ export function Forgot() {
         </>}
         {err && <div className="err" role="alert">{err}</div>}
         <button className={'gel' + (busy ? ' off' : '')} onClick={next}>{step === 3 && noKey ? 'Começar diário novo' : CTA[step - 1]}</button>
-        <button className="link" style={{ alignSelf: 'center', padding: 6 }} onClick={() => go('auth', { authMode: 'login', fStep: 1 })}>Voltar para o login</button>
+        {locked
+          ? <button className="link" style={{ alignSelf: 'center', padding: 6 }} onClick={() => go('forgotPin', { fStep: 1 })}>Voltar</button>
+          : <button className="link" style={{ alignSelf: 'center', padding: 6 }} onClick={() => go('auth', { authMode: 'login', fStep: 1 })}>Voltar para o login</button>}
       </div>
     </div>
   );
@@ -93,8 +98,8 @@ export function ForgotPin() {
       const ok = acc ? await verifyAccount(email, pass) : await verifySecret(normCode(key), s.cfg.pinKeySalt, s.cfg.pinKeyHash);
       if (!ok) return setErr(acc ? 'Email ou senha incorretos.' : 'Chave não confere. Confira e tente de novo.');
       setPass('');
-      setCfg({ lockUntil: 0, pinFails: 0 });
-      set({ unlocked: true, pinError: false, pinMsg: '' });
+      setCfg({ lockUntil: 0, pinFails: 0, pinLocks: 0 });
+      set({ unlocked: true, pinError: false, pinMsg: '', resume: null });
       setDone(true);
     } catch (x) { setErr(friendly(x)); }
     finally { setBusy(false); }

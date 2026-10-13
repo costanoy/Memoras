@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, net, powerMonitor, protocol, session, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -49,7 +49,7 @@ function createWindow() {
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, 'preload.cjs') },
   });
   win.webContents.setWindowOpenHandler(({ url }) => { external(url); return { action: 'deny' }; });
-  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(ORIGIN)) { e.preventDefault(); external(url); } });
+  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(ORIGIN + '/')) { e.preventDefault(); external(url); } });
   win.webContents.on('context-menu', (_e, p) => {
     const items = contextMenu(p);
     if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
@@ -116,6 +116,19 @@ else {
       return net.fetch(pathToFileURL(file).toString());
     });
     Menu.setApplicationMenu(null);
+    // O app não usa câmera, microfone, localização nem notificações, e o Electron liberaria tudo
+    // sem perguntar. Ficam: guardar as anotações sem o sistema apagar quando falta espaço
+    // (persistent-storage), copiar as chaves e abrir o app de email.
+    // (O Electron chama a cópia de "clipboard-read" quando ela não vem direto de um clique.)
+    const ALLOWED = ['persistent-storage', 'clipboard-sanitized-write', 'clipboard-read'];
+    const allowed = (perm, url) => ALLOWED.includes(perm) || (perm === 'openExternal' && /^mailto:/i.test(url ?? ''));
+    session.defaultSession.setPermissionRequestHandler((_wc, perm, cb, details) => cb(allowed(perm, details?.externalURL)));
+    // Computador bloqueado ou em suspensão conta como app fora da tela: com PIN, depois de 1 minuto ele trava.
+    const away = v => win?.webContents.send('away', v);
+    powerMonitor.on('lock-screen', () => away(true));
+    powerMonitor.on('suspend', () => away(true));
+    powerMonitor.on('unlock-screen', () => away(false));
+    powerMonitor.on('resume', () => away(false));
     createWindow();
 
     // Procura versão nova ao abrir e a cada 4 horas. Se a pessoa não reiniciar pelo botão,

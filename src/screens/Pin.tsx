@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { flashKey, get, go, pressKey, set, setCfg, useApp } from '../store';
+import { fixLockClock, flashKey, go, lockLeft, pressKey, set, setCfg, useApp } from '../store';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
 export function Pin() {
   const s = useApp();
   const [, tick] = useState(0);
-  const locked = s.cfg.lockUntil > Date.now();
+  const left = lockLeft(), locked = left > 0;
 
   useEffect(() => {
+    fixLockClock();
     if (!locked) return;
     const iv = setInterval(() => {
-      if (get().cfg.lockUntil <= Date.now()) { setCfg({ lockUntil: 0 }); set({ pinError: false, pinMsg: '' }); }
+      fixLockClock();
+      if (lockLeft() <= 0) { setCfg({ lockUntil: 0 }); set({ pinError: false, pinMsg: '' }); }
       tick(x => x + 1);
     }, 500);
     return () => clearInterval(iv);
@@ -28,7 +30,8 @@ export function Pin() {
   }, []);
 
   const title = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'verify' ? 'Digite o PIN atual' : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
-  const msg = locked ? 'Muitas tentativas. Tente de novo em ' + Math.ceil((s.cfg.lockUntil - Date.now()) / 1000) + ' s.' : s.pinMsg;
+  const wait = left > 60000 ? Math.ceil(left / 60000) + ' min' : Math.ceil(left / 1000) + ' s';
+  const msg = locked ? 'Muitas tentativas. Tente de novo em ' + wait + '.' : s.pinMsg;
 
   return (
     <div className="flow">

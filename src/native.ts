@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { finishDoc, get, go, HOME, set } from './store';
+import { appAway, appBack, finishDoc, get, go, HOME, isLocked, set } from './store';
 
 export const isNative = Capacitor.isNativePlatform();
 
@@ -41,7 +41,8 @@ export function setupBackButton() {
       case 'search': case 'archive': case 'settings': return go(HOME[s.section]);
       case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : undefined;
       case 'auth': return s.authReturn === 'onboard' ? go('onboard', { onStep: 3 }) : go('settings');
-      case 'forgot': return go('auth', { authMode: 'login', fStep: 1 });
+      // Com o app travado, o "Esqueci minha senha" veio do "Esqueci o PIN" e volta para ele, nunca para o login.
+      case 'forgot': return isLocked() ? go('forgotPin', { fStep: 1 }) : go('auth', { authMode: 'login', fStep: 1 });
       case 'forgotPin': return go('pin', { pinMode: 'unlock', pin: '' });
       case 'pin':
         if (s.pinMode === 'unlock') return;
@@ -50,4 +51,12 @@ export function setupBackButton() {
       default: return;
     }
   });
+}
+
+// Saídas da tela que o navegador não conta como "página escondida": o celular avisa quando o app
+// vai para segundo plano; o Windows, quando o computador bloqueia ou entra em suspensão.
+// Com PIN, mais de 1 minuto fora trava o app de novo (ver relock em store.ts).
+export function watchAway() {
+  if (isNative) void App.addListener('appStateChange', ({ isActive }) => isActive ? appBack() : appAway());
+  (window as unknown as { memorasWin?: { onAway?(cb: (away: boolean) => void): void } }).memorasWin?.onAway?.(away => away ? appAway() : appBack());
 }
