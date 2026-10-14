@@ -2,12 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { docPreview, docTitle, todayKey } from '../lib/items';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
 import {
-  activeSorted, archive, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
-  set, setCfg, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, tasksOn, toast, trash, trashedDocs, typeNew, useApp, type Section, type State,
+  activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
+  set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, tasksOn, toast, trashedDocs, typeNew, useApp, type Section, type State,
 } from '../store';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { checkUpdate, installUpdate, useUpdate, type Upd } from '../updates';
-import { AutoArea, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
+import { paperStyle } from '../themes';
+import { AutoArea, ColorPick, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
 import { AgendaDay, agendaLabel, AgendaSide, focusNewTask } from './Agenda';
 import { DocsEmpty, DocsList, DocView } from './Docs';
 
@@ -106,7 +107,7 @@ function Side({ s }: { s: State }) {
             <div key={g.label} className="col" style={{ gap: 6 }}>
               <div className="group" style={{ padding: '0 8px' }}>{g.label}</div>
               {g.items.map(n => (
-                <button key={n.id} className={'item press' + (!s.mobile && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '')} onClick={() => openNote(n.id)}>
+                <button key={n.id} className={'item press' + (!s.mobile && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '')} style={paperStyle(n.color)} onClick={() => openNote(n.id)}>
                   <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{dispTitle(n)}</span><span className="meta">{fmtT(nd(n))}</span></span>
                   <span className="prev">{preview(n)}</span>
                 </button>
@@ -170,11 +171,12 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
         <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{date}</div>
         <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
       </div>
+      <ColorPick value={cur.color} onPick={c => setNoteColor(cur.id, c)} mobile={s.mobile} label="Cor da anotação" />
       <button className="pill press" aria-label={archLabel} onClick={() => archive(cur.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
-      <button className="pill press" aria-label="Mover para a lixeira" onClick={() => trash(cur.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
+      <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(cur.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
     </div>
     <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
-      <div className="sheet" ref={sheet} onClick={e => e.target === e.currentTarget && focusLast()}>
+      <div className="sheet" ref={sheet} style={paperStyle(cur.color)} onClick={e => e.target === e.currentTarget && focusLast()}>
         <input className="title" value={cur.title} placeholder="Título (opcional)" aria-label="Título" onChange={e => setTitle(cur.id, e.target.value)} />
         {/* O trecho novo nasce com o id que vai ter depois, para o cursor não sair do lugar. */}
         {[...segs, ...(needNew ? [null] : [])].map(g => g ? (
@@ -199,7 +201,7 @@ const plain = (body: string) => body.replace(/^\s*(#{1,3}|[-*•]|\d+[.)])\s+/gm
 
 function Search({ s }: { s: State }) {
   const q = s.query.trim(), nq = normMap(q).out;
-  const results: { key: string; title: string; meta: string; tag?: string; open: () => void; before: string; match: string; after: string }[] = [];
+  const results: { key: string; title: string; meta: string; tag?: string; color?: string; open: () => void; before: string; match: string; after: string }[] = [];
   const hit = (src: string) => {
     const m = normMap(src), idx = m.out.indexOf(nq);
     if (idx < 0) return null;
@@ -209,11 +211,11 @@ function Search({ s }: { s: State }) {
   if (nq) {
     live(s).filter(n => n.status !== 'trashed').sort((a, b) => nd(b) - nd(a)).forEach(n => {
       const r = hit([n.title, fullText(n)].filter(Boolean).join(' · '));
-      if (r) results.push({ key: n.id, title: dispTitle(n), meta: dayLabel(nd(n)), tag: n.status === 'archived' ? 'Arquivada' : undefined, open: () => openNote(n.id), ...r });
+      if (r) results.push({ key: n.id, title: dispTitle(n), meta: dayLabel(nd(n)), tag: n.status === 'archived' ? 'Arquivada' : undefined, color: n.color, open: () => openNote(n.id), ...r });
     });
     docsOf(s).forEach(d => {
       const r = hit([d.title, plain(d.body)].filter(Boolean).join(' · '));
-      if (r) results.push({ key: d.id, title: docTitle(d), meta: '', tag: 'Caderno', open: () => openDoc(d.id), ...r });
+      if (r) results.push({ key: d.id, title: docTitle(d), meta: '', tag: 'Caderno', color: d.color, open: () => openDoc(d.id), ...r });
     });
     [...plannedDays(s)].sort().reverse().forEach(k => {
       const r = hit([...tasksOn(s, k).map(t => t.text), ...dayNotesOn(s, k).map(n => n.text)].filter(Boolean).join(' · '));
@@ -233,7 +235,7 @@ function Search({ s }: { s: State }) {
     </div>
     <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
       {results.map(r => (
-        <button key={r.key} className="gcard press" style={{ gap: 4, padding: '14px 16px' }} onClick={r.open}>
+        <button key={r.key} className="gcard press" style={{ gap: 4, padding: '14px 16px', ...paperStyle(r.color) }} onClick={r.open}>
           <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{r.title}</span><span className="meta">{r.meta}</span></span>
           <span style={{ fontSize: 15, lineHeight: 1.5, color: 'var(--ink3)' }}>{r.before}<mark>{r.match}</mark>{r.after}</span>
           {r.tag && <span className="tag">{r.tag}</span>}
@@ -270,7 +272,7 @@ function Shelf({ s }: { s: State }) {
     </div>
     <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
       {rows.map(n => (
-        <div key={n.id} className="gcard" style={{ gap: 10, padding: '14px 16px' }}>
+        <div key={n.id} className="gcard" style={{ gap: 10, padding: '14px 16px', ...paperStyle(n.color) }}>
           <div className="col" style={{ gap: 3 }}>
             <span className="row" style={{ gap: 8, alignItems: 'baseline' }}><span className="ttl">{dispTitle(n)}</span><span className="meta">{dayLabel(nd(n))}</span></span>
             <span className="prev">{preview(n)}</span>
@@ -282,7 +284,7 @@ function Shelf({ s }: { s: State }) {
         </div>
       ))}
       {docRows.map(d => (
-        <div key={d.id} className="gcard" style={{ gap: 10, padding: '14px 16px' }}>
+        <div key={d.id} className="gcard" style={{ gap: 10, padding: '14px 16px', ...paperStyle(d.color) }}>
           <div className="col" style={{ gap: 3 }}>
             <span className="row" style={{ gap: 8, alignItems: 'baseline' }}><span className="ttl">{docTitle(d)}</span><span className="tag" style={{ alignSelf: 'center' }}>Caderno</span></span>
             <span className="prev">{docPreview(d.body) || 'Sem texto ainda'}</span>

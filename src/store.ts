@@ -40,7 +40,7 @@ export interface State {
   shelf: 'archive' | 'trash';
   calOpen: boolean; calY: number; calM: number; day: number | null;
   toast: { text: string; undo?: () => void } | null;
-  confirm: { id?: string; all?: boolean; reset?: boolean } | null;
+  confirm: { id?: string; all?: boolean; reset?: boolean; trash?: boolean } | null;
   pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
   pinReturn: 'history' | 'settings'; pressedKey: string | null; unlocking: boolean;
   resume: Screen | null;
@@ -231,6 +231,7 @@ export function typeNew(id: string, segId: string, text: string) {
 }
 export const setTitle = (id: string, title: string) => upd(id, n => { n.title = title; n.titleTs = Date.now(); });
 export const setStatus = (id: string, status: Status) => upd(id, n => { n.status = status; n.statusTs = Date.now(); });
+export const setNoteColor = (id: string, color: string) => upd(id, n => { n.color = color; n.colorTs = Date.now(); });
 
 function afterRemove(id: string) {
   const next = activeSorted(state).find(n => n.id !== id);
@@ -260,9 +261,17 @@ export function trash(id: string) {
   setStatus(id, 'trashed'); afterRemove(id); sfx('trash');
   toast('Movida para a lixeira', () => { setStatus(id, prev); set({ sel: id }); });
 }
+// Mandar para a lixeira pergunta antes (o "Desfazer" continua depois). Anotação ou caderno vazio some direto.
+export function askTrash(id: string) {
+  const n = state.notes.find(x => x.id === id), d = state.items.find(i => i.id === id && i.kind === 'doc');
+  if (n && isEmpty(n)) return trash(id);
+  if (d && isBlankItem(d)) return trashDoc(id);
+  set({ confirm: { id, trash: true } });
+}
 export function confirmDo() {
   const c = state.confirm; if (!c) return;
   if (c.reset) { void resetDiary(); return; }
+  if (c.trash && c.id) { set({ confirm: null }); if (state.items.some(i => i.id === c.id)) trashDoc(c.id); else trash(c.id); return; }
   const isDoc = !c.all && state.items.some(i => i.id === c.id);
   if (c.all || !isDoc) drop(c.all ? live(state).filter(n => n.status === 'trashed').map(n => n.id) : [c.id!]);
   (c.all ? trashedDocs(state).map(d => d.id) : isDoc ? [c.id!] : []).forEach(dropItem);
@@ -308,6 +317,7 @@ export function finishDoc() {
 export const setDocTitle = (id: string, title: string) => updItem<Doc>(id, d => { d.title = title; d.titleTs = Date.now(); });
 export const setDocBody = (id: string, body: string) => updItem<Doc>(id, d => { d.body = body; d.bodyTs = Date.now(); });
 const setDocStatus = (id: string, status: Doc['status']) => updItem<Doc>(id, d => { d.status = status; d.statusTs = Date.now(); });
+export const setDocColor = (id: string, color: string) => updItem<Doc>(id, d => { d.color = color; d.colorTs = Date.now(); });
 export function trashDoc(id: string) {
   const d = state.items.find(i => i.id === id); if (!d || d.kind !== 'doc') return;
   const next = docsOf(state).find(x => x.id !== id);
@@ -326,6 +336,16 @@ export function openDay(date: string) {
 }
 export function addTask(date: string, text: string) {
   if (text.trim()) addItem(blankTask(uid(), date, text.trim()));
+}
+// Enter numa tarefa abre uma linha nova logo abaixo, já com a caixinha. Vazia, ela some ao sair dela.
+export function insertTaskAfter(id: string) {
+  const t = state.items.find(i => i.id === id);
+  if (!t || t.kind !== 'task') return null;
+  const list = tasksOn(state, t.date), next = list[list.findIndex(x => x.id === id) + 1];
+  const n = blankTask(uid(), t.date, '');
+  if (next) n.order = (t.order + next.order) / 2;
+  addItem(n);
+  return n.id;
 }
 export const setTaskText = (id: string, text: string) => updItem<Task>(id, t => { t.text = text; t.textTs = Date.now(); });
 export const toggleTask = (id: string) => updItem<Task>(id, t => { t.done = !t.done; t.doneTs = Date.now(); });
@@ -484,14 +504,15 @@ export async function init() {
   await snapshotOnUpgrade(lastVersion, saved, stored, storedItems);
   const cfg: Cfg = { ...defaultCfg, ...saved };
   if (!THEMES[cfg.theme]) cfg.theme = 'turquesa';
+  // Anotações e cadernos gravados antes da cor por item chegam sem ela: "sem cor".
   const notes = stored.filter(n => {
     if (n.deleted || !isEmpty(n) || n.status !== 'active' || n.pushed) return true;
     void noteDel(n.id); return false;
-  });
+  }).map(n => ({ ...n, color: n.color ?? '', colorTs: n.colorTs ?? 0 }));
   const items = storedItems.filter(i => {
     if (i.deleted || i.kind === 'daynote' || !isBlankItem(i) || i.pushed) return true;
     void itemDel(i.id); return false;
-  });
+  }).map(i => i.kind === 'doc' ? { ...i, color: i.color ?? '', colorTs: i.colorTs ?? 0 } : i);
   applyTheme(cfg.theme);
   set({ cfg, notes, items });
   const first = activeSorted(state)[0];

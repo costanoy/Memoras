@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { addDays, dayKey, keyTime, todayKey, type Task } from '../lib/items';
 import { dayLabel, dayMonth, uid } from '../lib/notes';
-import { addTask, dayNotesOn, deleteTask, moveTask, openDay, plannedDays, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
+import { addTask, dayNotesOn, deleteTask, get, insertTaskAfter, moveTask, openDay, plannedDays, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
 import { AutoArea, Icon, MonthCal } from '../ui';
 
 // "Hoje", "Amanhã", "Ontem" ou o dia da semana com a data.
@@ -14,6 +14,8 @@ const fullLabel = (k: string) => { const l = agendaLabel(k); return l === 'Hoje'
 // O + do celular pede o campo de tarefa nova já com o cursor.
 let wantFocus = false;
 export const focusNewTask = () => { wantFocus = true; };
+// Tarefa que recebe o cursor quando aparecer na tela (Enter cria uma logo abaixo; apagar volta para a de cima).
+let focusTaskId: string | null = null;
 
 function AgendaCal({ s }: { s: State }) {
   const planned = plannedDays(s);
@@ -45,26 +47,50 @@ export function AgendaSide({ s }: { s: State }) {
 
 function TaskRow({ t, k }: { t: Task; k: string }) {
   const toToday = k === todayKey();
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (focusTaskId !== t.id) return;
+    focusTaskId = null;
+    const el = ref.current;
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  });
+  // Enter: linha nova logo abaixo, com a caixinha. Enter numa linha vazia vai para "Adicionar tarefa".
+  // Apagar numa linha vazia tira a linha e volta para a de cima.
+  const keys = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!t.text.trim()) { wantFocus = true; deleteTask(t.id); return; }
+      const id = insertTaskAfter(t.id);
+      if (id) focusTaskId = id;
+    } else if (e.key === 'Backspace' && !t.text) {
+      e.preventDefault();
+      const list = tasksOn(get(), k), prev = list[list.findIndex(x => x.id === t.id) - 1];
+      if (prev) focusTaskId = prev.id; else wantFocus = true;
+      deleteTask(t.id);
+    }
+  };
   return (
     <div className={'task' + (t.done ? ' done' : '')}>
       <button className={'tick press' + (t.done ? ' on' : '')} role="checkbox" aria-checked={t.done} aria-label={t.done ? 'Desmarcar ' + t.text : 'Marcar ' + t.text + ' como feita'} onClick={() => toggleTask(t.id)}><i>{t.done ? '✓' : ''}</i></button>
-      <input className="tasktext" value={t.text} aria-label="Tarefa" onChange={e => setTaskText(t.id, e.target.value)} onBlur={() => { if (!t.text.trim()) deleteTask(t.id); }} />
+      <input ref={ref} className="tasktext" value={t.text} aria-label="Tarefa" onChange={e => setTaskText(t.id, e.target.value)} onKeyDown={keys} onBlur={() => { if (!t.text.trim()) deleteTask(t.id); }} />
       {!t.done && <button className="mini press" title={toToday ? 'Passar para amanhã' : 'Passar para o dia seguinte'} onClick={() => moveTask(t.id, addDays(k, 1))}>{toToday ? 'Amanhã' : 'Dia seguinte'}</button>}
       <button className="mini x press" aria-label={'Apagar ' + t.text} onClick={() => deleteTask(t.id)}>×</button>
     </div>
   );
 }
 
+// Linha para a próxima tarefa: enquanto se escreve nela, o + vira uma caixinha vazia.
 function NewTask({ k }: { k: string }) {
-  const [v, setV] = useState('');
+  const [v, setV] = useState(''), [on, setOn] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { if (wantFocus) { wantFocus = false; ref.current?.focus(); } });
   const add = () => { if (v.trim()) { addTask(k, v); setV(''); } };
   return (
     <div className="task add">
-      <span className="tick ghost" aria-hidden="true"><Icon name="plus" size={14} sw={3} /></span>
+      <span className="tick ghost" aria-hidden="true">{!on && !v && <Icon name="plus" size={14} sw={3} />}</span>
       <input ref={ref} className="tasktext" value={v} placeholder="Adicionar tarefa" aria-label="Adicionar tarefa" onChange={e => setV(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} onBlur={add} />
+        onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} onFocus={() => setOn(true)} onBlur={() => { setOn(false); add(); }} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { Shell } from './screens/Shell';
 import { TitleBar } from './TitleBar';
 
 export function App() {
-  const s = useApp(), scr = s.screen, c = s.confirm;
+  const s = useApp(), scr = s.screen, c = s.confirm, isDoc = !!c?.id && s.items.some(i => i.id === c.id);
   // Esc fecha a confirmação de apagar, como o Cancelar.
   useEffect(() => {
     if (!c) return;
@@ -41,11 +41,11 @@ export function App() {
       {c && (
         <div className="modal" role="dialog" aria-modal="true">
           <div>
-            <div style={{ fontSize: 22, fontWeight: 700 }}>{c.reset ? 'Apagar todo o diário deste aparelho?' : c.all ? 'Esvaziar a lixeira?' : 'Apagar para sempre?'}</div>
-            <div className="p" style={{ color: 'var(--ink3)' }}>{c.reset ? 'Isso não pode ser desfeito.' : 'Isso não pode ser desfeito, nem em outros aparelhos.'}</div>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{c.trash ? (isDoc ? 'Mover o caderno para a lixeira?' : 'Mover a anotação para a lixeira?') : c.reset ? 'Apagar todo o diário deste aparelho?' : c.all ? 'Esvaziar a lixeira?' : 'Apagar para sempre?'}</div>
+            <div className="p" style={{ color: 'var(--ink3)' }}>{c.trash ? (isDoc ? 'Ele fica na Lixeira e pode ser restaurado.' : 'Ela fica na Lixeira e pode ser restaurada.') : c.reset ? 'Isso não pode ser desfeito.' : 'Isso não pode ser desfeito, nem em outros aparelhos.'}</div>
             <div className="row" style={{ gap: 10, marginTop: 6 }}>
               <button className="soft press" style={{ flex: 1, height: 48, fontSize: 16 }} autoFocus onClick={() => set({ confirm: null })}>Cancelar</button>
-              <button className="gel red" style={{ flex: 1, height: 48, fontSize: 16, padding: 0 }} onClick={confirmDo}>Apagar</button>
+              <button className="gel red" style={{ flex: 1, height: 48, fontSize: 16, padding: 0 }} onClick={confirmDo}>{c.trash ? 'Mover' : 'Apagar'}</button>
             </div>
           </div>
         </div>

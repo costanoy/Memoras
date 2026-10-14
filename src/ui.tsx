@@ -1,16 +1,61 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { monthYear, same } from './lib/notes';
 import { setPrefs, useApp } from './store';
-import { THEME_META } from './themes';
+import { PAPERS, THEME_META } from './themes';
 export { Icon } from './icons';
 
+// Botão "Cor" da anotação ou do caderno: mostra a cor atual e abre as amostras.
+export function ColorPick({ value, onPick, mobile, label }: { value: string; onPick: (c: string) => void; mobile: boolean; label: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const out = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('pointerdown', out); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', out); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  const cur = PAPERS.find(p => p[0] === value) ?? PAPERS[0];
+  return (
+    <div ref={ref} className="colorpick">
+      <button className="pill press" aria-label={label} aria-expanded={open} title={label} onClick={() => setOpen(!open)}>
+        <span className="cdot" style={{ background: cur[0] ? cur[3] : '#fff' }} />{!mobile && 'Cor'}
+      </button>
+      {open && (
+        <div className="colorpop" role="group" aria-label={label}>
+          {PAPERS.map(([k, name, , sw]) => (
+            <button key={k || 'sem'} className={'cswatch press' + (k === value ? ' on' : '')} aria-label={name} aria-pressed={k === value} title={name}
+              style={{ background: sw }} onClick={() => { onPick(k); setOpen(false); }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Campo de texto que cresce com o conteúdo (trechos do diário, cadernos, observações).
-export function AutoArea({ value, placeholder, onChange, className = 'segtext', label }: { value: string; placeholder: string; onChange: (v: string) => void; className?: string; label?: string }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  const fit = () => { const el = ref.current; if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } };
+// Onde o navegador sabe crescer sozinho (field-sizing), ele cuida disso. Nos outros, o campo é
+// medido a cada letra: para medir, ele encolhe por um instante e a tela perdia a rolagem (voltava
+// ao topo e corria atrás do cursor). Por isso a rolagem de quem contém o campo é guardada e devolvida.
+const NATIVE_GROW = typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content');
+export function scrollerOf(el: HTMLElement | null) {
+  for (let p = el?.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if (o === 'auto' || o === 'scroll') return p; }
+  return null;
+}
+export function fitArea(el: HTMLTextAreaElement) {
+  const sc = scrollerOf(el), top = sc?.scrollTop ?? 0;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+  if (sc && sc.scrollTop !== top) sc.scrollTop = top;
+}
+export function AutoArea({ value, placeholder, onChange, className = 'segtext', label, areaRef }: {
+  value: string; placeholder: string; onChange: (v: string) => void; className?: string; label?: string; areaRef?: RefObject<HTMLTextAreaElement | null>;
+}) {
+  const own = useRef<HTMLTextAreaElement>(null), ref = areaRef ?? own;
+  const fit = () => { if (!NATIVE_GROW && ref.current) fitArea(ref.current); };
   useLayoutEffect(fit, [value]);
   useEffect(() => { window.addEventListener('resize', fit); return () => window.removeEventListener('resize', fit); }, []);
-  return <textarea ref={ref} className={className} rows={1} value={value} placeholder={placeholder} aria-label={label} onChange={e => onChange(e.target.value)} />;
+  return <textarea ref={ref} className={className + (NATIVE_GROW ? ' grow' : '')} rows={1} value={value} placeholder={placeholder} aria-label={label} onChange={e => onChange(e.target.value)} />;
 }
 
 // Calendário do mês. "all": qualquer dia pode ser escolhido (agenda); sem ele, só os marcados (diário).

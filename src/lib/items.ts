@@ -9,6 +9,7 @@ export interface DocContent {
   kind: 'doc'; created: number; deleted: boolean;
   title: string; titleTs: number; body: string; bodyTs: number;
   status: 'active' | 'trashed'; statusTs: number;
+  color: string; colorTs: number;   // cor do papel ('' = sem cor); a 1.1.0 e a 1.1.1 não conhecem
 }
 export interface TaskContent {
   kind: 'task'; created: number; deleted: boolean;
@@ -33,7 +34,7 @@ const fresh = { rev: 0, syncedRev: -1, pushed: false };
 let lastOrder = 0;
 export const nextOrder = () => (lastOrder = Math.max(Date.now(), lastOrder + 1));
 export const blankDoc = (id: string): Doc => ({
-  id, kind: 'doc', created: Date.now(), deleted: false, title: '', titleTs: 0, body: '', bodyTs: 0, status: 'active', statusTs: 0, base: null, ...fresh,
+  id, kind: 'doc', created: Date.now(), deleted: false, title: '', titleTs: 0, body: '', bodyTs: 0, status: 'active', statusTs: 0, color: '', colorTs: 0, base: null, ...fresh,
 });
 export const blankTask = (id: string, date: string, text: string): Task => {
   const t = Date.now();
@@ -44,7 +45,10 @@ export const blankDayNote = (id: string, date: string): DayNote => ({
 });
 
 export function itemContent(i: ItemContent): ItemContent {
-  if (i.kind === 'doc') return { kind: 'doc', created: i.created, deleted: i.deleted, title: i.title, titleTs: i.titleTs, body: i.body, bodyTs: i.bodyTs, status: i.status, statusTs: i.statusTs };
+  if (i.kind === 'doc') return {
+    kind: 'doc', created: i.created, deleted: i.deleted, title: i.title, titleTs: i.titleTs, body: i.body, bodyTs: i.bodyTs, status: i.status, statusTs: i.statusTs,
+    color: typeof i.color === 'string' ? i.color : '', colorTs: typeof i.colorTs === 'number' ? i.colorTs : 0,
+  };
   if (i.kind === 'task') return { kind: 'task', created: i.created, deleted: i.deleted, date: i.date, dateTs: i.dateTs, text: i.text, textTs: i.textTs, done: i.done, doneTs: i.doneTs, order: i.order, orderTs: i.orderTs };
   return { kind: 'daynote', created: i.created, deleted: i.deleted, date: i.date, text: i.text, textTs: i.textTs };
 }
@@ -93,7 +97,8 @@ export function mergeItem(l: Item, r: ItemContent): { merged: ItemContent; copy?
   if (l.kind === 'doc' && r.kind === 'doc') {
     const [title, titleTs] = pick(l.title, l.titleTs, r.title, r.titleTs);
     const [status, statusTs] = pick(l.status, l.statusTs, r.status, r.statusTs);
-    return { merged: { kind: 'doc', created, deleted: false, title, titleTs, body: text, bodyTs: textTs, status, statusTs }, copy };
+    const lc = itemContent(l) as DocContent, rc = itemContent(r) as DocContent, [color, colorTs] = pick(lc.color, lc.colorTs, rc.color, rc.colorTs);
+    return { merged: { kind: 'doc', created, deleted: false, title, titleTs, body: text, bodyTs: textTs, status, statusTs, color, colorTs }, copy };
   }
   return { merged: { kind: 'daynote', created, deleted: false, date: (l as DayNote).date, text, textTs }, copy };
 }
@@ -106,22 +111,26 @@ export const addDays = (k: string, n: number) => { const [y, m, d] = k.split('-'
 export const todayKey = () => dayKey(Date.now());
 
 // Documento com títulos (#) e listas (- ou 1.). O resto é parágrafo.
-export type Block = { t: 'h1' | 'h2' | 'p' | 'ul' | 'ol'; lines: string[] };
+// src: de que linha do texto veio cada linha mostrada (para o toque duplo levar o cursor até ela).
+export type Block = { t: 'h1' | 'h2' | 'p' | 'ul' | 'ol'; lines: string[]; src: number[] };
 export function parseDoc(body: string): Block[] {
   const out: Block[] = [];
   let cur: Block | null = null;
-  for (const raw of body.split('\n')) {
+  body.split('\n').forEach((raw, n) => {
     const line = raw.trimEnd();
     let m: RegExpExecArray | null;
-    if (!line.trim()) { cur = null; continue; }
-    if ((m = /^\s*(#{1,3})\s+(.*)$/.exec(line))) { out.push({ t: m[1].length === 1 ? 'h1' : 'h2', lines: [m[2]] }); cur = null; continue; }
+    if (!line.trim()) { cur = null; return; }
+    if ((m = /^\s*(#{1,3})\s+(.*)$/.exec(line))) { out.push({ t: m[1].length === 1 ? 'h1' : 'h2', lines: [m[2]], src: [n] }); cur = null; return; }
     const li = /^\s*[-*•]\s+(.*)$/.exec(line), ol = /^\s*\d+[.)]\s+(.*)$/.exec(line);
     const t = li ? 'ul' : ol ? 'ol' : 'p', text = li ? li[1] : ol ? ol[1] : line.trim();
-    if (!cur || cur.t !== t) out.push(cur = { t, lines: [] });
-    cur.lines.push(text);
-  }
+    if (!cur || cur.t !== t) out.push(cur = { t, lines: [], src: [] });
+    cur.lines.push(text); cur.src.push(n);
+  });
   return out;
 }
+// Onde começa cada linha no texto e quantos caracteres de marca (#, -, 1.) vêm antes do que aparece na leitura.
+export const lineStarts = (body: string) => { const out: number[] = []; let at = 0; for (const l of body.split('\n')) { out.push(at); at += l.length + 1; } return out; };
+export const markLen = (line: string) => /^\s*(#{1,3}\s+|[-*•]\s+|\d+[.)]\s+)/.exec(line)?.[0].length ?? line.length - line.trimStart().length;
 export const docPreview = (body: string) => parseDoc(body).filter(b => b.t !== 'h1' && b.t !== 'h2').map(b => b.lines.join(b.t === 'p' ? ' ' : ' · ')).join(' · ').slice(0, 160);
 export const docTitle = (d: { title: string; body: string }) => d.title.trim() || parseDoc(d.body).find(b => b.t === 'h1' || b.t === 'h2')?.lines[0] || 'Sem título';
 export const isBlankItem = (i: Item) => i.kind === 'doc' ? !i.title.trim() && !i.body.trim() : !i.text.trim();

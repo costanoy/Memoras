@@ -25,10 +25,10 @@ const sendLink = link => {
   else win.webContents.send('link', link);
 };
 
-// Menu do botão direito com corretor, recortar, copiar e colar (o Electron não traz um pronto).
+// Menu do botão direito com recortar, copiar e colar (o Electron não traz um pronto).
+// Sem corretor: o sublinhado de ortografia atrapalhava a leitura do diário.
 function contextMenu(p) {
-  const items = p.dictionarySuggestions.slice(0, 4).map(w => ({ label: w, click: () => win?.webContents.replaceMisspelling(w) }));
-  if (p.misspelledWord) items.push({ label: 'Adicionar ao dicionário', click: () => win?.webContents.session.addWordToSpellCheckerDictionary(p.misspelledWord) }, { type: 'separator' });
+  const items = [];
   if (p.isEditable) {
     const f = p.editFlags;
     items.push(
@@ -46,7 +46,7 @@ function createWindow() {
     width: 1180, height: 800, minWidth: 360, minHeight: 520, frame: false,
     backgroundColor: '#1fd0c8', autoHideMenuBar: true, title: 'Memoras',
     icon: path.join(ROOT, 'icon-512.png'),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, 'preload.cjs') },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, preload: path.join(__dirname, 'preload.cjs') },
   });
   win.webContents.setWindowOpenHandler(({ url }) => { external(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(ORIGIN + '/')) { e.preventDefault(); external(url); } });

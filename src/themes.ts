@@ -29,6 +29,23 @@ export const THEME_META: [ThemeKey, string, string][] = [
   ['noite', 'Noite', 'radial-gradient(70% 50% at 30% 10%, rgba(80,255,180,.6), rgba(80,255,180,0) 70%), linear-gradient(165deg,#081634,#1c1f5a)'],
 ];
 
+// Cor de cada anotação ou caderno: tons claros de papel, legíveis com qualquer tema do app.
+// [chave, nome, papel, amostra]. A chave vazia é o papel normal. Chave desconhecida (de uma
+// versão futura) aparece como papel normal, mas continua guardada.
+export const PAPERS: [string, string, string, string][] = [
+  ['', 'Sem cor', '', 'linear-gradient(135deg,#fff 44%,#e0606a 44% 56%,#fff 56%)'],
+  ['amarelo', 'Amarelo', 'linear-gradient(180deg,#fffbe6,#fff0bf)', '#ffd84a'],
+  ['laranja', 'Laranja', 'linear-gradient(180deg,#fff5e9,#ffe1c2)', '#ffa64d'],
+  ['vermelho', 'Vermelho', 'linear-gradient(180deg,#fff1f1,#ffd8d8)', '#f2656a'],
+  ['rosa', 'Rosa', 'linear-gradient(180deg,#fff3f9,#ffd9ec)', '#ff7fbd'],
+  ['roxo', 'Roxo', 'linear-gradient(180deg,#f7f2ff,#e6daff)', '#a47dff'],
+  ['azul', 'Azul', 'linear-gradient(180deg,#f0f7ff,#d8eaff)', '#4ea2ff'],
+  ['turquesa', 'Turquesa', 'linear-gradient(180deg,#eefcfb,#cff3ef)', '#25cbc2'],
+  ['verde', 'Verde', 'linear-gradient(180deg,#f1fbed,#d8f2cd)', '#5ccc68'],
+];
+export const paperOf = (k: string | undefined) => (k && PAPERS.find(p => p[0] === k)?.[2]) || '';
+export const paperStyle = (k: string | undefined) => { const p = paperOf(k); return p ? { background: p } : undefined; };
+
 const THEME_KEYS = ['--gel-fg', '--glass', '--glass2', '--bg', '--gel', '--acc', '--acc-d', '--acc-dd', '--ring', '--acc-a', '--gel-bd', '--gel-sh', '--gel-ts', '--ink', '--ink2', '--ink3', '--ink4', '--base', '--lock'];
 
 export function applyTheme(k: ThemeKey) {

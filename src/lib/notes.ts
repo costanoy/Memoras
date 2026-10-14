@@ -9,6 +9,7 @@ export interface NoteContent {
   created: number;
   title: string; titleTs: number;
   status: Status; statusTs: number;
+  color: string; colorTs: number;   // cor do papel ('' = sem cor); versões até a 1.1.1 não conhecem
   last: number;
   segs: Seg[];
   deleted: boolean;
@@ -23,12 +24,14 @@ export interface Note extends NoteContent {
 export const uid = () => crypto.randomUUID();
 
 export const blank = (id: string): Note => ({
-  id, created: Date.now(), title: '', titleTs: 0, status: 'active', statusTs: 0, last: 0, segs: [], deleted: false,
+  id, created: Date.now(), title: '', titleTs: 0, status: 'active', statusTs: 0, color: '', colorTs: 0, last: 0, segs: [], deleted: false,
   rev: 0, syncedRev: -1, pushed: false,
 });
 
+// Anotação gravada por versões antigas chega sem cor: vale "sem cor".
 export const content = (n: NoteContent): NoteContent => ({
-  created: n.created, title: n.title, titleTs: n.titleTs, status: n.status, statusTs: n.statusTs, last: n.last,
+  created: n.created, title: n.title, titleTs: n.titleTs, status: n.status, statusTs: n.statusTs,
+  color: typeof n.color === 'string' ? n.color : '', colorTs: typeof n.colorTs === 'number' ? n.colorTs : 0, last: n.last,
   segs: n.segs.map(s => ({ id: s.id, t: s.t, text: s.text, ts: s.ts })), deleted: n.deleted,
 });
 
@@ -36,13 +39,14 @@ export const tombstone = (n: Note): Note => ({ ...n, title: '', segs: [], delete
 
 export function merge(a: NoteContent, b: NoteContent): NoteContent {
   const created = Math.min(a.created, b.created);
-  if (a.deleted || b.deleted) return { created, title: '', titleTs: Math.max(a.titleTs, b.titleTs), status: 'trashed', statusTs: Math.max(a.statusTs, b.statusTs), last: Math.max(a.last, b.last), segs: [], deleted: true };
+  if (a.deleted || b.deleted) return { created, title: '', titleTs: Math.max(a.titleTs, b.titleTs), status: 'trashed', statusTs: Math.max(a.statusTs, b.statusTs), color: '', colorTs: Math.max(a.colorTs, b.colorTs), last: Math.max(a.last, b.last), segs: [], deleted: true };
   const segs = new Map<string, Seg>();
   for (const s of [...a.segs, ...b.segs]) { const o = segs.get(s.id); if (!o || s.ts > o.ts || (s.ts === o.ts && s.text > o.text)) segs.set(s.id, s); }
   const t = a.titleTs > b.titleTs || (a.titleTs === b.titleTs && a.title >= b.title) ? a : b;
   const st = a.statusTs > b.statusTs || (a.statusTs === b.statusTs && a.status >= b.status) ? a : b;
+  const c = a.colorTs > b.colorTs || (a.colorTs === b.colorTs && a.color >= b.color) ? a : b;
   return {
-    created, title: t.title, titleTs: t.titleTs, status: st.status, statusTs: st.statusTs, last: Math.max(a.last, b.last),
+    created, title: t.title, titleTs: t.titleTs, status: st.status, statusTs: st.statusTs, color: c.color, colorTs: c.colorTs, last: Math.max(a.last, b.last),
     segs: [...segs.values()].sort((x, y) => x.t - y.t || (x.id < y.id ? -1 : 1)), deleted: false,
   };
 }
