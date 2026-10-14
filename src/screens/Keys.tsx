@@ -24,13 +24,19 @@ function Kept({ on, toggle }: { on: boolean; toggle: () => void }) {
   return <button className={'check press' + (on ? ' on' : '')} aria-pressed={on} onClick={toggle}><i>{on ? '✓' : ''}</i>Guardei minha chave</button>;
 }
 
+// Email de quem tem a conta, com o @ escrito normalmente: codificado (%40), alguns apps de email
+// não entendem e deixam o destinatário vazio ou errado.
+const mailTo = (email: string) => encodeURIComponent(email.trim()).replace(/%40/g, '@').replace(/%2B/gi, '+');
+
 export function Recovery() {
-  const s = useApp(), key = s.shownKey;
+  const s = useApp(), key = s.shownKey, email = s.cfg.account?.email ?? '';
   const [emailed, setEmailed] = useState(false);
   const [kept, setKept] = useState(false);
+  // O app de email abre já com o endereço da conta, o assunto e a chave: a chave sai deste aparelho
+  // direto para a caixa de email da pessoa, sem passar pelo servidor do Memoras.
   const mail = () => {
     setEmailed(true);
-    openExternal('mailto:' + encodeURIComponent(s.cfg.account?.email ?? '') + '?subject=' + encodeURIComponent('Chave de recuperação do Memoras')
+    openExternal('mailto:' + mailTo(email) + '?subject=' + encodeURIComponent('Chave de recuperação do Memoras')
       + '&body=' + encodeURIComponent('Minha chave de recuperação do Memoras:\n\n' + key + '\n\nGuarde este email. Quem tiver esta chave pode reabrir o diário.'));
   };
   const done = () => {
@@ -50,6 +56,7 @@ export function Recovery() {
           {emailed ? 'Email aberto' : 'Enviar para meu email'}
           <span style={{ fontSize: 12, letterSpacing: '.04em', padding: '3px 8px', borderRadius: 999, background: 'rgba(255,255,255,.75)', color: '#2d5a0c' }}>RECOMENDADO</span>
         </button>
+        {email && <div className="small" style={{ marginTop: -6, overflowWrap: 'anywhere' }}>Abre seu app de email já preenchido para {email}. É só tocar em Enviar.</div>}
         <KeyActions value={key} heading="Chave de recuperação do Memoras" file="memoras-chave-de-recuperacao.txt" />
         <div className="amber col" style={{ gap: 4 }}>
           <strong>Quem acessar seu email poderá abrir seu diário.</strong>
