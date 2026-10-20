@@ -3,8 +3,9 @@ import { docPreview, docTitle, todayKey } from '../lib/items';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
 import {
   activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
-  set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, tasksOn, toast, trashedDocs, typeNew, useApp, type Section, type State,
+  set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, startUsePin, tasksOn, toast, trashedDocs, typeNew, useApp, archivedDocs, archiveDoc, type Section, type State,
 } from '../store';
+import { bioAvailable, bioVerify } from '../native';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { checkUpdate, installUpdate, useUpdate, type Upd } from '../updates';
 import { paperStyle } from '../themes';
@@ -18,9 +19,9 @@ function Calendar({ s, act }: { s: State; act: Note[] }) {
 }
 
 const SECTIONS: [Section, string][] = [['diario', 'Diário'], ['cadernos', 'Cadernos'], ['agenda', 'Agenda']];
-// Entrar em Cadernos no computador já abre o caderno mais recente, como o diário faz.
+// Entrar em Cadernos volta ao caderno que estava aberto; se nenhum estava, nada abre sozinho.
 const goSection = (s: State, k: Section) => k === 'cadernos'
-  ? go('docs', { docSel: docsOf(s).some(d => d.id === s.docSel) ? s.docSel : !s.mobile ? docsOf(s)[0]?.id ?? null : null, docEdit: false })
+  ? go('docs', { docSel: docsOf(s).some(d => d.id === s.docSel) ? s.docSel : null, docEdit: false })
   : go(HOME[k]);
 
 const NAV = [['search', 'Busca'], ['archive', 'Arquivo'], ['trash', 'Lixeira'], ['settings', 'Ajustes'], ['calendar', 'Calendário']] as const;
@@ -213,9 +214,9 @@ function Search({ s }: { s: State }) {
       const r = hit([n.title, fullText(n)].filter(Boolean).join(' · '));
       if (r) results.push({ key: n.id, title: dispTitle(n), meta: dayLabel(nd(n)), tag: n.status === 'archived' ? 'Arquivada' : undefined, color: n.color, open: () => openNote(n.id), ...r });
     });
-    docsOf(s).forEach(d => {
+    [...docsOf(s), ...archivedDocs(s)].forEach(d => {
       const r = hit([d.title, plain(d.body)].filter(Boolean).join(' · '));
-      if (r) results.push({ key: d.id, title: docTitle(d), meta: '', tag: 'Caderno', color: d.color, open: () => openDoc(d.id), ...r });
+      if (r) results.push({ key: d.id, title: docTitle(d), meta: '', tag: d.status === 'archived' ? 'Caderno arquivado' : 'Caderno', color: d.color, open: () => openDoc(d.id), ...r });
     });
     [...plannedDays(s)].sort().reverse().forEach(k => {
       const r = hit([...tasksOn(s, k).map(t => t.text), ...dayNotesOn(s, k).map(n => n.text)].filter(Boolean).join(' · '));
@@ -255,7 +256,7 @@ function Search({ s }: { s: State }) {
 function Shelf({ s }: { s: State }) {
   const isTrash = s.shelf === 'trash';
   const rows = live(s).filter(n => n.status === (isTrash ? 'trashed' : 'archived')).sort((a, b) => nd(b) - nd(a));
-  const docRows = isTrash ? trashedDocs(s) : [];
+  const docRows = isTrash ? trashedDocs(s) : archivedDocs(s);
   return <>
     <div className="col" style={{ padding: '22px 20px 12px', gap: 14, flex: 'none' }}>
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
@@ -268,7 +269,7 @@ function Shelf({ s }: { s: State }) {
           <button className={'press' + (isTrash ? ' on' : '')} aria-pressed={isTrash} onClick={() => set({ shelf: 'trash' })}>Lixeira</button>
         </div>
       )}
-      <div style={{ fontSize: 15, color: 'var(--ink3)', lineHeight: 1.4 }}>{isTrash ? 'Restaure uma anotação ou apague para sempre.' : 'Anotações guardadas fora do histórico. Continuam aparecendo na busca.'}</div>
+      <div style={{ fontSize: 15, color: 'var(--ink3)', lineHeight: 1.4 }}>{isTrash ? 'Restaure uma anotação ou apague para sempre.' : 'Anotações e cadernos guardados fora das listas. Continuam aparecendo na busca.'}</div>
     </div>
     <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
       {rows.map(n => (
@@ -290,8 +291,8 @@ function Shelf({ s }: { s: State }) {
             <span className="prev">{docPreview(d.body) || 'Sem texto ainda'}</span>
           </div>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <button className="soft press" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700 }} onClick={() => restoreDoc(d.id)}>Restaurar</button>
-            <button className="soft danger press" style={{ height: 40, padding: '0 16px', fontSize: 14 }} onClick={() => set({ confirm: { id: d.id } })}>Apagar para sempre</button>
+            <button className="soft press" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700 }} onClick={() => isTrash ? restoreDoc(d.id) : archiveDoc(d.id)}>{isTrash ? 'Restaurar' : 'Desarquivar'}</button>
+            {isTrash && <button className="soft danger press" style={{ height: 40, padding: '0 16px', fontSize: 14 }} onClick={() => set({ confirm: { id: d.id } })}>Apagar para sempre</button>}
           </div>
         </div>
       ))}
@@ -299,7 +300,7 @@ function Shelf({ s }: { s: State }) {
         <div className="empty">
           <div className="orb" style={{ width: 64, height: 64 }} />
           <div style={{ fontSize: 19, fontWeight: 700 }}>{isTrash ? 'Lixeira vazia' : 'Nada arquivado'}</div>
-          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>{isTrash ? 'Anotações que você mandar para a lixeira aparecem aqui.' : 'Arquive anotações para tirá-las do histórico sem apagar.'}</div>
+          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>{isTrash ? 'Anotações que você mandar para a lixeira aparecem aqui.' : 'Arquive anotações e cadernos para tirá-los das listas sem apagar.'}</div>
         </div>
       )}
     </div>
@@ -309,6 +310,9 @@ function Shelf({ s }: { s: State }) {
 function Settings({ s }: { s: State }) {
   const acc = s.cfg.account;
   const [busy, setBusy] = useState(false);
+  // Digital: só no celular, e só se ele tiver uma cadastrada.
+  const [bio, setBio] = useState(false);
+  useEffect(() => { void bioAvailable().then(setBio); }, []);
   const regen = async () => {
     if (busy) return;
     setBusy(true);
@@ -340,13 +344,22 @@ function Settings({ s }: { s: State }) {
           </button>
         </div>
 
+        {/* Com conta, o PIN é um só em todos os aparelhos; cada aparelho escolhe se pede (ou abre com a digital). */}
         <div className="gcard setcard">
-          <div className="group">PIN deste aparelho</div>
+          <div className="group">{acc ? 'PIN da conta' : 'PIN deste aparelho'}</div>
           <button className="press row" aria-pressed={s.cfg.pinOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
-            onClick={() => s.cfg.pinOn ? startChangePin('off') : startCreatePin('settings')}>
-            <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Pedir PIN ao abrir</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Pede de novo depois de 1 minuto fora do app. Independente da senha da conta.</span></span>
+            onClick={() => s.cfg.pinOn ? startChangePin('off') : acc && s.cfg.pinHash ? startUsePin('settings') : startCreatePin('settings')}>
+            <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>{acc ? 'Pedir PIN neste aparelho' : 'Pedir PIN ao abrir'}</span>
+              <span style={{ fontSize: 14, color: 'var(--ink2)' }}>{acc ? 'O mesmo PIN em todos os seus aparelhos. Pede de novo depois de 1 minuto fora do app.' : 'Pede de novo depois de 1 minuto fora do app. Independente da senha da conta.'}</span></span>
             <Toggle on={s.cfg.pinOn} />
           </button>
+          {s.cfg.pinOn && bio && (
+            <button className="press row" aria-pressed={s.cfg.bioOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
+              onClick={() => s.cfg.bioOn ? setCfg({ bioOn: false }) : void bioVerify().then(ok => { if (ok) { setCfg({ bioOn: true }); toast('Digital ativada neste aparelho'); } })}>
+              <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Abrir com a digital</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>O PIN continua valendo se a digital não funcionar.</span></span>
+              <Toggle on={s.cfg.bioOn} />
+            </button>
+          )}
           {s.cfg.pinOn && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => startChangePin('change')}>Trocar PIN</button>}
         </div>
 
@@ -439,8 +452,10 @@ function usePlusBurst() {
 export function Shell() {
   const s = useApp(), scr = s.screen;
   const cur = s.notes.find(n => n.id === s.sel && !n.deleted && n.status !== 'trashed');
-  const curDoc = s.items.find(i => i.kind === 'doc' && i.id === s.docSel && !i.deleted && i.status === 'active');
+  // Caderno arquivado também abre (pela busca), com o botão Desarquivar.
+  const curDoc = s.items.find(i => i.kind === 'doc' && i.id === s.docSel && !i.deleted && i.status !== 'trashed');
   const showEditor = !!cur && (scr === 'editor' || (!s.mobile && scr === 'history'));
+  const hasNotes = activeSorted(s).length > 0;
   const showDoc = curDoc?.kind === 'doc' && (scr === 'doc' || (!s.mobile && scr === 'docs'));
   // No celular, as listas (diário e cadernos) ocupam a tela sozinhas.
   const listOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur) || scr === 'docs' || (scr === 'doc' && !curDoc));
@@ -462,8 +477,9 @@ export function Shell() {
             {!showEditor && (scr === 'history' || scr === 'editor') && (
               <div className="empty" style={{ gap: 12 }}>
                 <div className="orb" style={{ width: 84, height: 84 }} />
-                <div style={{ fontSize: 24, fontWeight: 700 }}>Seu diário está em branco</div>
-                <div className="p" style={{ color: 'var(--ink3)', maxWidth: 320 }}>Comece com uma frase. Você pode voltar e continuar quando quiser.</div>
+                {/* Com anotações, nenhuma abre sozinha: a pessoa escolhe na lista. */}
+                <div style={{ fontSize: 24, fontWeight: 700 }}>{hasNotes ? 'Seu diário' : 'Seu diário está em branco'}</div>
+                <div className="p" style={{ color: 'var(--ink3)', maxWidth: 320 }}>{hasNotes ? 'Escolha uma anotação na lista ou comece uma nova.' : 'Comece com uma frase. Você pode voltar e continuar quando quiser.'}</div>
                 <button className="gel" style={{ marginTop: 6, height: 50, padding: '0 26px' }} onClick={newNote}>Nova anotação</button>
               </div>
             )}

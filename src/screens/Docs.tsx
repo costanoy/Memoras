@@ -1,7 +1,7 @@
-import { Fragment, useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
-import { docPreview, docTitle, lineStarts, markLen, parseDoc, type Block, type Doc } from '../lib/items';
+import { useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
+import { docLines, docPreview, docTitle, lineStarts, type Doc, type Line } from '../lib/items';
 import { DAY, dayMonth, fmtT, same } from '../lib/notes';
-import { askTrash, docsOf, finishDoc, go, lastEdit, newDoc, openDoc, set, setDocBody, setDocColor, setDocTitle, type State } from '../store';
+import { archiveDoc, askTrash, docsOf, finishDoc, go, lastEdit, newDoc, openDoc, set, setDocBody, setDocColor, setDocTitle, type State } from '../store';
 import { paperStyle } from '../themes';
 import { AutoArea, ColorPick, Icon } from '../ui';
 
@@ -48,13 +48,19 @@ export function DocsEmpty() {
   );
 }
 
-// Cada linha mostrada guarda (data-line) de que linha do texto veio.
-function Rendered({ b }: { b: Block }) {
-  if (b.t === 'h1') return <h2 data-line={b.src[0]}>{b.lines[0]}</h2>;
-  if (b.t === 'h2') return <h3 data-line={b.src[0]}>{b.lines[0]}</h3>;
-  if (b.t === 'ul') return <ul>{b.lines.map((l, i) => <li key={i} data-line={b.src[i]}>{l}</li>)}</ul>;
-  if (b.t === 'ol') return <ol>{b.lines.map((l, i) => <li key={i} data-line={b.src[i]}>{l}</li>)}</ol>;
-  return <p>{b.lines.map((l, i) => <Fragment key={i}>{i > 0 && <br />}<span data-line={b.src[i]}>{l}</span></Fragment>)}</p>;
+// Leitura linha por linha, com a mesma altura e a mesma quebra da edição: linha em branco continua
+// linha em branco, e o "-" da lista vira um ponto no mesmo espaço. Cada linha guarda (data-line) de
+// que linha do texto veio; o texto fica em .tx, para o toque duplo achar a letra tocada.
+function Lines({ lines }: { lines: Line[] }) {
+  return <>{lines.map((l, i) => {
+    const sym = l.t === 'li' ? /^(\s*)(\S)(\s*)$/.exec(l.mark) : null;
+    return (
+      <div key={i} className={'ln ln-' + l.t} data-line={i}>
+        {sym ? <span className="mk">{sym[1]}<span className="bul">{sym[2]}</span>{sym[3]}</span> : l.mark && <span className="mk">{l.mark}</span>}
+        <span className="tx">{l.text}</span>
+      </div>
+    );
+  })}</>;
 }
 
 // Quantas letras do elemento ficam antes do ponto tocado.
@@ -94,8 +100,9 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
   const titleRef = useRef<HTMLInputElement>(null), areaRef = useRef<HTMLTextAreaElement>(null), scRef = useRef<HTMLDivElement>(null);
   const anchor = useRef<Anchor | null>(null), tap = useRef({ t: 0, x: 0, y: 0, sx: 0, sy: 0 });
   useEffect(() => { if (edit && !d.title && !d.body) titleRef.current?.focus(); }, [edit]);
-  const blocks = edit ? [] : parseDoc(d.body);
-  const sub = !acc ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo';
+  const lines = edit ? [] : docLines(d.body);
+  const sub = d.status === 'archived' ? 'Arquivado' : !acc ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo';
+  const archLabel = d.status === 'archived' ? 'Desarquivar' : 'Arquivar';
   const viewY = (el: Element) => el.getBoundingClientRect().top - scRef.current!.getBoundingClientRect().top;
 
   const startEdit = (at?: { x: number; y: number }) => {
@@ -104,7 +111,7 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
     if (sc && at) {
       const hit = document.elementFromPoint(at.x, at.y), line = hit?.closest<HTMLElement>('[data-line]'), title = hit?.closest('.doctitle');
       const y = at.y - sc.getBoundingClientRect().top;
-      anchor.current = line ? { line: +line.dataset.line!, col: colAt(line, at.x, at.y), y, focus: true }
+      anchor.current = line ? { line: +line.dataset.line!, col: colAt(line.querySelector('.tx') ?? line, at.x, at.y), y, focus: true }
         : title ? { line: 0, col: colAt(title, at.x, at.y), y, focus: true, title: true }
         : { line: -1, col: 0, y, focus: true };
     } else if (sc) {
@@ -148,8 +155,8 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
     if (edit) {
       const ta = areaRef.current;
       if (!ta) return;
-      const lines = d.body.split('\n'), starts = lineStarts(d.body);
-      const pos = a.line < 0 || a.line >= lines.length ? d.body.length : Math.min(starts[a.line] + markLen(lines[a.line]) + a.col, starts[a.line] + lines[a.line].length);
+      const l = docLines(d.body)[a.line], starts = lineStarts(d.body);
+      const pos = !l ? d.body.length : Math.min(starts[a.line] + l.mark.length + a.col, starts[a.line] + l.mark.length + l.text.length);
       sc.scrollTop += viewY(ta) + caretTop(ta, pos) - a.y;
       if (a.focus) { ta.focus({ preventScroll: true }); ta.setSelectionRange(pos, pos); }
       return;
@@ -180,6 +187,7 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
       {edit
         ? <button className="pill press" onClick={stopEdit}>Pronto</button>
         : <button className="pill press" aria-label="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && 'Editar'}</button>}
+      <button className="pill press" aria-label={archLabel} onClick={() => archiveDoc(d.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
       <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(d.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
     </div>
     <div ref={scRef} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
@@ -191,7 +199,7 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
       ) : (
         <div className="sheet doc" style={paperStyle(d.color)} onPointerDown={down} onPointerUp={up} onPointerCancel={() => { tap.current.t = 0; }}>
           {d.title.trim() && <div className="title doctitle">{d.title}</div>}
-          {blocks.length ? blocks.map((b, i) => <Rendered key={i} b={b} />) : <p className="dochint">Este caderno está vazio. Toque duas vezes aqui ou em Editar para escrever.</p>}
+          {d.body.trim() ? <Lines lines={lines} /> : <p className="dochint">Este caderno está vazio. Toque duas vezes aqui ou em Editar para escrever.</p>}
         </div>
       )}
     </div>

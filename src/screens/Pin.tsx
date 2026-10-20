@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { fixLockClock, flashKey, go, lockLeft, pressKey, set, setCfg, useApp } from '../store';
+import { bioVerify, isNative } from '../native';
+import { bioUnlocked, fixLockClock, flashKey, go, lockLeft, pressKey, set, setCfg, useApp } from '../store';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
 
@@ -7,6 +8,10 @@ export function Pin() {
   const s = useApp();
   const [, tick] = useState(0);
   const left = lockLeft(), locked = left > 0;
+  // Com a digital ligada neste aparelho, o leitor abre sozinho; cancelando, fica o teclado do PIN.
+  const bio = isNative && s.cfg.bioOn && s.pinMode === 'unlock';
+  const askBio = () => void bioVerify().then(ok => { if (ok) bioUnlocked(); });
+  useEffect(() => { if (bio) askBio(); }, [bio]);
 
   useEffect(() => {
     fixLockClock();
@@ -29,7 +34,8 @@ export function Pin() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const title = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'verify' ? 'Digite o PIN atual' : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
+  const title = s.pinMode === 'unlock' ? 'Digite seu PIN' : s.pinMode === 'verify' ? (s.pinAfter === 'on' ? 'Digite o PIN da sua conta' : 'Digite o PIN atual') : s.pinMode === 'create' ? 'Crie um PIN de 4 dígitos' : 'Digite o PIN de novo';
+  const cancel = () => { set({ pinMode: 'unlock', pin: '', pinMsg: '', pinError: false }); go(s.pinReturn); };
   const wait = left > 60000 ? Math.ceil(left / 60000) + ' min' : Math.ceil(left / 1000) + ' s';
   const msg = locked ? 'Muitas tentativas. Tente de novo em ' + wait + '.' : s.pinMsg;
 
@@ -52,9 +58,11 @@ export function Pin() {
             </button>
           ))}
         </div>
-        {s.pinMode === 'unlock'
-          ? <button className="link" onClick={() => go('forgotPin')}>Esqueci o PIN</button>
-          : <button className="link" onClick={() => { set({ pinMode: 'unlock', pin: '', pinMsg: '', pinError: false }); go(s.pinReturn); }}>Cancelar</button>}
+        <div className="row" style={{ gap: 22, justifyContent: 'center', flexWrap: 'wrap' }}>
+          {s.pinMode !== 'unlock' && <button className="link" onClick={cancel}>Cancelar</button>}
+          {bio && <button className="link" onClick={askBio}>Usar a digital</button>}
+          {(s.pinMode === 'unlock' || s.pinMode === 'verify') && <button className="link" onClick={() => go('forgotPin')}>Esqueci o PIN</button>}
+        </div>
       </div>
     </div>
   );

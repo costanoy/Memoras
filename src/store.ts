@@ -18,6 +18,8 @@ export interface Cfg {
   diaryName: string; theme: ThemeKey; prefsTs: number;
   pinOn: boolean; pinHash: string; pinSalt: string; pinKeyHash: string; pinKeySalt: string;
   pinFails: number; lockUntil: number; pinLocks: number;
+  pinTs: number;   // quando o PIN foi criado ou trocado (com conta, vale o mais novo em todos os aparelhos)
+  bioOn: boolean;  // abrir com a digital neste aparelho (Android)
   invite: boolean;
   sounds: boolean;
   account: Account | null; dk: string | null; lastPull: string | null;
@@ -41,7 +43,7 @@ export interface State {
   calOpen: boolean; calY: number; calM: number; day: number | null;
   toast: { text: string; undo?: () => void } | null;
   confirm: { id?: string; all?: boolean; reset?: boolean; trash?: boolean } | null;
-  pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
+  pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off' | 'on'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
   pinReturn: 'history' | 'settings'; pressedKey: string | null; unlocking: boolean;
   resume: Screen | null;
   onStep: number; storeMode: 'local' | 'account'; obPin: boolean;
@@ -52,7 +54,7 @@ export interface State {
 
 const defaultCfg: Cfg = {
   onboarded: false, diaryName: 'Meu diário', theme: 'turquesa', prefsTs: 0,
-  pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0, pinLocks: 0,
+  pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0, pinLocks: 0, pinTs: 0, bioOn: false,
   invite: true, sounds: true, account: null, dk: null, lastPull: null,
 };
 
@@ -89,7 +91,8 @@ export const useApp = () => useSyncExternalStore(f => { subs.add(f); return () =
 mq.addEventListener('change', () => set({ mobile: mq.matches }));
 
 // A sincronização se pendura aqui para saber quando algo mudou.
-export const hooks = { changed: () => {}, recoveryPending: false };
+// away: o app saiu da tela (a sincronização envia na hora o que falta).
+export const hooks = { changed: () => {}, away: () => {}, recoveryPending: false };
 
 export function setCfg(patch: Partial<Cfg>) {
   set(s => ({ cfg: { ...s.cfg, ...patch } }));
@@ -112,6 +115,7 @@ export const HOME: Record<Section, Screen> = { diario: 'history', cadernos: 'doc
 export const lastEdit = (d: Doc) => Math.max(d.created, d.titleTs, d.bodyTs);
 export const docsOf = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'active').sort((a, b) => lastEdit(b) - lastEdit(a));
 export const trashedDocs = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'trashed');
+export const archivedDocs = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'archived').sort((a, b) => lastEdit(b) - lastEdit(a));
 // Empate na ordem (tarefas de aparelhos diferentes) se desfaz pelo id, igual em todos os aparelhos.
 export const tasksOn = (s: State, date: string) => s.items.filter((i): i is Task => i.kind === 'task' && !i.deleted && i.date === date).sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1));
 export const dayNotesOn = (s: State, date: string) => s.items.filter((i): i is DayNote => i.kind === 'daynote' && !i.deleted && i.date === date).sort((a, b) => a.created - b.created);
@@ -157,7 +161,7 @@ export function go(target: Screen, extra: Partial<State> = {}) {
 // celular ou o computador bloqueado, ou com a janela minimizada. Ao digitar, volta para onde estava.
 const RELOCK_AFTER = 60_000;
 let awaySince = 0;
-export function appAway() { if (!awaySince) awaySince = Date.now(); }
+export function appAway() { if (!awaySince) awaySince = Date.now(); hooks.away(); }
 export function appBack() {
   const away = awaySince ? Date.now() - awaySince : 0;
   awaySince = 0;
@@ -329,6 +333,18 @@ export function trashDoc(id: string) {
   go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
 }
 export function restoreDoc(id: string) { setDocStatus(id, 'active'); toast('Caderno restaurado'); }
+// Arquivar tira o caderno da lista sem apagar: ele fica no Arquivo e continua aparecendo na busca.
+export function archiveDoc(id: string) {
+  const d = state.items.find(i => i.id === id); if (!d || d.kind !== 'doc') return;
+  if (d.status === 'archived') { setDocStatus(id, 'active'); toast('Caderno desarquivado'); return; }
+  const next = docsOf(state).find(x => x.id !== id);
+  if (isBlankItem(d)) dropItem(id);
+  else {
+    setDocStatus(id, 'archived'); sfx('archive');
+    toast('Caderno arquivado', () => { setDocStatus(id, 'active'); go('doc', { docSel: id, docEdit: false }); });
+  }
+  go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
+}
 
 export function openDay(date: string) {
   const d = new Date(keyTime(date));
@@ -336,6 +352,16 @@ export function openDay(date: string) {
 }
 export function addTask(date: string, text: string) {
   if (text.trim()) addItem(blankTask(uid(), date, text.trim()));
+}
+// Arrastar uma tarefa para a posição "to" do dia: a ordem nova fica entre as vizinhas. Se as
+// vizinhas estiverem coladas demais (de tanto arrastar entre as mesmas duas), o dia é renumerado.
+export function reorderTask(id: string, to: number) {
+  const t = state.items.find(i => i.id === id);
+  if (!t || t.kind !== 'task') return;
+  const rest = tasksOn(state, t.date).filter(x => x.id !== id), prev = rest[to - 1], next = rest[to];
+  const setOrder = (tid: string, order: number) => updItem<Task>(tid, x => { x.order = order; x.orderTs = Date.now(); });
+  if (prev && next && next.order - prev.order < 1e-3) return [...rest.slice(0, to), t, ...rest.slice(to)].forEach(x => setOrder(x.id, nextOrder()));
+  setOrder(id, prev && next ? (prev.order + next.order) / 2 : prev ? prev.order + 1 : next ? next.order - 1 : t.order);
 }
 // Enter numa tarefa abre uma linha nova logo abaixo, já com a caixinha. Vazia, ela some ao sair dela.
 export function insertTaskAfter(id: string) {
@@ -417,18 +443,14 @@ async function submitPin(pin: string) {
   if (s.pinMode === 'unlock' || s.pinMode === 'verify') {
     if (await verifySecret(pin, c.pinSalt, c.pinHash)) {
       setCfg({ pinFails: 0, pinLocks: 0 });
-      // PIN atual conferido: segue para trocar ou desligar.
+      // PIN conferido: segue para trocar, desligar ou ligar neste aparelho (com o PIN que a conta já tem).
       if (s.pinMode === 'verify') {
-        if (s.pinAfter === 'off') { setCfg({ pinOn: false }); set({ pin: '', pinMode: 'unlock' }); go('settings'); toast('PIN desativado'); }
+        if (s.pinAfter === 'off') { setCfg({ pinOn: false }); set({ pin: '', pinMode: 'unlock' }); go('settings'); toast('PIN desativado neste aparelho'); }
+        else if (s.pinAfter === 'on') { setCfg({ pinOn: true }); set({ pin: '', pinMode: 'unlock' }); go(s.pinReturn); toast('PIN ativado neste aparelho'); }
         else set({ pin: '', pinMode: 'create' });
         return;
       }
-      const rm = reducedMotion(), r = s.resume;
-      const to = r && r !== 'pin' && r !== 'forgotPin' && r !== 'loading' ? r : 'history';
-      set({ unlocking: true, unlocked: true, pin: '', resume: null });
-      sfx('unlock');
-      setTimeout(() => go(to), rm ? 0 : 60);
-      setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
+      unlockApp();
       return;
     }
     // Errar o PIN atual conta igual a errar no desbloqueio, com a mesma pausa.
@@ -446,23 +468,51 @@ async function submitPin(pin: string) {
     set({ pinMode: 'confirm', pinTmp: pin, pin: '' });
   } else if (pin === s.pinTmp) {
     const h = await hashSecret(pin);
-    const msg = c.pinOn && s.pinReturn === 'settings' ? 'PIN alterado' : 'PIN ativado';
-    const next: Partial<Cfg> = { pinOn: true, pinHash: h.hash, pinSalt: h.salt, pinFails: 0, lockUntil: 0, pinLocks: 0 };
+    const changing = c.pinOn && s.pinReturn === 'settings';
+    // Com conta, o PIN é um só para todos os aparelhos: pinTs diz qual é o mais novo.
+    const next: Partial<Cfg> = { pinOn: true, pinHash: h.hash, pinSalt: h.salt, pinTs: Date.now(), pinFails: 0, lockUntil: 0, pinLocks: 0 };
     set({ pin: '', pinTmp: '', pinMode: 'unlock' });
     if (!c.account) {
       const key = randomCode('PIN', 3), kh = await hashSecret(normCode(key));
       pendingPin = { ...next, pinKeyHash: kh.hash, pinKeySalt: kh.salt };
-      go('pinkey', { shownKey: key, pkReturn: s.pinReturn, pkMsg: msg });
+      go('pinkey', { shownKey: key, pkReturn: s.pinReturn, pkMsg: changing ? 'PIN alterado' : 'PIN ativado' });
       return;
     }
     setCfg(next);
+    hooks.changed();
     go(s.pinReturn);
-    toast(msg);
+    toast(changing ? 'PIN alterado em todos os seus aparelhos' : 'PIN ativado');
   } else pinFail('Os PINs não coincidem. Crie de novo.', { pinMode: 'create', pinTmp: '' });
 }
+
+// PIN certo ou digital reconhecida: abre o app e volta para onde a pessoa estava.
+function unlockApp() {
+  const s = state, rm = reducedMotion(), r = s.resume;
+  const to = r && r !== 'pin' && r !== 'forgotPin' && r !== 'loading' ? r : 'history';
+  setCfg({ pinFails: 0, pinLocks: 0, lockUntil: 0 });
+  set({ unlocking: true, unlocked: true, pin: '', resume: null });
+  sfx('unlock');
+  setTimeout(() => go(to), rm ? 0 : 60);
+  setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
+}
+// A digital (Android) foi reconhecida na tela do PIN.
+export function bioUnlocked() { if (state.screen === 'pin' && state.pinMode === 'unlock' && !state.unlocked && !state.unlocking) unlockApp(); }
+
+// O PIN da conta (vem cifrado com o nome e a cor do diário). force: quem acabou de entrar na conta
+// passa a usar o PIN dela, mesmo que o daqui seja mais novo.
+export function takeAccountPin(pin: { hash: string; salt: string; ts: number }, force = false) {
+  const c = state.cfg;
+  if (!force && pin.ts <= c.pinTs) return;
+  if (pin.hash === c.pinHash && pin.salt === c.pinSalt) { if (pin.ts !== c.pinTs) setCfg({ pinTs: pin.ts }); return; }
+  setCfg({ pinHash: pin.hash, pinSalt: pin.salt, pinTs: pin.ts, pinFails: 0, lockUntil: 0, pinLocks: 0 });
+  if (c.pinOn && c.pinHash) toast(force ? 'Este aparelho agora usa o PIN da sua conta.' : 'O PIN da sua conta foi trocado em outro aparelho.');
+}
+
 export const startCreatePin = (ret: 'history' | 'settings') => go('pin', { pinMode: 'create', pin: '', pinMsg: '', pinError: false, pinReturn: ret });
 // Trocar ou desligar o PIN nos ajustes pede o PIN atual antes.
 export const startChangePin = (after: 'change' | 'off') => go('pin', { pinMode: 'verify', pinAfter: after, pin: '', pinMsg: '', pinError: false, pinReturn: 'settings' });
+// Ligar o PIN num aparelho cuja conta já tem PIN: digita o PIN da conta uma vez, em vez de criar outro.
+export const startUsePin = (ret: 'history' | 'settings') => go('pin', { pinMode: 'verify', pinAfter: 'on', pin: '', pinMsg: '', pinError: false, pinReturn: ret });
 
 // Se o banco não abrir, o app não segue em frente: começar "vazio" levaria ao primeiro uso
 // e a pessoa poderia gravar por cima das configurações. Tenta de novo algumas vezes.
@@ -515,8 +565,8 @@ export async function init() {
   }).map(i => i.kind === 'doc' ? { ...i, color: i.color ?? '', colorTs: i.colorTs ?? 0 } : i);
   applyTheme(cfg.theme);
   set({ cfg, notes, items });
-  const first = activeSorted(state)[0];
   const unlocked = !cfg.pinOn;
+  // Abre sem nenhuma anotação aberta: nada do diário aparece sem a pessoa escolher.
   if (hooks.recoveryPending) set({ unlocked, screen: 'forgot', fStep: 2 });
-  else set({ unlocked, screen: !cfg.onboarded ? 'onboard' : cfg.pinOn ? 'pin' : 'history', sel: !state.mobile && first ? first.id : null });
+  else set({ unlocked, screen: !cfg.onboarded ? 'onboard' : cfg.pinOn ? 'pin' : 'history', sel: null, docSel: null });
 }

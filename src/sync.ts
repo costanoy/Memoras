@@ -5,7 +5,7 @@ import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomByt
 import { itemPut, notePut } from './lib/db';
 import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Item, type ItemContent } from './lib/items';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
-import { get, hooks, isLocked, set, setCfg, toast } from './store';
+import { get, hooks, isLocked, set, setCfg, takeAccountPin, toast } from './store';
 import { THEMES, type ThemeKey } from './themes';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -20,6 +20,11 @@ const CONFIRMED_PAGE = 'https://memoras.cyberhat.com.br/confirmado.html';
 const installed = Capacitor.isNativePlatform() || 'memorasWin' in window;
 
 class AppError extends Error {}
+
+// PIN da conta guardado (cifrado) junto com o nome e a cor do diário.
+type AccountPin = { hash: string; salt: string; ts: number };
+const isPin = (p: unknown): p is AccountPin => !!p && typeof p === 'object' && typeof (p as AccountPin).hash === 'string' && !!(p as AccountPin).hash
+  && typeof (p as AccountPin).salt === 'string' && typeof (p as AccountPin).ts === 'number';
 function need() {
   if (!supabase) throw new AppError('A sincronização ainda não foi configurada neste app.');
   return supabase;
@@ -97,7 +102,7 @@ export async function login(email: string, password: string): Promise<{ recKey?:
   const { data, error } = await sb.auth.signInWithPassword({ email, password: auth });
   if (error) throw error;
   const userId = data.user.id;
-  const { data: vault, error: e2 } = await sb.from('vaults').select('dk_id,wrapped_pw').eq('user_id', userId).maybeSingle();
+  const { data: vault, error: e2 } = await sb.from('vaults').select('dk_id,wrapped_pw,prefs').eq('user_id', userId).maybeSingle();
   if (e2) throw e2;
   if (!vault) {
     const v = await createVault(userId, kek);
@@ -110,6 +115,11 @@ export async function login(email: string, password: string): Promise<{ recKey?:
   // Quem entra numa conta durante o primeiro uso recebe o nome e a cor da conta,
   // em vez de espalhar para os outros aparelhos o que escolheu agora.
   if (!get().cfg.onboarded) setCfg({ prefsTs: 0 });
+  // Quem entra numa conta que já tem PIN passa a usar esse PIN (cada aparelho escolhe se pede ou não).
+  if (vault.prefs) {
+    try { const p = JSON.parse(await openText(await aesKey(dk), vault.prefs)) as { pin?: unknown }; if (isPin(p.pin)) takeAccountPin(p.pin, true); }
+    catch { /* prefs ilegíveis: fica o PIN daqui */ }
+  }
   await adopt(userId, email, dk, vault.dk_id, auth);
   return {};
 }
@@ -207,11 +217,22 @@ export async function verifyAccount(email: string, password: string) {
 
 // Sincronização
 let running = false, again = false, timer = 0;
+// Promessa que termina quando não há sincronização rodando nem na fila.
+let idle: Promise<void> | null = null, idleDone = () => {};
 
 export function scheduleSync(delay = 2500) {
   if (!get().cfg.account) return;
   clearTimeout(timer);
   timer = window.setTimeout(() => void syncNow(), delay);
+}
+
+// Ao sair do app (outro app, celular bloqueado, janela minimizada ou fechada): envia na hora o que
+// ainda não foi para a conta, sem esperar a pausa de costume, e só termina quando a fila esvazia.
+export async function flushSync() {
+  const s = get();
+  if (!s.cfg.account || !supabase || !navigator.onLine) return;
+  if (s.notes.some(n => n.rev !== n.syncedRev) || s.items.some(i => i.rev !== i.syncedRev)) void syncNow();
+  await idle;
 }
 
 export async function syncNow() {
@@ -220,6 +241,7 @@ export async function syncNow() {
   if (!navigator.onLine) { set({ sync: 'offline' }); return; }
   if (running) { again = true; return; }
   running = true; again = false;
+  idle ??= new Promise(r => { idleDone = r; });
   clearTimeout(timer);
   set({ sync: 'syncing' });
   try {
@@ -236,18 +258,23 @@ export async function syncNow() {
     if (ve) throw ve;
     if (!vault || vault.dk_id !== acc.dkId) { await logout(); toast('Sua conta mudou em outro aparelho. Entre de novo para sincronizar.'); return; }
 
-    // Nome do diário e cor: vale o mais recente.
-    let remoteTs = 0;
+    // Nome do diário e cor: vale o mais recente. O PIN da conta vai junto, com a própria data:
+    // vale o trocado por último, em todos os aparelhos.
+    let remoteTs = 0, remotePin: AccountPin | null = null;
     if (vault.prefs) {
       try {
-        const p = JSON.parse(await openText(key, vault.prefs)) as { diaryName: string; theme: ThemeKey; ts: number };
+        const p = JSON.parse(await openText(key, vault.prefs)) as { diaryName: string; theme: ThemeKey; ts: number; pin?: unknown };
         remoteTs = p.ts;
         if (p.ts > get().cfg.prefsTs && THEMES[p.theme]) setCfg({ diaryName: p.diaryName, theme: p.theme, prefsTs: p.ts });
+        if (isPin(p.pin)) { remotePin = p.pin; takeAccountPin(p.pin); }
       } catch { /* prefs ilegíveis: regravamos abaixo */ }
     }
+    // PIN criado antes do PIN da conta (sem data): sobe com a data mais antiga possível, para qualquer troca nova valer mais.
+    if (get().cfg.pinHash && !get().cfg.pinTs) setCfg({ pinTs: 1 });
     const c = get().cfg;
-    if (c.prefsTs > remoteTs || !vault.prefs) {
-      const blob = await sealText(key, JSON.stringify({ diaryName: c.diaryName, theme: c.theme, ts: c.prefsTs }));
+    if (c.prefsTs > remoteTs || !vault.prefs || (c.pinHash && (!remotePin || c.pinTs > remotePin.ts))) {
+      const pin: AccountPin | undefined = c.pinHash ? { hash: c.pinHash, salt: c.pinSalt, ts: c.pinTs } : undefined;
+      const blob = await sealText(key, JSON.stringify({ diaryName: c.diaryName, theme: c.theme, ts: c.prefsTs, ...(pin ? { pin } : {}) }));
       const { error } = await sb.from('vaults').update({ prefs: blob }).eq('user_id', acc.userId);
       if (error) throw error;
     }
@@ -352,11 +379,13 @@ export async function syncNow() {
   } finally {
     running = false;
     if (again) void syncNow();
+    else { idleDone(); idle = null; }
   }
 }
 
 export function startSync() {
   hooks.changed = () => scheduleSync();
+  hooks.away = () => void flushSync();
   window.addEventListener('online', () => void syncNow());
   window.addEventListener('offline', () => set({ sync: 'offline' }));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleSync(300); });

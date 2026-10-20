@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { addDays, dayKey, keyTime, todayKey, type Task } from '../lib/items';
 import { dayLabel, dayMonth, uid } from '../lib/notes';
-import { addTask, dayNotesOn, deleteTask, get, insertTaskAfter, moveTask, openDay, plannedDays, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
+import { addTask, dayNotesOn, deleteTask, get, insertTaskAfter, moveTask, openDay, plannedDays, reorderTask, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
 import { AutoArea, Icon, MonthCal } from '../ui';
 
 // "Hoje", "Amanhã", "Ontem" ou o dia da semana com a data.
@@ -45,8 +45,17 @@ export function AgendaSide({ s }: { s: State }) {
   </>;
 }
 
-function TaskRow({ t, k }: { t: Task; k: string }) {
+// Arrastar pela alça: a tarefa segue o dedo (ou o mouse) e as outras abrem espaço; ao soltar, fica na
+// posição nova. As setas do teclado na alça também mudam a ordem.
+type Drag = { id: string; from: number; to: number; y0: number; dy: number; mids: number[]; h: number };
+type Grab = { down(e: PointerEvent<HTMLButtonElement>, id: string): void; move(e: PointerEvent): void; up(): void; cancel(): void; key(id: string, dir: number): void };
+
+function TaskRow({ t, k, i, drag, grab, rowRef }: { t: Task; k: string; i: number; drag: Drag | null; grab: Grab; rowRef: (el: HTMLDivElement | null) => void }) {
   const toToday = k === todayKey();
+  let shift = 0;
+  if (drag?.id === t.id) shift = drag.dy;
+  else if (drag && drag.from < drag.to && i > drag.from && i <= drag.to) shift = -drag.h;
+  else if (drag && drag.to < drag.from && i >= drag.to && i < drag.from) shift = drag.h;
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (focusTaskId !== t.id) return;
@@ -71,7 +80,12 @@ function TaskRow({ t, k }: { t: Task; k: string }) {
     }
   };
   return (
-    <div className={'task' + (t.done ? ' done' : '')}>
+    <div ref={rowRef} className={'task' + (t.done ? ' done' : '') + (drag?.id === t.id ? ' dragging' : drag ? ' shift' : '')} style={shift ? { transform: 'translateY(' + shift + 'px)' } : undefined}>
+      <button className="grip" aria-label={'Mudar a ordem de ' + (t.text || 'tarefa')} title="Arraste para mudar a ordem"
+        onPointerDown={e => grab.down(e, t.id)} onPointerMove={grab.move} onPointerUp={grab.up} onPointerCancel={grab.cancel}
+        onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); grab.key(t.id, e.key === 'ArrowUp' ? -1 : 1); } }}>
+        <svg width="12" height="18" viewBox="0 0 12 18" fill="currentColor" aria-hidden="true">{[3, 9, 15].map(y => <g key={y}><circle cx="3" cy={y} r="1.7" /><circle cx="9" cy={y} r="1.7" /></g>)}</svg>
+      </button>
       <button className={'tick press' + (t.done ? ' on' : '')} role="checkbox" aria-checked={t.done} aria-label={t.done ? 'Desmarcar ' + t.text : 'Marcar ' + t.text + ' como feita'} onClick={() => toggleTask(t.id)}><i>{t.done ? '✓' : ''}</i></button>
       <input ref={ref} className="tasktext" value={t.text} aria-label="Tarefa" onChange={e => setTaskText(t.id, e.target.value)} onKeyDown={keys} onBlur={() => { if (!t.text.trim()) deleteTask(t.id); }} />
       {!t.done && <button className="mini press" title={toToday ? 'Passar para amanhã' : 'Passar para o dia seguinte'} onClick={() => moveTask(t.id, addDays(k, 1))}>{toToday ? 'Amanhã' : 'Dia seguinte'}</button>}
@@ -88,6 +102,7 @@ function NewTask({ k }: { k: string }) {
   const add = () => { if (v.trim()) { addTask(k, v); setV(''); } };
   return (
     <div className="task add">
+      <span className="gripspace" aria-hidden="true" />
       <span className="tick ghost" aria-hidden="true">{!on && !v && <Icon name="plus" size={14} sw={3} />}</span>
       <input ref={ref} className="tasktext" value={v} placeholder="Adicionar tarefa" aria-label="Adicionar tarefa" onChange={e => setV(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} onFocus={() => setOn(true)} onBlur={() => { setOn(false); add(); }} />
@@ -100,6 +115,28 @@ function DayBody({ s, k }: { s: State; k: string }) {
   // A observação nova nasce com este id, para o cursor não sair do lugar ao digitar a primeira letra.
   const pending = useRef(uid());
   const areas = notes.length ? notes : [{ id: pending.current, text: '' }];
+  const rows = useRef(new Map<string, HTMLDivElement>());
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const dragNow = useRef<Drag | null>(null);
+  const put = (d: Drag | null) => { dragNow.current = d; setDrag(d); };
+  const grab: Grab = {
+    down(e, id) {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const from = tasks.findIndex(t => t.id === id), rects = tasks.map(t => rows.current.get(t.id)!.getBoundingClientRect());
+      put({ id, from, to: from, y0: e.clientY, dy: 0, mids: rects.map(r => r.top + r.height / 2), h: rects[from].height });
+    },
+    move(e) {
+      const d = dragNow.current;
+      if (!d) return;
+      const dy = e.clientY - d.y0, center = d.mids[d.from] + dy;
+      put({ ...d, dy, to: d.mids.filter((m, i) => i !== d.from && m < center).length });
+    },
+    up() { const d = dragNow.current; put(null); if (d && d.to !== d.from) reorderTask(d.id, d.to); },
+    cancel() { put(null); },
+    key(id, dir) { const to = tasks.findIndex(t => t.id === id) + dir; if (to >= 0 && to < tasks.length) reorderTask(id, to); },
+  };
   return (
     <div className="sheet">
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
@@ -107,7 +144,7 @@ function DayBody({ s, k }: { s: State; k: string }) {
         {tasks.length > 0 && <span className="meta">{done} de {tasks.length} {tasks.length === 1 ? 'feita' : 'feitas'}</span>}
       </div>
       <div className="col" style={{ marginTop: 8 }}>
-        {tasks.map(t => <TaskRow key={t.id} t={t} k={k} />)}
+        {tasks.map((t, i) => <TaskRow key={t.id} t={t} k={k} i={i} drag={drag} grab={grab} rowRef={el => { if (el) rows.current.set(t.id, el); else rows.current.delete(t.id); }} />)}
         <NewTask k={k} />
       </div>
       <div className="group" style={{ marginTop: 30 }}>Observações</div>

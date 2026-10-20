@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from './sync';
 import { installUpdate, useUpdate } from './updates';
 
 // Ponte do app de Windows (electron/preload.cjs). Fora dele, não existe.
@@ -29,7 +30,8 @@ export function TitleBar() {
             ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="1.75" y="3.75" width="6.5" height="6.5" rx="1.2" /><path d="M4 3.5V2.6c0-.5.4-.85.85-.85h4.55c.45 0 .85.4.85.85v4.55c0 .45-.4.85-.85.85H8.5" /></svg>
             : <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="2" y="2" width="8" height="8" rx="1.5" /></svg>}
         </button>
-        <button className="tbtn close" aria-label="Fechar" onClick={() => api.close()}>
+        {/* Antes de fechar, manda para a conta o que ainda não foi (espera no máximo 3 s). */}
+        <button className="tbtn close" aria-label="Fechar" onClick={() => void Promise.race([flushSync(), new Promise(r => setTimeout(r, 3000))]).then(() => api.close())}>
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
         </button>
       </div>

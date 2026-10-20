@@ -12,6 +12,8 @@
 - Mudança de estrutura do banco: suba `DB_VERSION` em `src/lib/db.ts` e só acrescente passos de migração; nunca apague stores.
 - Cadernos e Agenda (`src/lib/items.ts`) vão para o servidor na tabela `notes`, com `kind` dentro do texto cifrado. Nunca dê a eles um campo `segs`: é por não terem `segs` que as versões antigas (até a 1.0.4) os ignoram sem quebrar.
 - A cor de anotações e cadernos (`color`/`colorTs`) não existe até a 1.1.1: essas versões descartam a cor ao gravar, e a junção pelo `colorTs` devolve a cor no aparelho novo. `content()` e `itemContent()` precisam continuar aceitando dados sem esses campos.
+- Caderno arquivado (`status: 'archived'`) não existe até a 1.1.2: essas versões não reconhecem e deixam o caderno de fora, sem apagar. Não troque esse estado por outro nome.
+- Com conta, o PIN é um só para todos os aparelhos: vai cifrado dentro de `prefs` do cofre (`pin: { hash, salt, ts }`, vale o `ts` mais novo; quem entra na conta adota o PIN dela). Versões até a 1.1.2 gravam `prefs` sem o `pin`, e a próxima sincronização de um aparelho novo o devolve. Pedir PIN (`pinOn`) e a digital (`bioOn`) continuam sendo de cada aparelho.
 - A cada versão nova, o app guarda uma cópia dos dados anteriores no próprio aparelho (`backup:<versão>`, as 3 últimas).
 - O APK precisa sair sempre com a chave de `~/.memoras`; o `npm run release` confere a assinatura e cancela se for outra.
 - No Windows, a atualização chama o desinstalador antigo com `--updated`, que não apaga os dados (testado em 01/10/2026 com uma cópia "MemorasTeste").

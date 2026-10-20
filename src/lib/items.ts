@@ -8,7 +8,7 @@ interface Local { id: string; rev: number; syncedRev: number; pushed: boolean }
 export interface DocContent {
   kind: 'doc'; created: number; deleted: boolean;
   title: string; titleTs: number; body: string; bodyTs: number;
-  status: 'active' | 'trashed'; statusTs: number;
+  status: 'active' | 'archived' | 'trashed'; statusTs: number;   // 'archived' só a partir da 1.1.3
   color: string; colorTs: number;   // cor do papel ('' = sem cor); a 1.1.0 e a 1.1.1 não conhecem
 }
 export interface TaskContent {
@@ -62,7 +62,7 @@ export function parseItem(o: unknown): ItemContent | null {
   if (!o || typeof o !== 'object') return null;
   const x = o as Record<string, unknown>;
   if (!isNum(x.created) || !isBool(x.deleted)) return null;
-  if (x.kind === 'doc' && isStr(x.title) && isNum(x.titleTs) && isStr(x.body) && isNum(x.bodyTs) && (x.status === 'active' || x.status === 'trashed') && isNum(x.statusTs)) return itemContent(x as unknown as DocContent);
+  if (x.kind === 'doc' && isStr(x.title) && isNum(x.titleTs) && isStr(x.body) && isNum(x.bodyTs) && (x.status === 'active' || x.status === 'archived' || x.status === 'trashed') && isNum(x.statusTs)) return itemContent(x as unknown as DocContent);
   if (x.kind === 'task' && isStr(x.date) && isNum(x.dateTs) && isStr(x.text) && isNum(x.textTs) && isBool(x.done) && isNum(x.doneTs) && isNum(x.order) && isNum(x.orderTs)) return itemContent(x as unknown as TaskContent);
   if (x.kind === 'daynote' && isStr(x.date) && isStr(x.text) && isNum(x.textTs)) return itemContent(x as unknown as DayNoteContent);
   return null;
@@ -128,9 +128,19 @@ export function parseDoc(body: string): Block[] {
   });
   return out;
 }
-// Onde começa cada linha no texto e quantos caracteres de marca (#, -, 1.) vêm antes do que aparece na leitura.
+// Onde começa cada linha no texto.
 export const lineStarts = (body: string) => { const out: number[] = []; let at = 0; for (const l of body.split('\n')) { out.push(at); at += l.length + 1; } return out; };
-export const markLen = (line: string) => /^\s*(#{1,3}\s+|[-*•]\s+|\d+[.)]\s+)/.exec(line)?.[0].length ?? line.length - line.trimStart().length;
+
+// Cada linha do texto como aparece na leitura, uma por uma, para ficar na mesma altura que tem na
+// edição. mark: a marca do começo (#, - ou 1.) com os espaços; text: o resto da linha.
+export type Line = { t: 'h1' | 'h2' | 'li' | 'ol' | 'p'; mark: string; text: string };
+export const docLines = (body: string): Line[] => body.split('\n').map(line => {
+  let m: RegExpExecArray | null;
+  if ((m = /^(\s*(#{1,3})\s+)(.*)$/.exec(line))) return { t: m[2].length === 1 ? 'h1' : 'h2', mark: m[1], text: m[3] };
+  if ((m = /^(\s*[-*•]\s+)(.*)$/.exec(line))) return { t: 'li', mark: m[1], text: m[2] };
+  if ((m = /^(\s*\d+[.)]\s+)(.*)$/.exec(line))) return { t: 'ol', mark: m[1], text: m[2] };
+  return { t: 'p', mark: '', text: line };
+});
 export const docPreview = (body: string) => parseDoc(body).filter(b => b.t !== 'h1' && b.t !== 'h2').map(b => b.lines.join(b.t === 'p' ? ' ' : ' · ')).join(' · ').slice(0, 160);
 export const docTitle = (d: { title: string; body: string }) => d.title.trim() || parseDoc(d.body).find(b => b.t === 'h1' || b.t === 'h2')?.lines[0] || 'Sem título';
 export const isBlankItem = (i: Item) => i.kind === 'doc' ? !i.title.trim() && !i.body.trim() : !i.text.trim();

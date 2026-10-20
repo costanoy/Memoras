@@ -88,7 +88,8 @@ export function ForgotPin() {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  const back = () => go('pin', { pinMode: 'unlock', pin: '' });
+  // Travado, volta ao PIN; vindo dos ajustes ou do primeiro uso (conferir o PIN), volta para lá.
+  const back = () => go('pin', { pinMode: isLocked() ? 'unlock' : 'verify', pin: '' });
 
   const submit = async () => {
     if (busy) return;

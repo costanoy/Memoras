@@ -1,4 +1,4 @@
-import { go, set, setCfg, startCreatePin, useApp } from '../store';
+import { go, set, setCfg, startCreatePin, startUsePin, useApp } from '../store';
 import { ThemeGrid, Toggle } from '../ui';
 
 const STORE = [
@@ -8,6 +8,8 @@ const STORE = [
 
 export function Onboard() {
   const s = useApp(), step = s.onStep;
+  // Conta que já tem PIN (de outro aparelho): este aparelho usa o mesmo, em vez de criar outro.
+  const accPin = !!s.cfg.account && !!s.cfg.pinHash;
 
   const next = () => {
     if (step === 1 && !s.cfg.diaryName.trim()) setCfg({ diaryName: 'Meu diário' });
@@ -19,7 +21,9 @@ export function Onboard() {
     setCfg({ onboarded: true, invite: true });
     set({ unlocked: true });
     void navigator.storage?.persist?.();
-    if (s.obPin) startCreatePin('history'); else go('history');
+    if (!s.obPin) go('history');
+    else if (accPin) startUsePin('history');
+    else startCreatePin('history');
   };
   const nav = (
     <div className="row" style={{ gap: 10 }}>
@@ -78,14 +82,14 @@ export function Onboard() {
           <div className="col" style={{ gap: 8 }}>
             <div className="h0">Proteger com um PIN?</div>
             <div className="p">O PIN pede um código de 4 dígitos ao abrir o app neste aparelho. É independente da senha da conta. Opcional.</div>
-            <div className="small">{s.cfg.account ? 'Se esquecer, é só entrar com sua conta para criar outro.' : 'Sem conta, você vai receber uma chave para usar caso esqueça o PIN.'}</div>
+            <div className="small">{accPin ? 'Sua conta já tem um PIN: use o mesmo neste aparelho.' : s.cfg.account ? 'Se esquecer, é só entrar com sua conta para criar outro.' : 'Sem conta, você vai receber uma chave para usar caso esqueça o PIN.'}</div>
           </div>
           <button className="press row" aria-pressed={s.obPin} onClick={() => set({ obPin: !s.obPin })}
             style={{ gap: 14, padding: '16px 18px', borderRadius: 22, textAlign: 'left', color: 'var(--ink)', background: 'rgba(255,255,255,.7)', border: '1px solid rgba(255,255,255,.95)' }}>
             <span style={{ flex: 1, fontSize: 17, fontWeight: 600 }}>Ativar PIN</span>
             <Toggle on={s.obPin} />
           </button>
-          <button className="gel" onClick={finish}>{s.obPin ? 'Criar PIN' : 'Começar a escrever'}</button>
+          <button className="gel" onClick={finish}>{!s.obPin ? 'Começar a escrever' : accPin ? 'Usar o PIN da conta' : 'Criar PIN'}</button>
         </>}
       </div>
     </div>
