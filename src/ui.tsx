@@ -65,8 +65,11 @@ export function MonthCal({ y, m, onMove, has, isSel, onPick, all }: {
 }) {
   const first = new Date(y, m, 1), dim = new Date(y, m + 1, 0).getDate();
   const move = (d: number) => { const x = new Date(y, m + d, 1); onMove(x.getFullYear(), x.getMonth()); };
+  // Ao abrir numa janela muito baixa (em que a coluna rola), leva a coluna até o calendário inteiro.
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { ref.current?.scrollIntoView({ block: 'nearest' }); }, []);
   return (
-    <div className="cal">
+    <div className="cal" ref={ref}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
         <button className="arrow press" aria-label="Mês anterior" onClick={() => move(-1)}>‹</button>
         <span style={{ fontSize: 15, fontWeight: 700 }}>{monthYear(y, m)}</span>

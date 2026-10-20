@@ -147,19 +147,31 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .ttl{flex:1;min-width:0;font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meta{flex:none;font-size:13px;color:var(--ink2)}
 .prev{font-size:14px;line-height:1.4;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.cal{flex:0 1 auto;min-height:0;overflow:auto;padding:12px;border-radius:20px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95)}
+.cal{flex:none;padding:12px;border-radius:20px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.95)}
 .cal .arrow{width:32px;height:32px;padding:0;border-radius:50%;border:none;background:rgba(255,255,255,.7);color:var(--ink);font-size:18px}
 .calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center}
 .calgrid span{font-size:12px;font-weight:700;color:var(--ink4);padding:2px 0}
 .day{position:relative;height:32px;border-radius:10px;border:none;padding:0;font-size:14px;color:var(--ink4);background:transparent;cursor:default}
-/* Em janelas baixas o calendário encolhe (e rola por dentro, se preciso) em vez de empurrar a barra de ícones para fora do painel. */
+/* O calendário aparece sempre inteiro: quem cede espaço é a lista. Em janelas baixas ele fica mais
+   compacto e, se nem assim couber, a coluna inteira rola (nada fica cortado na borda). */
+.side .panel{overflow-y:auto}
 .side .scroll{min-height:88px}
+.side .cal~.scroll,.side .scroll:has(~.cal){min-height:72px}
 @media (max-height:820px){
   .side .panel{gap:10px}
   .cal{padding:8px 10px}
   .cal .arrow{width:28px;height:28px}
   .day{height:28px}
 }
+@media (max-height:700px){
+  .side .panel{gap:8px;padding-top:14px}
+  .cal{padding:6px 8px}
+  .cal .arrow{width:26px;height:26px;font-size:16px}
+  .calgrid span{font-size:11px;padding:0}
+  .day{height:25px;font-size:13px}
+}
+/* Barras de rolagem finas e discretas, no lugar das cinzas com setas do Windows. */
+.scroll,.side .panel,.flow,.main .panel>div{scrollbar-width:thin;scrollbar-color:rgba(12,60,90,.28) transparent}
 .day.has{font-weight:700;color:var(--ink);cursor:pointer}
 .day.has::after{content:'';position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}
 .day.today{background:rgba(255,255,255,.95);box-shadow:inset 0 0 0 1.5px var(--acc)}

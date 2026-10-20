@@ -79,7 +79,8 @@ function Side({ s }: { s: State }) {
         {sec === 'agenda' && !s.mobile && <AgendaSide s={s} />}
 
         {sec === 'diario' && <>
-        {!acc && s.cfg.invite && (
+        {/* Com o calendário aberto, o convite sai para dar espaço a ele. */}
+        {!acc && s.cfg.invite && !s.calOpen && (
           <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 18, background: 'rgba(255,255,255,.72)', border: '1px solid #fff' }}>
             <div className="col" style={{ flex: 1, gap: 4, fontSize: 14, lineHeight: 1.4, color: 'var(--ink2)' }}>
               <span>Suas anotações estão só neste aparelho.</span>
