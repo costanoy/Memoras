@@ -398,12 +398,15 @@ function Settings({ s }: { s: State }) {
 
 // Só no app de Windows: andamento da atualização e o botão para reiniciar e instalar.
 const UPD_TEXT: Record<Upd['state'], (u: Upd) => string> = {
-  idle: () => 'Procura versão nova ao abrir o app e a cada 4 horas.',
+  idle: u => u.kind === 'win' ? 'Procura versão nova ao abrir o app e a cada 4 horas.' : 'Procura versão nova sempre que o app abre.',
   checking: () => 'Procurando versão nova…',
   latest: () => 'Você está na versão mais recente.',
+  available: u => `A versão ${u.version} está disponível. Suas anotações continuam no aparelho.`,
   downloading: u => `Baixando a versão ${u.version}… ${u.percent}%`,
   ready: u => `A versão ${u.version} está pronta. O Memoras fecha, atualiza e abre de novo em alguns segundos.`,
-  error: () => 'Não deu para procurar versão nova agora. Confira a internet e tente de novo.',
+  permission: () => 'Permita que o Memoras instale atualizações e toque em Atualizar de novo.',
+  installing: () => 'Confirme na tela do Android para terminar de atualizar.',
+  error: u => u.asked ? 'Não deu para baixar agora. Confira a internet e tente de novo.' : 'Não deu para procurar versão nova agora. Confira a internet e tente de novo.',
 };
 function Updates() {
   const u = useUpdate();
@@ -413,8 +416,10 @@ function Updates() {
       <div className="group">Atualizações</div>
       <div className="small" role="status">{UPD_TEXT[u.state](u)}</div>
       {u.state === 'ready'
-        ? <button className="gel" style={{ alignSelf: 'flex-start', height: 44, padding: '0 20px', fontSize: 15 }} onClick={installUpdate}>Reiniciar e atualizar</button>
-        : u.state !== 'checking' && u.state !== 'downloading' && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={checkUpdate}>Procurar agora</button>}
+        ? <button className="gel" style={{ alignSelf: 'flex-start', height: 44, padding: '0 20px', fontSize: 15 }} onClick={() => void installUpdate()}>Reiniciar e atualizar</button>
+        : u.kind === 'apk' && u.url && (u.state === 'available' || u.state === 'permission' || u.state === 'installing' || (u.state === 'error' && u.asked))
+          ? <button className="gel" style={{ alignSelf: 'flex-start', height: 44, padding: '0 20px', fontSize: 15 }} onClick={() => void installUpdate()}>Atualizar</button>
+          : u.state !== 'checking' && u.state !== 'downloading' && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => void checkUpdate(true)}>Procurar agora</button>}
     </div>
   );
 }

@@ -198,6 +198,15 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 .round.flip svg{transform:scaleX(-1)}
 .day.pick:not(.has){cursor:pointer;color:var(--ink3)}
 
+/* Aviso de versão nova, no alto da tela (abaixo da barra de título no Windows) */
+.updcard{position:absolute;left:50%;top:calc(10px + var(--tb) + var(--sat));transform:translateX(-50%);z-index:44;width:min(460px, calc(100% - 24px));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 18px 40px -16px rgba(0,30,60,.55);color:var(--ink);animation:mIn .2s cubic-bezier(.2,.8,.2,1)}
+.updcard strong{font-size:16px}
+.updcard span{font-size:14px;line-height:1.4;color:var(--ink2)}
+.updcard .gel{height:40px;padding:0 18px;font-size:15px}
+.updcard .soft{height:40px}
+.updbar{display:block;height:6px;margin-top:6px;border-radius:3px;background:rgba(12,60,90,.12);overflow:hidden}
+.updbar i{display:block;height:100%;background:var(--gel);border-radius:3px;transition:width .2s}
+
 /* Cor da anotação ou do caderno */
 .colorpick{position:relative;flex:none}
 .cdot{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid rgba(12,60,90,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}

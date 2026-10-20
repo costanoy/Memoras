@@ -6,6 +6,7 @@ import { PinKey, Recovery } from './screens/Keys';
 import { Onboard } from './screens/Onboard';
 import { Pin } from './screens/Pin';
 import { Shell } from './screens/Shell';
+import { UpdateCard } from './screens/UpdateCard';
 import { TitleBar } from './TitleBar';
 
 export function App() {
@@ -30,6 +31,7 @@ export function App() {
       {scr === 'forgotPin' && <ForgotPin />}
       {scr === 'pinkey' && <PinKey />}
       {inApp(scr) && <Shell />}
+      {inApp(scr) && <UpdateCard />}
 
       {s.toast && (
         <div className={'toast' + (s.mobile && inApp(scr) && scr !== 'editor' && scr !== 'doc' ? ' up' : '') + (s.toast.undo ? ' undo' : '')} role="status">

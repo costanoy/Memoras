@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(RingerModePlugin.class);
         registerPlugin(BiometricPlugin.class);
+        registerPlugin(UpdatePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

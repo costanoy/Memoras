@@ -9,9 +9,10 @@ import { setupBackButton, watchAway } from './native';
 import { preloadSounds } from './sounds';
 import { init } from './store';
 import { startSync } from './sync';
+import { startUpdates } from './updates';
 
 createRoot(document.getElementById('root')!).render(<App />);
 setupBackButton();
 watchAway();
 preloadSounds();
-void init().then(startSync);
+void init().then(() => { startSync(); startUpdates(); });
