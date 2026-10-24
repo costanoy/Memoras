@@ -1,8 +1,25 @@
+<p align="center">
+  <a href="https://memoras.cyberhat.com.br"><img src="site/img/og.jpg" alt="Memoras: escreva rápido, releia depois, tudo privado" width="720"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/costanoy/Memoras/releases/latest/download/Memoras-Setup.exe"><b>Baixar para Windows</b></a> · <a href="https://github.com/costanoy/Memoras/releases/latest/download/Memoras.apk"><b>Baixar para Android</b></a> · <a href="https://memoras.cyberhat.com.br">Site</a>
+</p>
+
 # Memoras
 
-Diário pessoal privado para computador e celular. Feito a partir de `design_handoff_memoras/`.
+Diário pessoal privado para computador e celular. Um lugar para guardar o que você pensa, sem distração, com cadernos para o que você quer reler e uma agenda para planejar cada dia. Funciona sem internet, protege tudo com criptografia e só abre para você.
 
-É um app web instalável (PWA): React + Vite + TypeScript. A mesma base serve os dois formatos; abaixo de 720 px de largura entra o layout de celular.
+- **Diário**: escreva do jeito que vier; cada dia guarda o horário de cada trecho.
+- **Cadernos**: textos para reler sempre, com títulos e listas.
+- **Agenda**: o plano de cada dia, com tarefas para marcar. O que ficou por fazer passa para amanhã com um toque.
+- **Sem internet e sem conta**: tudo fica no aparelho. A conta é opcional e serve só para sincronizar entre aparelhos.
+- **Criptografia de ponta a ponta**: o servidor só guarda texto cifrado e nunca recebe a sua senha.
+- **PIN e digital** para trancar a tela, 10 temas, atualização automática no Windows e aviso de versão nova no Android.
+
+## Como é feito
+
+Feito a partir de `design_handoff_memoras/`. É um app web instalável (PWA): React + Vite + TypeScript. A mesma base serve os dois formatos; abaixo de 720 px de largura entra o layout de celular. No Windows ele roda com Electron e no Android com Capacitor; as contas e a sincronização usam o Supabase.
 
 ## Rodar
 
