@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { addDays, dayKey, keyTime, todayKey, type Task } from '../lib/items';
 import { dayLabel, dayMonth, uid } from '../lib/notes';
-import { addTask, dayNotesOn, deleteTask, get, insertTaskAfter, moveTask, openDay, plannedDays, reorderTask, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
-import { AutoArea, Icon, MonthCal } from '../ui';
+import { addTask, dayNotesOn, deleteTask, doneDays, get, insertTaskAfter, moveTask, openDay, openMenu, plannedDays, reorderTask, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
+import { AutoArea, editing, Icon, menuOn, MonthCal } from '../ui';
 
 // "Hoje", "Amanhã", "Ontem" ou o dia da semana com a data.
 export function agendaLabel(k: string) {
   const t = todayKey();
   return k === t ? 'Hoje' : k === addDays(t, 1) ? 'Amanhã' : k === addDays(t, -1) ? 'Ontem' : dayLabel(keyTime(k));
 }
-const fullLabel = (k: string) => { const l = agendaLabel(k); return l === 'Hoje' || l === 'Amanhã' || l === 'Ontem' ? l + ', ' + dayMonth(keyTime(k)) : l; };
+export const fullLabel = (k: string) => { const l = agendaLabel(k); return l === 'Hoje' || l === 'Amanhã' || l === 'Ontem' ? l + ', ' + dayMonth(keyTime(k)) : l; };
 
 // O + do celular pede o campo de tarefa nova já com o cursor.
 let wantFocus = false;
@@ -17,9 +17,10 @@ export const focusNewTask = () => { wantFocus = true; };
 // Tarefa que recebe o cursor quando aparecer na tela (Enter cria uma logo abaixo; apagar volta para a de cima).
 let focusTaskId: string | null = null;
 
+// Dia com todas as tarefas feitas aparece com ✓ no lugar do pontinho.
 function AgendaCal({ s }: { s: State }) {
-  const planned = plannedDays(s);
-  return <MonthCal y={s.agY} m={s.agM} all onMove={(agY, agM) => set({ agY, agM })} has={t => planned.has(dayKey(t))} isSel={t => dayKey(t) === s.agDay}
+  const planned = plannedDays(s), done = doneDays(s);
+  return <MonthCal y={s.agY} m={s.agM} all onMove={(agY, agM) => set({ agY, agM })} has={t => planned.has(dayKey(t))} done={t => done.has(dayKey(t))} isSel={t => dayKey(t) === s.agDay}
     onPick={t => { openDay(dayKey(t)); if (s.mobile) set({ agCal: false }); }} />;
 }
 
@@ -50,7 +51,9 @@ export function AgendaSide({ s }: { s: State }) {
 type Drag = { id: string; from: number; to: number; y0: number; dy: number; mids: number[]; h: number };
 type Grab = { down(e: PointerEvent<HTMLButtonElement>, id: string): void; move(e: PointerEvent): void; up(): void; cancel(): void; key(id: string, dir: number): void };
 
-function TaskRow({ t, k, i, drag, grab, rowRef }: { t: Task; k: string; i: number; drag: Drag | null; grab: Grab; rowRef: (el: HTMLDivElement | null) => void }) {
+// No celular, a linha fica só com a alça, a caixinha e o texto: "Amanhã" e apagar ficam no toque longo
+// (no computador, também no botão direito). Tocar longo no texto que se está editando é do sistema (copiar, colar).
+function TaskRow({ t, k, i, drag, grab, rowRef, mobile, menuOpen }: { t: Task; k: string; i: number; drag: Drag | null; grab: Grab; rowRef: (el: HTMLDivElement | null) => void; mobile: boolean; menuOpen: boolean }) {
   const toToday = k === todayKey();
   let shift = 0;
   if (drag?.id === t.id) shift = drag.dy;
@@ -79,17 +82,20 @@ function TaskRow({ t, k, i, drag, grab, rowRef }: { t: Task; k: string; i: numbe
       deleteTask(t.id);
     }
   };
+  const menu = menuOn((x, y, touch) => openMenu('task', t.id, x, y, touch), (el, touch) => !editing(el) && !(touch && el.closest('.grip')));
   return (
-    <div ref={rowRef} className={'task' + (t.done ? ' done' : '') + (drag?.id === t.id ? ' dragging' : drag ? ' shift' : '')} style={shift ? { transform: 'translateY(' + shift + 'px)' } : undefined}>
+    <div ref={rowRef} className={'task' + (t.done ? ' done' : '') + (drag?.id === t.id ? ' dragging' : drag ? ' shift' : '') + (menuOpen ? ' ctxon' : '')}
+      style={shift ? { transform: 'translateY(' + shift + 'px)' } : undefined} {...menu}>
       <button className="grip" aria-label={'Mudar a ordem de ' + (t.text || 'tarefa')} title="Arraste para mudar a ordem"
         onPointerDown={e => grab.down(e, t.id)} onPointerMove={grab.move} onPointerUp={grab.up} onPointerCancel={grab.cancel}
         onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); grab.key(t.id, e.key === 'ArrowUp' ? -1 : 1); } }}>
         <svg width="12" height="18" viewBox="0 0 12 18" fill="currentColor" aria-hidden="true">{[3, 9, 15].map(y => <g key={y}><circle cx="3" cy={y} r="1.7" /><circle cx="9" cy={y} r="1.7" /></g>)}</svg>
       </button>
       <button className={'tick press' + (t.done ? ' on' : '')} role="checkbox" aria-checked={t.done} aria-label={t.done ? 'Desmarcar ' + t.text : 'Marcar ' + t.text + ' como feita'} onClick={() => toggleTask(t.id)}><i>{t.done ? '✓' : ''}</i></button>
-      <input ref={ref} className="tasktext" value={t.text} aria-label="Tarefa" onChange={e => setTaskText(t.id, e.target.value)} onKeyDown={keys} onBlur={() => { if (!t.text.trim()) deleteTask(t.id); }} />
-      {!t.done && <button className="mini press" title={toToday ? 'Passar para amanhã' : 'Passar para o dia seguinte'} onClick={() => moveTask(t.id, addDays(k, 1))}>{toToday ? 'Amanhã' : 'Dia seguinte'}</button>}
-      <button className="mini x press" aria-label={'Apagar ' + t.text} onClick={() => deleteTask(t.id)}>×</button>
+      {/* enterKeyHint: no Android, a tecla Enter do teclado vira um Enter de verdade (sem ele, ela pulava para as Observações). */}
+      <input ref={ref} className="tasktext" value={t.text} aria-label="Tarefa" enterKeyHint="enter" onChange={e => setTaskText(t.id, e.target.value)} onKeyDown={keys} onBlur={() => { if (!t.text.trim()) deleteTask(t.id); }} />
+      {!mobile && !t.done && <button className="mini press" title={toToday ? 'Passar para amanhã' : 'Passar para o dia seguinte'} onClick={() => moveTask(t.id, addDays(k, 1))}>{toToday ? 'Amanhã' : 'Dia seguinte'}</button>}
+      {!mobile && <button className="mini x press" aria-label={'Apagar ' + t.text} onClick={() => deleteTask(t.id)}>×</button>}
     </div>
   );
 }
@@ -104,7 +110,7 @@ function NewTask({ k }: { k: string }) {
     <div className="task add">
       <span className="gripspace" aria-hidden="true" />
       <span className="tick ghost" aria-hidden="true">{!on && !v && <Icon name="plus" size={14} sw={3} />}</span>
-      <input ref={ref} className="tasktext" value={v} placeholder="Adicionar tarefa" aria-label="Adicionar tarefa" onChange={e => setV(e.target.value)}
+      <input ref={ref} className="tasktext" value={v} placeholder="Adicionar tarefa" aria-label="Adicionar tarefa" enterKeyHint="enter" onChange={e => setV(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} onFocus={() => setOn(true)} onBlur={() => { setOn(false); add(); }} />
     </div>
   );
@@ -144,7 +150,8 @@ function DayBody({ s, k }: { s: State; k: string }) {
         {tasks.length > 0 && <span className="meta">{done} de {tasks.length} {tasks.length === 1 ? 'feita' : 'feitas'}</span>}
       </div>
       <div className="col" style={{ marginTop: 8 }}>
-        {tasks.map((t, i) => <TaskRow key={t.id} t={t} k={k} i={i} drag={drag} grab={grab} rowRef={el => { if (el) rows.current.set(t.id, el); else rows.current.delete(t.id); }} />)}
+        {tasks.map((t, i) => <TaskRow key={t.id} t={t} k={k} i={i} drag={drag} grab={grab} mobile={s.mobile} menuOpen={s.menu?.id === t.id}
+          rowRef={el => { if (el) rows.current.set(t.id, el); else rows.current.delete(t.id); }} />)}
         <NewTask k={k} />
       </div>
       <div className="group" style={{ marginTop: 30 }}>Observações</div>

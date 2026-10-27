@@ -11,8 +11,8 @@
 Diário pessoal privado para computador e celular. Um lugar para guardar o que você pensa, sem distração, com cadernos para o que você quer reler e uma agenda para planejar cada dia. Funciona sem internet, protege tudo com criptografia e só abre para você.
 
 - **Diário**: escreva do jeito que vier; cada dia guarda o horário de cada trecho.
-- **Cadernos**: textos para reler sempre, com títulos e listas.
-- **Agenda**: o plano de cada dia, com tarefas para marcar. O que ficou por fazer passa para amanhã com um toque.
+- **Cadernos**: textos para reler sempre, com títulos e listas. Os mais usados ficam fixados no alto.
+- **Agenda**: o plano de cada dia, com tarefas para marcar, e o Resumão com tudo o que vem pela frente, dia a dia. O que ficou por fazer passa para amanhã.
 - **Sem internet e sem conta**: tudo fica no aparelho. A conta é opcional e serve só para sincronizar entre aparelhos.
 - **Criptografia de ponta a ponta**: o servidor só guarda texto cifrado e nunca recebe a sua senha.
 - **PIN e digital** para trancar a tela, 10 temas, atualização automática no Windows e aviso de versão nova no Android.

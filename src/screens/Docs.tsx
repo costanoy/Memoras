@@ -1,16 +1,43 @@
 import { useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
 import { docLines, docPreview, docTitle, lineStarts, type Doc, type Line } from '../lib/items';
 import { DAY, dayMonth, fmtT, same } from '../lib/notes';
-import { archiveDoc, askTrash, docsOf, finishDoc, go, lastEdit, newDoc, openDoc, set, setDocBody, setDocColor, setDocTitle, type State } from '../store';
+import { archiveDoc, askTrash, docsOf, finishDoc, go, lastEdit, newDoc, openDoc, openMenu, set, setDocBody, setDocColor, setDocTitle, upcoming, type State } from '../store';
 import { paperStyle } from '../themes';
-import { AutoArea, ColorPick, Icon } from '../ui';
+import { AutoArea, ColorPick, Icon, menuOn } from '../ui';
+import { agendaLabel } from './Agenda';
 
 const when = (t: number) => same(t, Date.now()) ? fmtT(t) : same(t, Date.now() - DAY) ? 'Ontem' : dayMonth(t);
 const edited = (t: number) => same(t, Date.now()) ? 'Editado hoje às ' + fmtT(t) : same(t, Date.now() - DAY) ? 'Editado ontem' : 'Editado em ' + dayMonth(t);
 
-// Lista dos cadernos: na barra lateral do computador e na aba Cadernos do celular.
+// O Resumão, sempre no alto da lista: as tarefas da Agenda de hoje em diante, lidas como um caderno.
+function SummaryCard({ s }: { s: State }) {
+  const days = upcoming(s), left = days.reduce((n, d) => n + d.tasks.filter(t => !t.done).length, 0);
+  const prev = days.map(d => [agendaLabel(d.k), d.tasks.filter(t => !t.done).map(t => t.text.trim()).join(', ')]).filter(([, t]) => t).map(([l, t]) => l + ': ' + t).join(' · ');
+  return (
+    <button className={'item press sumcard' + (!s.mobile && s.screen === 'summary' ? ' on' : '')} onClick={() => go('summary')}>
+      <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}>
+        <span className="ttl"><Icon name="agenda" size={16} sw={2.4} />Resumão</span><span className="meta">{left ? left + ' a fazer' : ''}</span>
+      </span>
+      <span className="prev">{prev.slice(0, 160) || (days.length ? 'Tudo feito por enquanto.' : 'As tarefas da Agenda de hoje em diante, separadas por dia.')}</span>
+    </button>
+  );
+}
+
+// Lista dos cadernos: na barra lateral do computador e na aba Cadernos do celular. Os fixados vêm
+// primeiro. Botão direito (ou toque longo no celular) abre as opções do caderno.
 export function DocsList({ s }: { s: State }) {
-  const docs = docsOf(s);
+  const docs = docsOf(s), pinned = docs.filter(d => d.pinned), rest = docs.filter(d => !d.pinned);
+  const card = (d: Doc) => (
+    <button key={d.id} className={'item press' + (!s.mobile && s.docSel === d.id && (s.screen === 'docs' || s.screen === 'doc') ? ' on' : '') + (s.menu?.id === d.id ? ' ctxon' : '')}
+      style={paperStyle(d.color)} onClick={() => openDoc(d.id)} {...menuOn((x, y, touch) => openMenu('doc', d.id, x, y, touch))}>
+      <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}>
+        <span className="ttl">{docTitle(d)}</span>
+        {d.pinned && <span className="pinmark" title="Fixado no alto"><Icon name="pin" size={14} sw={2.4} /></span>}
+        <span className="meta">{when(lastEdit(d))}</span>
+      </span>
+      <span className="prev">{docPreview(d.body) || 'Sem texto ainda'}</span>
+    </button>
+  );
   return <>
     {!s.mobile && (
       <button className="gel row" style={{ flex: 'none', justifyContent: 'center', gap: 8, height: 50 }} onClick={() => newDoc()}>
@@ -18,12 +45,11 @@ export function DocsList({ s }: { s: State }) {
       </button>
     )}
     <div className="scroll" style={{ gap: 6, padding: '2px 2px 8px', margin: '0 -2px' }}>
-      {docs.map(d => (
-        <button key={d.id} className={'item press' + (!s.mobile && s.docSel === d.id && (s.screen === 'docs' || s.screen === 'doc') ? ' on' : '')} style={paperStyle(d.color)} onClick={() => openDoc(d.id)}>
-          <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{docTitle(d)}</span><span className="meta">{when(lastEdit(d))}</span></span>
-          <span className="prev">{docPreview(d.body) || 'Sem texto ainda'}</span>
-        </button>
-      ))}
+      <SummaryCard s={s} />
+      {pinned.length > 0 && <div className="group" style={{ padding: '8px 8px 0' }}>Fixados</div>}
+      {pinned.map(card)}
+      {pinned.length > 0 && rest.length > 0 && <div className="group" style={{ padding: '8px 8px 0' }}>Outros cadernos</div>}
+      {rest.map(card)}
       {!docs.length && (
         <div className="empty" style={{ margin: 'auto 0', gap: 10, padding: '24px 16px' }}>
           <div className="orb" style={{ width: 64, height: 64 }} />
@@ -184,11 +210,15 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
         <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
       </div>
       <ColorPick value={d.color} onPick={c => setDocColor(d.id, c)} mobile={s.mobile} label="Cor do caderno" />
+      {/* Escrevendo no celular, Arquivar e Lixeira saem para sobrar espaço (continuam no toque longo da lista). */}
+      {!(edit && s.mobile) && <>
+        <button className="pill press" aria-label={archLabel} onClick={() => archiveDoc(d.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
+        <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(d.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
+      </>}
+      {/* Editar e Pronto ficam por último; Pronto, em destaque, termina a edição. */}
       {edit
-        ? <button className="pill press" onClick={stopEdit}>Pronto</button>
+        ? <button className="pill press go" onClick={stopEdit}><Icon name="check" size={18} sw={2.8} />Pronto</button>
         : <button className="pill press" aria-label="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && 'Editar'}</button>}
-      <button className="pill press" aria-label={archLabel} onClick={() => archiveDoc(d.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
-      <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(d.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
     </div>
     <div ref={scRef} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
       {edit ? (

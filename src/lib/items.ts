@@ -10,6 +10,7 @@ export interface DocContent {
   title: string; titleTs: number; body: string; bodyTs: number;
   status: 'active' | 'archived' | 'trashed'; statusTs: number;   // 'archived' só a partir da 1.1.3
   color: string; colorTs: number;   // cor do papel ('' = sem cor); a 1.1.0 e a 1.1.1 não conhecem
+  pinned: boolean; pinnedTs: number;   // fixado no alto da lista; até a 1.1.3 não existe
 }
 export interface TaskContent {
   kind: 'task'; created: number; deleted: boolean;
@@ -34,7 +35,7 @@ const fresh = { rev: 0, syncedRev: -1, pushed: false };
 let lastOrder = 0;
 export const nextOrder = () => (lastOrder = Math.max(Date.now(), lastOrder + 1));
 export const blankDoc = (id: string): Doc => ({
-  id, kind: 'doc', created: Date.now(), deleted: false, title: '', titleTs: 0, body: '', bodyTs: 0, status: 'active', statusTs: 0, color: '', colorTs: 0, base: null, ...fresh,
+  id, kind: 'doc', created: Date.now(), deleted: false, title: '', titleTs: 0, body: '', bodyTs: 0, status: 'active', statusTs: 0, color: '', colorTs: 0, pinned: false, pinnedTs: 0, base: null, ...fresh,
 });
 export const blankTask = (id: string, date: string, text: string): Task => {
   const t = Date.now();
@@ -48,6 +49,7 @@ export function itemContent(i: ItemContent): ItemContent {
   if (i.kind === 'doc') return {
     kind: 'doc', created: i.created, deleted: i.deleted, title: i.title, titleTs: i.titleTs, body: i.body, bodyTs: i.bodyTs, status: i.status, statusTs: i.statusTs,
     color: typeof i.color === 'string' ? i.color : '', colorTs: typeof i.colorTs === 'number' ? i.colorTs : 0,
+    pinned: typeof i.pinned === 'boolean' ? i.pinned : false, pinnedTs: typeof i.pinnedTs === 'number' ? i.pinnedTs : 0,
   };
   if (i.kind === 'task') return { kind: 'task', created: i.created, deleted: i.deleted, date: i.date, dateTs: i.dateTs, text: i.text, textTs: i.textTs, done: i.done, doneTs: i.doneTs, order: i.order, orderTs: i.orderTs };
   return { kind: 'daynote', created: i.created, deleted: i.deleted, date: i.date, text: i.text, textTs: i.textTs };
@@ -98,7 +100,9 @@ export function mergeItem(l: Item, r: ItemContent): { merged: ItemContent; copy?
     const [title, titleTs] = pick(l.title, l.titleTs, r.title, r.titleTs);
     const [status, statusTs] = pick(l.status, l.statusTs, r.status, r.statusTs);
     const lc = itemContent(l) as DocContent, rc = itemContent(r) as DocContent, [color, colorTs] = pick(lc.color, lc.colorTs, rc.color, rc.colorTs);
-    return { merged: { kind: 'doc', created, deleted: false, title, titleTs, body: text, bodyTs: textTs, status, statusTs, color, colorTs }, copy };
+    // Uma versão antiga grava o caderno sem "fixado" (vale false, com data 0): a data maior daqui o mantém fixado.
+    const [pinned, pinnedTs] = lc.pinnedTs > rc.pinnedTs || (lc.pinnedTs === rc.pinnedTs && lc.pinned) ? [lc.pinned, lc.pinnedTs] : [rc.pinned, rc.pinnedTs];
+    return { merged: { kind: 'doc', created, deleted: false, title, titleTs, body: text, bodyTs: textTs, status, statusTs, color, colorTs, pinned, pinnedTs }, copy };
   }
   return { merged: { kind: 'daynote', created, deleted: false, date: (l as DayNote).date, text, textTs }, copy };
 }

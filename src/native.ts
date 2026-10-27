@@ -6,10 +6,22 @@ import { appAway, appBack, finishDoc, get, go, HOME, isLocked, set } from './sto
 
 export const isNative = Capacitor.isNativePlatform();
 
-// Digital do Android (android/.../BiometricPlugin.java). No Windows e no navegador não existe.
-const Biometria = registerPlugin<{ check(): Promise<{ available: boolean }>; verify(o: { title: string; cancel: string }): Promise<{ ok: boolean }> }>('Biometria');
-export const bioAvailable = async () => isNative && (await Biometria.check().catch(() => ({ available: false }))).available;
-export const bioVerify = async () => isNative && (await Biometria.verify({ title: 'Abrir o Memoras', cancel: 'Usar o PIN' }).catch(() => ({ ok: false }))).ok;
+// Digital do Android (android/.../BiometricPlugin.java). No Windows e no navegador não existe; no servidor
+// de desenvolvimento, os testes põem um dublê em window.__bioTeste antes do app carregar.
+type BioApi = { check(): Promise<{ available: boolean; status?: string }>; verify(o: { title: string; cancel: string }): Promise<{ ok: boolean }> };
+const devBio = import.meta.env.DEV ? (window as unknown as { __bioTeste?: BioApi }).__bioTeste : undefined;
+const Biometria: BioApi | null = isNative ? registerPlugin<BioApi>('Biometria') : devBio ?? null;
+export const bioPossible = !!Biometria;
+// ok: dá para entrar com a digital; none: o celular tem leitor, mas nenhuma digital cadastrada; no: sem leitor.
+export type BioStatus = 'ok' | 'none' | 'no';
+export async function bioStatus(): Promise<BioStatus> {
+  const r = await Biometria?.check().catch(() => null);
+  return !r ? 'no' : r.available ? 'ok' : r.status === 'none' ? 'none' : 'no';
+}
+export const bioAvailable = async () => (await bioStatus()) === 'ok';
+// enable: confirmar a digital para ligar a opção (não é para abrir o app; cancelar não leva ao PIN).
+export const bioVerify = async (enable = false) => !!Biometria && (await Biometria.verify(enable
+  ? { title: 'Confirme a sua digital', cancel: 'Cancelar' } : { title: 'Abrir o Memoras', cancel: 'Usar o PIN' }).catch(() => ({ ok: false }))).ok;
 
 // No Android não há "baixar arquivo": grava e abre o menu de compartilhar,
 // de onde a pessoa salva nos Arquivos, no Drive ou manda para onde quiser.
@@ -41,11 +53,13 @@ export function setupBackButton() {
   void App.addListener('backButton', () => {
     const s = get();
     if (s.confirm) return set({ confirm: null });
+    if (s.menu) return set({ menu: null });
     switch (s.screen) {
       case 'loading': return leave();
       case 'history': return s.day || s.calOpen ? set({ day: null, calOpen: false }) : leave();
       case 'editor': case 'docs': case 'agenda': return go('history');
       case 'doc': if (s.docEdit) return finishDoc(); return go('docs');
+      case 'summary': return go('docs');
       case 'search': case 'archive': case 'settings': return go(HOME[s.section]);
       case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : leave();
       case 'auth': return s.authReturn === 'onboard' ? go('onboard', { onStep: 3 }) : go('settings');

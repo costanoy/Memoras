@@ -13,12 +13,15 @@ const TEXT: Partial<Record<Upd['state'], (u: Upd) => string>> = {
   error: () => 'Não deu para baixar agora. Confira a internet e tente de novo.',
 };
 
+// Erro só aparece aqui se a pessoa pediu para atualizar; o resto fica nos Ajustes.
+const textOf = (u: Upd | null) => !u?.on || !u.version || hiddenFor === u.version || (u.state === 'error' && !u.asked) ? undefined : TEXT[u.state];
+// O cartão está na tela (a oferta da digital espera ele sair, para um não cobrir o outro).
+export const updShown = (u: Upd | null) => !!textOf(u);
+
 export function UpdateCard() {
   const u = useUpdate(), [, hide] = useState(0);
-  if (!u?.on || !u.version || hiddenFor === u.version) return null;
-  // Erro só aparece aqui se a pessoa pediu para atualizar; o resto fica nos Ajustes.
-  const text = u.state === 'error' && !u.asked ? undefined : TEXT[u.state];
-  if (!text) return null;
+  const text = textOf(u);
+  if (!u || !text) return null;
   const busy = u.state === 'downloading';
   const action = u.state === 'ready' ? 'Atualizar agora' : u.state === 'error' ? 'Tentar de novo' : u.state === 'installing' ? 'Abrir de novo' : 'Atualizar';
   const later = () => { hiddenFor = u.version; hide(x => x + 1); };

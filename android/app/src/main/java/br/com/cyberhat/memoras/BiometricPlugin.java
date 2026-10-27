@@ -18,10 +18,13 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class BiometricPlugin extends Plugin {
     private static final int FORTE = BiometricManager.Authenticators.BIOMETRIC_STRONG;
 
+    // status: "ok" (dá para usar), "none" (tem leitor, mas nenhuma digital cadastrada) ou "no" (sem leitor).
     @PluginMethod
     public void check(PluginCall call) {
+        int can = BiometricManager.from(getContext()).canAuthenticate(FORTE);
         JSObject r = new JSObject();
-        r.put("available", BiometricManager.from(getContext()).canAuthenticate(FORTE) == BiometricManager.BIOMETRIC_SUCCESS);
+        r.put("available", can == BiometricManager.BIOMETRIC_SUCCESS);
+        r.put("status", can == BiometricManager.BIOMETRIC_SUCCESS ? "ok" : can == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED ? "none" : "no");
         call.resolve(r);
     }
 

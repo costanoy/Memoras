@@ -2,16 +2,17 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { docPreview, docTitle, todayKey } from '../lib/items';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
 import {
-  activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, HOME, live, newDoc, newNote, openDay, openDoc, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
+  activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, HOME, live, LOCK_AFTER, newDoc, newNote, openDay, openDoc, openMenu, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
   set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, startUsePin, tasksOn, toast, trashedDocs, typeNew, useApp, archivedDocs, archiveDoc, type Section, type State,
 } from '../store';
-import { bioAvailable, bioVerify } from '../native';
+import { bioStatus, bioVerify, type BioStatus } from '../native';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
 import { checkUpdate, installUpdate, useUpdate, type Upd } from '../updates';
 import { paperStyle } from '../themes';
-import { AutoArea, ColorPick, Icon, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
+import { AutoArea, ColorPick, Icon, menuOn, MonthCal, SyncDot, syncLabel, ThemeGrid, Toggle } from '../ui';
 import { AgendaDay, agendaLabel, AgendaSide, focusNewTask } from './Agenda';
 import { DocsEmpty, DocsList, DocView } from './Docs';
+import { Summary } from './Summary';
 
 function Calendar({ s, act }: { s: State; act: Note[] }) {
   return <MonthCal y={s.calY} m={s.calM} onMove={(calY, calM) => set({ calY, calM })} has={t => act.some(n => same(nd(n), t))} isSel={t => !!s.day && same(s.day, t)}
@@ -108,8 +109,10 @@ function Side({ s }: { s: State }) {
           {groups.map(g => (
             <div key={g.label} className="col" style={{ gap: 6 }}>
               <div className="group" style={{ padding: '0 8px' }}>{g.label}</div>
+              {/* Botão direito (ou toque longo no celular): cor, arquivar e lixeira. */}
               {g.items.map(n => (
-                <button key={n.id} className={'item press' + (!s.mobile && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '')} style={paperStyle(n.color)} onClick={() => openNote(n.id)}>
+                <button key={n.id} className={'item press' + (!s.mobile && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '') + (s.menu?.id === n.id ? ' ctxon' : '')}
+                  style={paperStyle(n.color)} onClick={() => openNote(n.id)} {...menuOn((x, y, touch) => openMenu('note', n.id, x, y, touch))}>
                   <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{dispTitle(n)}</span><span className="meta">{fmtT(nd(n))}</span></span>
                   <span className="prev">{preview(n)}</span>
                 </button>
@@ -311,9 +314,16 @@ function Shelf({ s }: { s: State }) {
 function Settings({ s }: { s: State }) {
   const acc = s.cfg.account;
   const [busy, setBusy] = useState(false);
-  // Digital: só no celular, e só se ele tiver uma cadastrada.
-  const [bio, setBio] = useState(false);
-  useEffect(() => { void bioAvailable().then(setBio); }, []);
+  // Digital: só no celular com leitor; sem digital cadastrada, explica onde cadastrar. Confere de novo
+  // quando o app volta à tela (a pessoa pode ter ido cadastrar uma nas configurações do celular).
+  const [bio, setBio] = useState<BioStatus>('no');
+  useEffect(() => {
+    const check = () => { if (document.visibilityState === 'visible') void bioStatus().then(setBio); };
+    check();
+    document.addEventListener('visibilitychange', check);
+    return () => document.removeEventListener('visibilitychange', check);
+  }, []);
+  const after = LOCK_AFTER.includes(s.cfg.lockAfter) ? s.cfg.lockAfter : 5;
   const regen = async () => {
     if (busy) return;
     setBusy(true);
@@ -351,15 +361,29 @@ function Settings({ s }: { s: State }) {
           <button className="press row" aria-pressed={s.cfg.pinOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
             onClick={() => s.cfg.pinOn ? startChangePin('off') : acc && s.cfg.pinHash ? startUsePin('settings') : startCreatePin('settings')}>
             <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>{acc ? 'Pedir PIN neste aparelho' : 'Pedir PIN ao abrir'}</span>
-              <span style={{ fontSize: 14, color: 'var(--ink2)' }}>{acc ? 'O mesmo PIN em todos os seus aparelhos. Pede de novo depois de 1 minuto fora do app.' : 'Pede de novo depois de 1 minuto fora do app. Independente da senha da conta.'}</span></span>
+              <span style={{ fontSize: 14, color: 'var(--ink2)' }}>{acc ? 'O mesmo PIN em todos os seus aparelhos.' : 'Independente da senha da conta.'}</span></span>
             <Toggle on={s.cfg.pinOn} />
           </button>
-          {s.cfg.pinOn && bio && (
+          {s.cfg.pinOn && bio === 'ok' && (
             <button className="press row" aria-pressed={s.cfg.bioOn} style={{ gap: 14, padding: 0, background: 'none', border: 'none', textAlign: 'left', color: 'var(--ink)', minHeight: 44 }}
-              onClick={() => s.cfg.bioOn ? setCfg({ bioOn: false }) : void bioVerify().then(ok => { if (ok) { setCfg({ bioOn: true }); toast('Digital ativada neste aparelho'); } })}>
-              <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Abrir com a digital</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>O PIN continua valendo se a digital não funcionar.</span></span>
+              onClick={() => s.cfg.bioOn ? setCfg({ bioOn: false }) : void bioVerify(true).then(ok => { if (ok) { setCfg({ bioOn: true, bioAsked: true }); toast('Digital ativada neste aparelho'); } })}>
+              <span className="col" style={{ flex: 1, gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Entrar com a digital</span><span style={{ fontSize: 14, color: 'var(--ink2)' }}>Sem digitar o PIN neste celular. O PIN continua valendo se a digital não funcionar.</span></span>
               <Toggle on={s.cfg.bioOn} />
             </button>
+          )}
+          {s.cfg.pinOn && bio === 'none' && <div className="small">Para entrar com a digital, cadastre uma nas configurações do celular (Segurança). Depois volte aqui.</div>}
+          {/* Quanto tempo fora do app (ou com ele fechado) até pedir o PIN de novo. */}
+          {s.cfg.pinOn && (
+            <div className="col" style={{ gap: 8 }}>
+              <span className="col" style={{ gap: 2 }}><span style={{ fontSize: 17, fontWeight: 600 }}>Pedir o PIN de novo depois de</span>
+                <span style={{ fontSize: 14, color: 'var(--ink2)' }}>Tempo fora do app neste aparelho, mesmo com ele fechado.</span></span>
+              <div className="seg2 lockafter" role="group" aria-label="Pedir o PIN de novo depois de">
+                {LOCK_AFTER.map(m => (
+                  <button key={m} className={'press' + (after === m ? ' on' : '')} aria-pressed={after === m} aria-label={m === 60 ? '1 hora' : m === 1 ? '1 minuto' : m + ' minutos'}
+                    onClick={() => setCfg({ lockAfter: m })}>{m === 60 ? '1 h' : m + ' min'}</button>
+                ))}
+              </div>
+            </div>
           )}
           {s.cfg.pinOn && <button className="soft press" style={{ alignSelf: 'flex-start' }} onClick={() => startChangePin('change')}>Trocar PIN</button>}
         </div>
@@ -428,7 +452,7 @@ function Updates() {
 // Abas do celular: as três partes do app, o + e os ajustes.
 const TABS = [['history', 'Diário'], ['docs', 'Cadernos'], ['new', ''], ['agenda', 'Agenda'], ['settings', 'Ajustes']] as const;
 const NEW_LABEL: Record<Section, string> = { diario: 'Nova anotação', cadernos: 'Novo caderno', agenda: 'Nova tarefa' };
-const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', agenda: 'agenda', settings: 'settings' };
+const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', summary: 'docs', agenda: 'agenda', settings: 'settings' };
 
 // O "+" do celular: o botão gira e uma bolha de gel cresce a partir dele até
 // cobrir a tela; o item novo abre por baixo e a bolha se desfaz.
@@ -465,8 +489,8 @@ export function Shell() {
   const showDoc = curDoc?.kind === 'doc' && (scr === 'doc' || (!s.mobile && scr === 'docs'));
   // No celular, as listas (diário e cadernos) ocupam a tela sozinhas.
   const listOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur) || scr === 'docs' || (scr === 'doc' && !curDoc));
-  // Enquanto escreve ou lê no celular, o menu inferior sai de cena.
-  const tabbar = s.mobile && !showEditor && !showDoc;
+  // Enquanto escreve ou lê no celular (inclusive o Resumão), o menu inferior sai de cena.
+  const tabbar = s.mobile && !showEditor && !showDoc && scr !== 'summary';
   const plus = usePlusBurst();
   const add = (btn: HTMLElement) => {
     if (s.section === 'cadernos') plus.start(btn, () => newDoc(true), () => newDoc());
@@ -491,6 +515,7 @@ export function Shell() {
             )}
             {showDoc && curDoc.kind === 'doc' && <DocView key={curDoc.id} s={s} d={curDoc} />}
             {!showDoc && (scr === 'docs' || scr === 'doc') && <DocsEmpty />}
+            {scr === 'summary' && <Summary s={s} />}
             {scr === 'agenda' && <AgendaDay s={s} />}
             {scr === 'search' && <Search s={s} />}
             {scr === 'archive' && <Shelf s={s} />}

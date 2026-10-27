@@ -70,6 +70,8 @@ strong{font-weight:700}
 .link.u{text-decoration:underline;text-underline-offset:3px}
 .round{flex:none;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;color:var(--ink);background:var(--glass2);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45)}
 .pill{flex:none;display:flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;font-size:15px;font-weight:600;color:var(--ink);background:var(--glass2);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45)}
+/* Pronto (termina a edição do caderno): em gel, na cor do tema, para se destacar dos outros botões */
+.pill.go{padding:0 16px 0 13px;font-weight:700;color:var(--gel-fg);background:var(--gel);border-color:var(--gel-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 8px rgba(0,50,110,.2), 0 8px 16px -8px var(--gel-sh);text-shadow:0 1px 1px var(--gel-ts)}
 .field{width:100%;height:52px;border-radius:16px;border:1px solid rgba(12,60,90,.2);background:rgba(255,255,255,.9);box-shadow:inset 0 2px 4px rgba(0,40,80,.08);padding:0 16px;font-size:17px;font-weight:400;color:var(--ink);outline:none}
 textarea.field{height:auto;padding:14px 16px;resize:none}
 .field:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--ring)}
@@ -144,6 +146,12 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .group{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink4)}
 .item{text-align:left;display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:18px;color:var(--ink);background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.8)}
 .item.on{background:rgba(255,255,255,.95);border-color:var(--acc-a);box-shadow:0 0 0 3px var(--ring)}
+/* Toque longo abre o menu do item: sem selecionar o texto nem o menu do sistema */
+.item{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.item.ctxon,.task.ctxon{box-shadow:0 0 0 2px var(--acc-a)}
+.task.ctxon{border-radius:10px;background:rgba(255,255,255,.6)}
+.pinmark{flex:none;align-self:center;display:grid;color:var(--acc-d)}
+.sumcard .ttl svg{vertical-align:-2px;margin-right:7px;color:var(--acc-d)}
 .ttl{flex:1;min-width:0;font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .meta{flex:none;font-size:13px;color:var(--ink2)}
 .prev{font-size:14px;line-height:1.4;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -177,6 +185,12 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .day.today{background:rgba(255,255,255,.95);box-shadow:inset 0 0 0 1.5px var(--acc)}
 .day.sel{background:var(--gel);color:var(--gel-fg);box-shadow:none}
 .day.sel::after{background:var(--gel-fg)}
+/* Agenda: dia com todas as tarefas feitas, com fundo verde-claro e um ✓ pequeno no lugar do pontinho
+   (o número sobe um pouco em todos os dias, para o ✓ não encostar nele) */
+.calgrid .day{padding:0 0 3px}
+.day.alldone:not(.sel){background:rgba(70,180,90,.18)}
+.day.alldone::after{left:50%;bottom:2px;width:9px;height:6px;margin-left:-4.5px;border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Cpath d='M1 3l2.2 2L8 1' fill='none' stroke='%2323863a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.day.sel.alldone::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Cpath d='M1 3l2.2 2L8 1' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 .nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;border-radius:24px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff}
 .nav button{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:44px;overflow:hidden;padding:0;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:700;color:var(--ink);background:transparent;white-space:nowrap;transition:background .15s, padding .15s}
 .nav button:active{filter:brightness(.95);transform:scale(.97)}
@@ -261,6 +275,31 @@ input.doctitle{height:1.2em}
 .task.shift{transition:transform .16s ease}
 .mini{flex:none;height:30px;padding:0 11px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;color:var(--ink2);background:rgba(255,255,255,.85);border:1px solid rgba(12,60,90,.14)}
 .mini.x{width:30px;padding:0;font-size:19px;line-height:1}
+.task .tick,.task .grip{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* Menu de opções de um item (botão direito do mouse ou toque longo) */
+.ctxmenu{position:fixed;z-index:46;width:262px;max-width:calc(100vw - 20px);display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .12s cubic-bezier(.2,.8,.2,1);-webkit-user-select:none;user-select:none}
+.ctxtitle{padding:4px 10px 8px;font-size:14px;font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctxlabel{padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink4)}
+.ctxcolors{display:grid;grid-template-columns:repeat(5,36px);justify-content:space-between;gap:8px;padding:8px 10px 10px}
+.ctxcolors .cswatch{width:36px;height:36px}
+.ctxitem{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border:none;border-radius:14px;background:transparent;color:var(--ink);font-size:15px;font-weight:600;text-align:left}
+.ctxitem.danger{color:#a3203f}
+.ctxitem:focus-visible{outline:none;background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 2px var(--acc-a)}
+.ctxitem:active{background:rgba(255,255,255,.9)}
+@media (hover:hover){.ctxitem:hover{background:rgba(255,255,255,.85)}}
+
+/* Resumão: as tarefas de hoje em diante, dia a dia, como um caderno */
+.sumday{margin-top:18px}
+.sumhead{display:flex;align-items:baseline;gap:10px;width:100%;padding:4px 0;border:none;background:none;text-align:left;color:var(--ink);font-size:21px;font-weight:700;line-height:1.4}
+.sumhead .meta{font-size:14px;font-weight:600}
+@media (hover:hover){.sumhead:hover span:first-child{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}}
+.sumtask{display:flex;align-items:flex-start;gap:12px;padding:5px 0;font-size:19px;line-height:1.5;overflow-wrap:anywhere}
+.sumtask .tick{width:24px;height:24px;margin-top:3px;border-radius:7px}
+.sumtask.done span{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--ink3)}
+
+/* Ajustes: tempo até pedir o PIN de novo */
+.lockafter button{min-width:0;padding:0 4px;font-size:14px;white-space:nowrap}
 
 /* Barra de título do app de Windows (só aparece lá) */
 :root{--tb:0px}

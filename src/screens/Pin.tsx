@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { bioVerify, isNative } from '../native';
+import { bioPossible, bioVerify } from '../native';
 import { bioUnlocked, fixLockClock, flashKey, go, lockLeft, pressKey, set, setCfg, useApp } from '../store';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
@@ -9,7 +9,7 @@ export function Pin() {
   const [, tick] = useState(0);
   const left = lockLeft(), locked = left > 0;
   // Com a digital ligada neste aparelho, o leitor abre sozinho; cancelando, fica o teclado do PIN.
-  const bio = isNative && s.cfg.bioOn && s.pinMode === 'unlock';
+  const bio = bioPossible && s.cfg.bioOn && s.pinMode === 'unlock';
   const askBio = () => void bioVerify().then(ok => { if (ok) bioUnlocked(); });
   useEffect(() => { if (bio) askBio(); }, [bio]);
 

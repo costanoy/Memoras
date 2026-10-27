@@ -6,9 +6,12 @@ import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './li
 import { playSound, type Sound } from './sounds';
 import { applyTheme, THEMES, type ThemeKey } from './themes';
 
-export type Screen = 'loading' | 'pin' | 'forgotPin' | 'pinkey' | 'onboard' | 'auth' | 'recovery' | 'forgot' | 'history' | 'editor' | 'docs' | 'doc' | 'agenda' | 'search' | 'archive' | 'settings';
+export type Screen = 'loading' | 'pin' | 'forgotPin' | 'pinkey' | 'onboard' | 'auth' | 'recovery' | 'forgot' | 'history' | 'editor' | 'docs' | 'doc' | 'summary' | 'agenda' | 'search' | 'archive' | 'settings';
 export type Section = 'diario' | 'cadernos' | 'agenda';
 export type Sync = 'synced' | 'syncing' | 'offline' | 'error';
+// Menu de opções de um item das listas (botão direito do mouse ou toque longo). touch: aberto com o dedo.
+export type MenuKind = 'note' | 'doc' | 'task';
+export interface Menu { kind: MenuKind; id: string; x: number; y: number; touch: boolean }
 
 export interface Account { email: string; userId: string; dkId: string; pwSalt: string; pwHash: string }
 
@@ -20,6 +23,9 @@ export interface Cfg {
   pinFails: number; lockUntil: number; pinLocks: number;
   pinTs: number;   // quando o PIN foi criado ou trocado (com conta, vale o mais novo em todos os aparelhos)
   bioOn: boolean;  // abrir com a digital neste aparelho (Android)
+  bioAsked: boolean;   // já respondeu à oferta de entrar com a digital, neste aparelho
+  lockAfter: number;   // minutos fora do app até pedir o PIN de novo (neste aparelho)
+  awayAt: number;      // quando o app saiu da tela destravado (0: está na tela, ou saiu travado)
   invite: boolean;
   sounds: boolean;
   account: Account | null; dk: string | null; lastPull: string | null;
@@ -43,6 +49,8 @@ export interface State {
   calOpen: boolean; calY: number; calM: number; day: number | null;
   toast: { text: string; undo?: () => void } | null;
   confirm: { id?: string; all?: boolean; reset?: boolean; trash?: boolean } | null;
+  menu: Menu | null;
+  bioOffer: boolean;
   pinMode: 'unlock' | 'verify' | 'create' | 'confirm'; pinAfter: 'change' | 'off' | 'on'; pin: string; pinTmp: string; pinError: boolean; pinMsg: string; shake: number;
   pinReturn: 'history' | 'settings'; pressedKey: string | null; unlocking: boolean;
   resume: Screen | null;
@@ -55,6 +63,7 @@ export interface State {
 const defaultCfg: Cfg = {
   onboarded: false, diaryName: 'Meu diário', theme: 'turquesa', prefsTs: 0,
   pinOn: false, pinHash: '', pinSalt: '', pinKeyHash: '', pinKeySalt: '', pinFails: 0, lockUntil: 0, pinLocks: 0, pinTs: 0, bioOn: false,
+  bioAsked: false, lockAfter: 5, awayAt: 0,
   invite: true, sounds: true, account: null, dk: null, lastPull: null,
 };
 
@@ -72,7 +81,7 @@ const initial = (): State => ({
   items: [], section: 'diario', docSel: null, docEdit: false,
   agDay: todayKey(), agY: now.getFullYear(), agM: now.getMonth(), agCal: false,
   calOpen: false, calY: now.getFullYear(), calM: now.getMonth(), day: null,
-  toast: null, confirm: null,
+  toast: null, confirm: null, menu: null, bioOffer: false,
   pinMode: 'unlock', pinAfter: 'change', pin: '', pinTmp: '', pinError: false, pinMsg: '', shake: 0, pinReturn: 'history', pressedKey: null, unlocking: false, resume: null,
   onStep: 1, storeMode: 'local', obPin: true,
   authMode: 'signup', authReturn: 'onboard',
@@ -104,22 +113,36 @@ export function setPrefs(patch: { diaryName?: string; theme?: ThemeKey }) {
   hooks.changed();
 }
 
-const APP: Screen[] = ['history', 'editor', 'docs', 'doc', 'agenda', 'search', 'archive', 'settings'];
+const APP: Screen[] = ['history', 'editor', 'docs', 'doc', 'summary', 'agenda', 'search', 'archive', 'settings'];
 export const inApp = (s: Screen) => APP.includes(s);
 export const live = (s: State) => s.notes.filter(n => !n.deleted);
 export const activeSorted = (s: State) => s.notes.filter(n => !n.deleted && n.status === 'active').sort((a, b) => nd(b) - nd(a));
 
 // Cada parte do app e a sua tela inicial.
-const SECTION: Partial<Record<Screen, Section>> = { history: 'diario', editor: 'diario', docs: 'cadernos', doc: 'cadernos', agenda: 'agenda' };
+// O Resumão (summary) fica em Cadernos: é lido como um caderno, montado com as tarefas da Agenda.
+const SECTION: Partial<Record<Screen, Section>> = { history: 'diario', editor: 'diario', docs: 'cadernos', doc: 'cadernos', summary: 'cadernos', agenda: 'agenda' };
 export const HOME: Record<Section, Screen> = { diario: 'history', cadernos: 'docs', agenda: 'agenda' };
 export const lastEdit = (d: Doc) => Math.max(d.created, d.titleTs, d.bodyTs);
-export const docsOf = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'active').sort((a, b) => lastEdit(b) - lastEdit(a));
+// Os fixados primeiro; em cada grupo, o editado por último no alto.
+export const docsOf = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'active').sort((a, b) => Number(b.pinned) - Number(a.pinned) || lastEdit(b) - lastEdit(a));
 export const trashedDocs = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'trashed');
 export const archivedDocs = (s: State) => s.items.filter((i): i is Doc => i.kind === 'doc' && !i.deleted && i.status === 'archived').sort((a, b) => lastEdit(b) - lastEdit(a));
 // Empate na ordem (tarefas de aparelhos diferentes) se desfaz pelo id, igual em todos os aparelhos.
 export const tasksOn = (s: State, date: string) => s.items.filter((i): i is Task => i.kind === 'task' && !i.deleted && i.date === date).sort((a, b) => a.order - b.order || (a.id < b.id ? -1 : 1));
 export const dayNotesOn = (s: State, date: string) => s.items.filter((i): i is DayNote => i.kind === 'daynote' && !i.deleted && i.date === date).sort((a, b) => a.created - b.created);
 export const plannedDays = (s: State) => new Set(s.items.filter(i => (i.kind === 'task' || i.kind === 'daynote') && !i.deleted && !isBlankItem(i)).map(i => (i as Task | DayNote).date));
+const realTasks = (s: State) => s.items.filter((i): i is Task => i.kind === 'task' && !i.deleted && !!i.text.trim());
+// Dias em que todas as tarefas estão feitas (o calendário da Agenda marca com ✓).
+export function doneDays(s: State) {
+  const all = new Map<string, boolean>();
+  for (const t of realTasks(s)) all.set(t.date, (all.get(t.date) ?? true) && t.done);
+  return new Set([...all].filter(([, done]) => done).map(([k]) => k));
+}
+// As tarefas de hoje em diante, dia a dia (o Resumão).
+export function upcoming(s: State) {
+  const today = todayKey();
+  return [...new Set(realTasks(s).filter(t => t.date >= today).map(t => t.date))].sort().map(k => ({ k, tasks: tasksOn(s, k).filter(t => t.text.trim()) }));
+}
 
 // Anotação vazia abandonada some sem passar pela lixeira.
 function cleaned(notes: Note[], keep: string | null) {
@@ -154,26 +177,41 @@ export function go(target: Screen, extra: Partial<State> = {}) {
   const docSel = extra.docSel !== undefined ? extra.docSel : state.docSel;
   const keepDoc = target === 'doc' || (target === 'docs' && !state.mobile) ? docSel : null;
   const section = SECTION[screen];
-  set({ screen, confirm: null, ...(section ? { section } : {}), ...extra, notes: cleaned(state.notes, keep), items: cleanItems(state.items, keepDoc) });
+  set({ screen, confirm: null, menu: null, ...(section ? { section } : {}), ...extra, notes: cleaned(state.notes, keep), items: cleanItems(state.items, keepDoc) });
 }
 
-// Com PIN, o app volta a pedir o PIN depois de 1 minuto fora da tela: em outro app, com o
-// celular ou o computador bloqueado, ou com a janela minimizada. Ao digitar, volta para onde estava.
-const RELOCK_AFTER = 60_000;
+export const openMenu = (kind: MenuKind, id: string, x: number, y: number, touch = false) => set({ menu: { kind, id, x, y, touch } });
+export const closeMenu = () => { if (state.menu) set({ menu: null }); };
+
+// Com PIN, o app volta a pedir o PIN depois de um tempo fora da tela: em outro app, com o celular ou
+// o computador bloqueado, com a janela minimizada ou com o app fechado. O tempo se escolhe nos Ajustes
+// (até a 1.1.3 era sempre 1 minuto). Ao digitar, volta para onde estava.
+export const LOCK_AFTER = [1, 5, 15, 30, 60];
+const relockMs = (c: Cfg) => (LOCK_AFTER.includes(c.lockAfter) ? c.lockAfter : 5) * 60_000;
 let awaySince = 0;
-export function appAway() { if (!awaySince) awaySince = Date.now(); hooks.away(); }
+export function appAway() {
+  if (!awaySince) {
+    awaySince = Date.now();
+    // Fica gravado: se o sistema fechar o app enquanto ele está fora (ou a pessoa fechar), ao abrir vale o mesmo tempo.
+    if (state.screen !== 'loading' && state.cfg.pinOn && state.unlocked) setCfg({ awayAt: awaySince });
+  }
+  hooks.away();
+}
 export function appBack() {
   const away = awaySince ? Date.now() - awaySince : 0;
   awaySince = 0;
   // Relógio que voltou atrás enquanto o app estava fora: na dúvida, trava.
-  if (away >= RELOCK_AFTER || away < 0) relock();
+  if (away >= relockMs(state.cfg) || away < 0) relock();
+  if (state.screen !== 'loading' && state.cfg.awayAt) setCfg({ awayAt: 0 });
 }
+// Grava as configurações e espera terminar (o app de Windows usa antes de fechar a janela).
+export const saveCfg = () => kvSet('cfg', state.cfg);
 export function relock() {
   const s = state;
   if (!s.cfg.pinOn || !s.unlocked || s.screen === 'loading' || s.screen === 'forgotPin' || (s.screen === 'pin' && s.pinMode === 'unlock')) return;
   // Trocando o PIN nos ajustes: depois de desbloquear, volta aos ajustes.
   const resume = s.screen === 'pin' ? s.pinReturn : s.screen;
-  set({ unlocked: false, screen: 'pin', resume, pinMode: 'unlock', pin: '', pinTmp: '', pinMsg: '', pinError: false, confirm: null, toast: null });
+  set({ unlocked: false, screen: 'pin', resume, pinMode: 'unlock', pin: '', pinTmp: '', pinMsg: '', pinError: false, confirm: null, toast: null, menu: null, bioOffer: false });
 }
 document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' ? appAway() : appBack());
 
@@ -237,7 +275,11 @@ export const setTitle = (id: string, title: string) => upd(id, n => { n.title = 
 export const setStatus = (id: string, status: Status) => upd(id, n => { n.status = status; n.statusTs = Date.now(); });
 export const setNoteColor = (id: string, color: string) => upd(id, n => { n.color = color; n.colorTs = Date.now(); });
 
-function afterRemove(id: string) {
+// A anotação aberta é a escolhida no diário (no celular, a do editor).
+const isOpenNote = (id: string) => state.sel === id && (state.screen === 'editor' || state.screen === 'history');
+// Saiu da lista a anotação aberta: abre a próxima. Tirada pelo menu da lista, o que está aberto continua.
+function afterRemove(id: string, open: boolean) {
+  if (!open) return;
   const next = activeSorted(state).find(n => n.id !== id);
   set({ sel: next ? next.id : null, screen: 'history', section: 'diario' });
 }
@@ -255,15 +297,16 @@ function drop(ids: string[]) {
 export function archive(id: string) {
   const n = state.notes.find(x => x.id === id); if (!n) return;
   if (n.status === 'archived') { setStatus(id, 'active'); toast('Anotação desarquivada'); return; }
-  setStatus(id, 'archived'); afterRemove(id); sfx('archive');
-  toast('Anotação arquivada', () => { setStatus(id, 'active'); set({ sel: id }); });
+  const open = isOpenNote(id);
+  setStatus(id, 'archived'); afterRemove(id, open); sfx('archive');
+  toast('Anotação arquivada', () => { setStatus(id, 'active'); if (open) set({ sel: id }); });
 }
 export function trash(id: string) {
   const n = state.notes.find(x => x.id === id); if (!n) return;
-  const prev = n.status;
-  if (isEmpty(n)) { drop([id]); afterRemove(id); return; }
-  setStatus(id, 'trashed'); afterRemove(id); sfx('trash');
-  toast('Movida para a lixeira', () => { setStatus(id, prev); set({ sel: id }); });
+  const prev = n.status, open = isOpenNote(id);
+  if (isEmpty(n)) { drop([id]); afterRemove(id, open); return; }
+  setStatus(id, 'trashed'); afterRemove(id, open); sfx('trash');
+  toast('Movida para a lixeira', () => { setStatus(id, prev); if (open) set({ sel: id }); });
 }
 // Mandar para a lixeira pergunta antes (o "Desfazer" continua depois). Anotação ou caderno vazio some direto.
 export function askTrash(id: string) {
@@ -322,28 +365,36 @@ export const setDocTitle = (id: string, title: string) => updItem<Doc>(id, d => 
 export const setDocBody = (id: string, body: string) => updItem<Doc>(id, d => { d.body = body; d.bodyTs = Date.now(); });
 const setDocStatus = (id: string, status: Doc['status']) => updItem<Doc>(id, d => { d.status = status; d.statusTs = Date.now(); });
 export const setDocColor = (id: string, color: string) => updItem<Doc>(id, d => { d.color = color; d.colorTs = Date.now(); });
+// Fixado fica no alto da lista de Cadernos, em todos os aparelhos.
+export function setDocPinned(id: string, pinned: boolean) {
+  updItem<Doc>(id, d => { d.pinned = pinned; d.pinnedTs = Date.now(); });
+  toast(pinned ? 'Caderno fixado no alto' : 'Caderno desafixado');
+}
+// Tirar da lista o caderno aberto volta para a lista (no computador, abre o próximo). Pelo menu da
+// lista, o que está aberto continua aberto.
+const isOpenDoc = (id: string) => state.docSel === id && (state.screen === 'doc' || state.screen === 'docs');
 export function trashDoc(id: string) {
   const d = state.items.find(i => i.id === id); if (!d || d.kind !== 'doc') return;
-  const next = docsOf(state).find(x => x.id !== id);
+  const next = docsOf(state).find(x => x.id !== id), open = isOpenDoc(id);
   if (isBlankItem(d)) dropItem(id);
   else {
     setDocStatus(id, 'trashed'); sfx('trash');
-    toast('Caderno movido para a lixeira', () => { setDocStatus(id, 'active'); go('doc', { docSel: id, docEdit: false }); });
+    toast('Caderno movido para a lixeira', () => { setDocStatus(id, 'active'); if (open) go('doc', { docSel: id, docEdit: false }); });
   }
-  go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
+  if (open) go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
 }
 export function restoreDoc(id: string) { setDocStatus(id, 'active'); toast('Caderno restaurado'); }
 // Arquivar tira o caderno da lista sem apagar: ele fica no Arquivo e continua aparecendo na busca.
 export function archiveDoc(id: string) {
   const d = state.items.find(i => i.id === id); if (!d || d.kind !== 'doc') return;
   if (d.status === 'archived') { setDocStatus(id, 'active'); toast('Caderno desarquivado'); return; }
-  const next = docsOf(state).find(x => x.id !== id);
+  const next = docsOf(state).find(x => x.id !== id), open = isOpenDoc(id);
   if (isBlankItem(d)) dropItem(id);
   else {
     setDocStatus(id, 'archived'); sfx('archive');
-    toast('Caderno arquivado', () => { setDocStatus(id, 'active'); go('doc', { docSel: id, docEdit: false }); });
+    toast('Caderno arquivado', () => { setDocStatus(id, 'active'); if (open) go('doc', { docSel: id, docEdit: false }); });
   }
-  go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
+  if (open) go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
 }
 
 export function openDay(date: string) {
@@ -450,7 +501,7 @@ async function submitPin(pin: string) {
         else set({ pin: '', pinMode: 'create' });
         return;
       }
-      unlockApp();
+      unlockApp(true);
       return;
     }
     // Errar o PIN atual conta igual a errar no desbloqueio, com a mesma pausa.
@@ -485,12 +536,13 @@ async function submitPin(pin: string) {
   } else pinFail('Os PINs não coincidem. Crie de novo.', { pinMode: 'create', pinTmp: '' });
 }
 
-// PIN certo ou digital reconhecida: abre o app e volta para onde a pessoa estava.
-function unlockApp() {
+// PIN certo ou digital reconhecida: abre o app e volta para onde a pessoa estava. Quem digitou o PIN
+// e ainda não respondeu recebe a oferta de entrar com a digital (BioOffer, só no celular que tem uma).
+function unlockApp(byPin = false) {
   const s = state, rm = reducedMotion(), r = s.resume;
   const to = r && r !== 'pin' && r !== 'forgotPin' && r !== 'loading' ? r : 'history';
   setCfg({ pinFails: 0, pinLocks: 0, lockUntil: 0 });
-  set({ unlocking: true, unlocked: true, pin: '', resume: null });
+  set({ unlocking: true, unlocked: true, pin: '', resume: null, bioOffer: byPin && !s.cfg.bioOn && !s.cfg.bioAsked });
   sfx('unlock');
   setTimeout(() => go(to), rm ? 0 : 60);
   setTimeout(() => set({ unlocking: false }), rm ? 240 : 720);
@@ -554,6 +606,9 @@ export async function init() {
   await snapshotOnUpgrade(lastVersion, saved, stored, storedItems);
   const cfg: Cfg = { ...defaultCfg, ...saved };
   if (!THEMES[cfg.theme]) cfg.theme = 'turquesa';
+  // Fechado (pela pessoa ou pelo sistema) há menos tempo do que o escolhido nos Ajustes: abre sem pedir o PIN.
+  const away = Date.now() - cfg.awayAt, grace = cfg.pinOn && cfg.awayAt > 0 && away >= 0 && away < relockMs(cfg);
+  cfg.awayAt = 0;
   // Anotações e cadernos gravados antes da cor por item chegam sem ela: "sem cor".
   const notes = stored.filter(n => {
     if (n.deleted || !isEmpty(n) || n.status !== 'active' || n.pushed) return true;
@@ -562,11 +617,12 @@ export async function init() {
   const items = storedItems.filter(i => {
     if (i.deleted || i.kind === 'daynote' || !isBlankItem(i) || i.pushed) return true;
     void itemDel(i.id); return false;
-  }).map(i => i.kind === 'doc' ? { ...i, color: i.color ?? '', colorTs: i.colorTs ?? 0 } : i);
+  }).map(i => i.kind === 'doc' ? { ...i, color: i.color ?? '', colorTs: i.colorTs ?? 0, pinned: i.pinned ?? false, pinnedTs: i.pinnedTs ?? 0 } : i);
   applyTheme(cfg.theme);
   set({ cfg, notes, items });
-  const unlocked = !cfg.pinOn;
+  if (saved?.awayAt) void kvSet('cfg', cfg);
+  const unlocked = !cfg.pinOn || grace;
   // Abre sem nenhuma anotação aberta: nada do diário aparece sem a pessoa escolher.
   if (hooks.recoveryPending) set({ unlocked, screen: 'forgot', fStep: 2 });
-  else set({ unlocked, screen: !cfg.onboarded ? 'onboard' : cfg.pinOn ? 'pin' : 'history', sel: null, docSel: null });
+  else set({ unlocked, screen: !cfg.onboarded ? 'onboard' : !unlocked ? 'pin' : 'history', sel: null, docSel: null });
 }

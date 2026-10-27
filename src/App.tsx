@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { confirmDo, inApp, set, toastUndo, useApp } from './store';
 import { Auth } from './screens/Auth';
+import { BioOffer } from './screens/BioOffer';
 import { Forgot, ForgotPin } from './screens/Forgot';
 import { PinKey, Recovery } from './screens/Keys';
+import { ItemMenu } from './screens/Menu';
 import { Onboard } from './screens/Onboard';
 import { Pin } from './screens/Pin';
 import { Shell } from './screens/Shell';
@@ -32,6 +34,8 @@ export function App() {
       {scr === 'pinkey' && <PinKey />}
       {inApp(scr) && <Shell />}
       {inApp(scr) && <UpdateCard />}
+      {inApp(scr) && <BioOffer />}
+      {inApp(scr) && <ItemMenu />}
 
       {s.toast && (
         <div className={'toast' + (s.mobile && inApp(scr) && scr !== 'editor' && scr !== 'doc' ? ' up' : '') + (s.toast.undo ? ' undo' : '')} role="status">
