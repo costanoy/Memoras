@@ -9,6 +9,8 @@
   --glass:linear-gradient(180deg,rgba(255,255,255,.58),rgba(255,255,255,.30));
   --glass2:linear-gradient(180deg,rgba(255,255,255,.84),rgba(255,255,255,.60));
   --milk:linear-gradient(180deg,rgba(251,254,255,.97),rgba(242,250,253,.94));
+  /* Use só backdrop-filter, sem o -webkit-: o build juntava os dois e ficava só com o prefixado, que o
+     Chromium do app não aplica (o vidro saía sem o desfoque). O build põe o prefixo sozinho onde precisa. */
   --blur:blur(22px) saturate(170%);
   /* No Android o Capacitor informa as bordas do sistema em --safe-area-inset-*. */
   --sat:var(--safe-area-inset-top,env(safe-area-inset-top,0px));--sab:var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px));
@@ -21,7 +23,8 @@ html,body,#root{margin:0;height:100%}
 body{font-family:'Source Sans 3 Variable','Source Sans 3',system-ui,sans-serif;color:var(--ink);background:var(--base);-webkit-font-smoothing:antialiased}
 input,textarea,button{font-family:inherit;color:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
-textarea::placeholder,input::placeholder{color:#6d8898}
+:root{--docfs:19px}
+textarea::placeholder,input::placeholder{color:#56707f}
 strong{font-weight:700}
 .mono{font-family:'Source Code Pro',monospace}
 
@@ -89,7 +92,7 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 
 /* Telas de fluxo */
 .flow{position:absolute;inset:0;overflow:auto;display:flex;justify-content:center;padding:calc(32px + var(--sat)) 20px calc(32px + var(--sab))}
-.card{width:100%;max-width:440px;margin:auto 0;display:flex;flex-direction:column;gap:18px;padding:30px 28px;border-radius:36px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)}
+.card{width:100%;max-width:440px;margin:auto 0;display:flex;flex-direction:column;gap:18px;padding:30px 28px;border-radius:36px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.85);box-shadow:inset 0 1px 0 #fff, 0 30px 60px -26px rgba(0,50,100,.5)}
 .h1{font-size:26px;font-weight:700;line-height:1.15}
 .h0{font-size:28px;font-weight:700;line-height:1.15;text-wrap:balance}
 .p{font-size:16px;line-height:1.45;color:var(--ink2)}
@@ -134,7 +137,7 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .side{width:340px;flex:none;display:flex;flex-direction:column;min-height:0}
 .wrap.m .side{width:auto;flex:1;min-width:0}
 .main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
-.panel{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:28px;background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 24px 60px -28px rgba(0,50,100,.5);overflow:hidden;position:relative}
+.panel{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:28px;background:var(--glass);backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 24px 60px -28px rgba(0,50,100,.5);overflow:hidden;position:relative}
 .side .panel{gap:12px;padding:18px 14px 12px}
 .name{width:100%;margin:-4px 0 0 -6px;padding:2px 6px;border-radius:10px;border:1px solid transparent;background:transparent;font-size:24px;font-weight:700;line-height:1.2;color:var(--ink);outline:none;text-overflow:ellipsis}
 .name:focus{background:rgba(255,255,255,.92);border-color:var(--acc);box-shadow:0 0 0 3px var(--ring)}
@@ -165,21 +168,30 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .side .panel{overflow-y:auto}
 .side .scroll{min-height:88px}
 .side .cal~.scroll,.side .scroll:has(~.cal){min-height:72px}
+/* (Só na barra lateral do computador; no celular e no Mini-Memoras o calendário tem as medidas dele.) */
 @media (max-height:820px){
-  .side .panel{gap:10px}
-  .cal{padding:8px 10px}
-  .cal .arrow{width:28px;height:28px}
-  .day{height:28px}
+  html:not([data-mini]) .wrap:not(.m) .side .panel{gap:10px}
+  html:not([data-mini]) .wrap:not(.m) .cal{padding:8px 10px}
+  html:not([data-mini]) .wrap:not(.m) .cal .arrow{width:28px;height:28px}
+  html:not([data-mini]) .wrap:not(.m) .day{height:28px}
 }
 @media (max-height:700px){
-  .side .panel{gap:8px;padding-top:14px}
-  .cal{padding:6px 8px}
-  .cal .arrow{width:26px;height:26px;font-size:16px}
-  .calgrid span{font-size:11px;padding:0}
-  .day{height:25px;font-size:13px}
+  html:not([data-mini]) .wrap:not(.m) .side .panel{gap:8px;padding-top:14px}
+  html:not([data-mini]) .wrap:not(.m) .cal{padding:6px 8px}
+  html:not([data-mini]) .wrap:not(.m) .cal .arrow{width:26px;height:26px;font-size:16px}
+  html:not([data-mini]) .wrap:not(.m) .calgrid span{font-size:11px;padding:0}
+  html:not([data-mini]) .wrap:not(.m) .day{height:25px;font-size:13px}
 }
-/* Barras de rolagem finas e discretas, no lugar das cinzas com setas do Windows. */
-.scroll,.side .panel,.flow,.main .panel>div{scrollbar-width:thin;scrollbar-color:rgba(12,60,90,.28) transparent}
+/* No celular: dias e setas grandes para o dedo, e o calendário não estica além de 400 px. */
+.wrap.m .cal{width:100%;max-width:400px;margin-left:auto;margin-right:auto}
+.wrap.m .cal .arrow{width:40px;height:40px}
+.wrap.m .day{height:38px}
+/* Barras de rolagem finas e discretas, sem as setas do Windows. */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-button{display:none}
+::-webkit-scrollbar-thumb{background:rgba(12,60,90,.28);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(12,60,90,.42)}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
 .day.has{font-weight:700;color:var(--ink);cursor:pointer}
 .day.has::after{content:'';position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}
 .day.today{background:rgba(255,255,255,.95);box-shadow:inset 0 0 0 1.5px var(--acc)}
@@ -191,11 +203,11 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .day.alldone:not(.sel){background:rgba(70,180,90,.18)}
 .day.alldone::after{left:50%;bottom:2px;width:9px;height:6px;margin-left:-4.5px;border-radius:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Cpath d='M1 3l2.2 2L8 1' fill='none' stroke='%2323863a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
 .day.sel.alldone::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 6'%3E%3Cpath d='M1 3l2.2 2L8 1' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
-.nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:6px;border-radius:24px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff}
+.nav{flex:none;display:flex;align-items:center;justify-content:space-between;gap:0;padding:6px;border-radius:24px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff}
 .nav button{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:44px;overflow:hidden;padding:0;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:700;color:var(--ink);background:transparent;white-space:nowrap;transition:background .15s, padding .15s}
 .nav button:active{filter:brightness(.95);transform:scale(.97)}
 .nav button.on{color:var(--acc-d);background:rgba(255,255,255,.95);border-color:var(--acc-a);box-shadow:0 0 0 3px var(--ring), inset 0 1px 0 #fff}
-.nav button.open{padding:0 14px 0 12px}
+.nav button.open{padding:0 12px 0 10px}
 .sheet{max-width:740px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;background:var(--milk);border:1px solid #fff;border-radius:24px;box-shadow:inset 0 1px 0 #fff, 0 10px 30px -18px rgba(0,50,100,.35);padding:36px 44px 56px;animation:mIn .18s cubic-bezier(.2,.8,.2,1)}
 .wrap.m .sheet{padding:24px 20px 40px}
 .title{border:none;outline:none;background:transparent;padding:0;font-size:30px;font-weight:700;color:var(--ink);width:100%}
@@ -210,7 +222,7 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 .tag{align-self:flex-start;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(12,60,90,.08);color:var(--ink2)}
 .searchbox{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid rgba(12,60,90,.15);box-shadow:inset 0 2px 4px rgba(0,40,80,.08);color:var(--ink2)}
 .searchbox input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:17px;color:var(--ink)}
-.tabbar{position:absolute;left:12px;right:12px;bottom:calc(14px + var(--sab));height:72px;z-index:20;display:flex;align-items:center;justify-content:space-around;padding:0 6px;border-radius:30px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff, 0 18px 40px -18px rgba(0,50,100,.55)}
+.tabbar{position:absolute;left:12px;right:12px;bottom:calc(14px + var(--sab));height:72px;z-index:20;display:flex;align-items:center;justify-content:space-around;padding:0 6px;border-radius:30px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff, 0 18px 40px -18px rgba(0,50,100,.55)}
 .tabbar button{flex:1;height:60px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--ink2);font-size:12px;font-weight:700}
 .tabbar button.on{color:var(--acc-d)}
 .wrap.m.notab{padding-bottom:calc(10px + var(--sab))}
@@ -222,10 +234,11 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 .syncpill{max-width:100%}
 .syncpill .lbl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .round.flip svg{transform:scaleX(-1)}
-.day.pick:not(.has){cursor:pointer;color:var(--ink3)}
+.day.pick:not(.has):not(.sel){cursor:pointer;color:var(--ink3)}
+.day.pick.sel{cursor:pointer}
 
 /* Aviso de versão nova, no alto da tela (abaixo da barra de título no Windows) */
-.updcard{position:absolute;left:50%;top:calc(10px + var(--tb) + var(--sat));transform:translateX(-50%);z-index:44;width:min(460px, calc(100% - 24px));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 18px 40px -16px rgba(0,30,60,.55);color:var(--ink);animation:mIn .2s cubic-bezier(.2,.8,.2,1)}
+.updcard{position:absolute;left:50%;top:calc(10px + var(--tb) + var(--sat));transform:translateX(-50%);z-index:44;width:min(460px, calc(100% - 24px));display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 18px 40px -16px rgba(0,30,60,.55);color:var(--ink);animation:mIn .2s cubic-bezier(.2,.8,.2,1)}
 .updcard strong{font-size:16px}
 .updcard span{font-size:14px;line-height:1.4;color:var(--ink2)}
 .updcard .gel{height:40px;padding:0 18px;font-size:15px}
@@ -236,25 +249,25 @@ mark{background:rgba(166,231,86,.75);color:var(--ink);border-radius:4px;padding:
 /* Cor da anotação ou do caderno */
 .colorpick{position:relative;flex:none}
 .cdot{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid rgba(12,60,90,.22);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
-.colorpop{position:absolute;right:0;top:calc(100% + 8px);z-index:35;display:grid;grid-template-columns:repeat(3,42px);gap:12px;padding:16px;border-radius:24px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .14s cubic-bezier(.2,.8,.2,1)}
+.colorpop{position:absolute;right:0;top:calc(100% + 8px);z-index:35;display:grid;grid-template-columns:repeat(3,42px);gap:12px;padding:16px;border-radius:24px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .14s cubic-bezier(.2,.8,.2,1)}
 .cswatch{width:42px;height:42px;padding:0;border-radius:50%;border:2px solid #fff;box-shadow:0 4px 10px -4px rgba(0,40,80,.45)}
 .cswatch.on{box-shadow:0 0 0 3px var(--acc), 0 4px 10px -4px rgba(0,40,80,.45)}
 
 /* Cadernos: leitura linha por linha (classes ln-*: .p e .h1 já são do app), com a altura de linha da edição (19 px × 1,7), para nada mudar de lugar. */
-.doc{font-size:19px;line-height:1.7;color:var(--ink);touch-action:manipulation}
-.doc .ln{min-height:calc(19px * 1.7);white-space:pre-wrap;overflow-wrap:break-word}
-.doc .ln-h1,.doc .ln-h2{line-height:calc(19px * 1.7);font-weight:700}
+.doc{font-size:var(--docfs);line-height:1.7;color:var(--ink);touch-action:manipulation}
+.doc .ln{min-height:calc(var(--docfs) * 1.7);white-space:pre-wrap;overflow-wrap:break-word}
+.doc .ln-h1,.doc .ln-h2{line-height:calc(var(--docfs) * 1.7);font-weight:700}
 .doc .ln-h1{font-size:23px}
 .doc .ln-h2{font-size:20px;color:var(--ink4)}
 .doc .ln-h1 .mk,.doc .ln-h2 .mk{display:none}
 .doc .bul{position:relative;color:transparent}
-.doc .bul::before{content:'•';position:absolute;left:50%;transform:translateX(-50%);color:var(--acc);font-weight:700}
-.doc .ln-ol .mk{color:var(--acc)}
+.doc .bul::before{content:'•';position:absolute;left:50%;transform:translateX(-50%);color:var(--acc-d);font-weight:700}
+.doc .ln-ol .mk{color:var(--acc-d)}
 /* Título e texto ficam no mesmo lugar lendo e editando. */
 .doctitle{line-height:1.2;margin-bottom:18px}
 input.doctitle{height:1.2em}
 .dochint{font-size:14px;line-height:1.45;color:var(--ink2);margin:8px 0 18px}
-.docbody{font-size:19px;line-height:1.7;min-height:45vh}
+.docbody{font-size:var(--docfs);line-height:1.7;min-height:45vh}
 
 /* Agenda: tarefas do dia */
 .task{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(12,60,90,.08)}
@@ -278,7 +291,7 @@ input.doctitle{height:1.2em}
 .task .tick,.task .grip{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
 /* Menu de opções de um item (botão direito do mouse ou toque longo) */
-.ctxmenu{position:fixed;z-index:46;width:262px;max-width:calc(100vw - 20px);display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .12s cubic-bezier(.2,.8,.2,1);-webkit-user-select:none;user-select:none}
+.ctxmenu{position:fixed;z-index:46;width:262px;max-width:calc(100vw - 20px);display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .12s cubic-bezier(.2,.8,.2,1);-webkit-user-select:none;user-select:none}
 .ctxtitle{padding:4px 10px 8px;font-size:14px;font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctxlabel{padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink4)}
 .ctxcolors{display:grid;grid-template-columns:repeat(5,36px);justify-content:space-between;gap:8px;padding:8px 10px 10px}
@@ -307,7 +320,7 @@ input.doctitle{height:1.2em}
 .wrap,.flow{top:var(--tb)}
 .titlebar{position:absolute;left:0;right:0;top:0;height:var(--tb);z-index:60;display:flex;align-items:center;gap:9px;padding:0 6px 0 14px;-webkit-app-region:drag;user-select:none;
   background:linear-gradient(180deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.32) 50%,rgba(255,255,255,.14) 51%,rgba(255,255,255,.24) 100%);
-  border-bottom:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 6px 18px -12px rgba(0,50,100,.45);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+  border-bottom:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 6px 18px -12px rgba(0,50,100,.45);backdrop-filter:var(--blur)}
 .titlebar img{flex:none;filter:drop-shadow(0 1px 2px rgba(0,50,100,.3))}
 /* O brilho branco atrás do título lembra o vidro do Windows 7. */
 .tbtitle{font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--ink);text-shadow:0 0 8px rgba(255,255,255,.95), 0 0 16px rgba(255,255,255,.75)}
@@ -323,12 +336,12 @@ input.doctitle{height:1.2em}
 .tbtn.close:hover{color:#fff;filter:brightness(1.1) saturate(1.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.65), 0 0 14px rgba(255,80,120,.75)}
 
 /* Avisos */
-.toast{position:absolute;left:50%;bottom:calc(28px + var(--sab));transform:translateX(-50%);z-index:40;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:14px;padding:10px 20px;min-height:56px;border-radius:999px;background:rgba(12,43,64,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 16px 30px -12px rgba(0,30,60,.6);color:#fff;font-size:15px;font-weight:600}
+.toast{position:absolute;left:50%;bottom:calc(28px + var(--sab));transform:translateX(-50%);z-index:40;width:max-content;max-width:calc(100% - 32px);display:flex;align-items:center;gap:14px;padding:10px 20px;min-height:56px;border-radius:999px;background:rgba(12,43,64,.88);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 16px 30px -12px rgba(0,30,60,.6);color:#fff;font-size:15px;font-weight:600}
 .toast.up{bottom:calc(100px + var(--sab))}
 .toast.undo{padding-right:10px}
 .toast button{flex:none;height:36px;border-radius:999px;padding:0 16px;border:none;font-size:15px;font-weight:700;color:#0c2b40;background:linear-gradient(180deg,#e2ffab 0%,#a6e756 50%,#8fd83e 100%);text-shadow:none;box-shadow:none}
 .modal{position:absolute;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(8,40,70,.28)}
-.modal>div{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;padding:26px 24px 22px;border-radius:30px;background:var(--glass2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 30px 60px -20px rgba(0,30,60,.6)}
+.modal>div{width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;padding:26px 24px 22px;border-radius:30px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 30px 60px -20px rgba(0,30,60,.6)}
 
 /* Desbloqueio */
 .unlock{position:absolute;inset:0;z-index:50;display:grid;place-items:center;background:var(--bg);animation:mFade .26s ease-in .44s forwards}
@@ -356,3 +369,200 @@ input.doctitle{height:1.2em}
   .print{display:block;padding:40px;color:#000;font-size:16px}
   .print b{display:block;margin:24px 0;font-family:'Source Code Pro',monospace;font-size:22px;letter-spacing:.05em}
 }
+
+/* Classes no lugar de estilos fixos nos componentes (mesmos valores de antes no app completo),
+   para o Mini-Memoras e as telas estreitas poderem ajustar */
+.contents{display:contents}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.ibar{gap:8px;padding:12px 14px;flex:none}
+.ibar-txt{flex:1;min-width:0;padding-left:6px}
+.ibar-t{font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ibar-s{font-size:13px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iscroll{flex:1;min-height:0;overflow:auto;padding:0 12px 12px}
+.vhead{padding:22px 20px 12px;gap:14px;flex:none}
+.vlist{padding:0 16px 16px;gap:8px}
+.vset{flex:1;min-height:0;overflow:auto;padding:22px 16px 20px}
+.orb.lg{width:84px;height:84px}
+.orb.md{width:64px;height:64px}
+.mtitle{font-size:22px;font-weight:700}
+.invite{gap:10px;align-items:flex-start;padding:12px 14px;border-radius:18px;background:rgba(255,255,255,.72);border:1px solid #fff}
+.invx{position:relative;flex:none;width:28px;height:28px;padding:0;border-radius:50%;border:none;background:rgba(12,60,90,.08);color:var(--ink2);font-size:16px;line-height:1}
+.invx::after{content:'';position:absolute;inset:-8px}
+.agcal{padding:0 12px 10px;flex:none;display:flex;flex-direction:column;gap:6px}
+.pincard{max-width:360px;align-items:center;gap:22px;padding:34px 24px 28px}
+.pinhead{align-items:center;gap:4px;text-align:center}
+.pinname{font-size:14px;font-weight:600;color:var(--ink4);letter-spacing:.04em}
+.pintitle{font-size:24px;font-weight:700}
+.pinmsg{min-height:22px;text-align:center}
+.key.del{font-size:22px}
+/* PIN em janelas baixas (laptops de 768 px, janelas pequenas): o teclado inteiro cabe sem rolar */
+@media (max-height:760px){
+  html:not([data-mini]) .flow{padding-top:12px;padding-bottom:12px}
+  html:not([data-mini]) .pincard{gap:12px;padding:22px 20px 18px}
+  html:not([data-mini]) .keys{grid-template-columns:repeat(3,60px);gap:10px 18px}
+  html:not([data-mini]) .key{width:60px;height:60px;font-size:24px}
+}
+
+/* Cabeçalho do item (anotação, caderno, Resumão, dia): com o painel estreito (janela pela metade da tela,
+   Mini-Memoras pequeno), os botões ficam só com o ícone; o nome continua no leitor de tela e na dica. */
+.main .panel{container-type:inline-size}
+@container (max-width:600px){
+  .ibar .plbl{display:none}
+  .ibar .pill:not(.go){width:44px;padding:0;justify-content:center}
+}
+
+/* Barra de título: o separador do botão do Mini-Memoras e o "Manter por cima" ligado */
+.tbtns{flex:none}
+.tbupd{min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.tbtitle{display:none}}
+.tbsep{flex:none;width:1px;height:16px;margin:0 3px;background:rgba(12,60,90,.25);box-shadow:1px 0 0 rgba(255,255,255,.85)}
+.tbtn.on{color:var(--gel-fg);background:var(--gel);border-color:var(--gel-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,.75), 0 0 12px var(--ring)}
+
+/* Foco do teclado na cor do tema (antes era a cor de destaque do Windows) */
+:where(button,[role=checkbox],a):focus-visible{outline:2px solid var(--acc-d);outline-offset:2px}
+.task:focus-within{background:rgba(255,255,255,.55);border-radius:10px;box-shadow:0 0 0 2px var(--acc-a)}
+.searchbox:focus-within{border-color:var(--acc);box-shadow:0 0 0 4px var(--ring)}
+
+/* Telas de alto contraste do Windows: o que estava só em gradiente e sombra (ligado, escolhido,
+   os pontos do PIN) ganha borda e cor do sistema */
+@media (forced-colors: active){
+  .toggle{border:2px solid ButtonText}
+  .toggle i{background:ButtonText;top:1px;left:1px}
+  .toggle.on{background:Highlight}
+  .toggle.on i{background:HighlightText;left:23px}
+  .dots i{border-color:ButtonText}
+  .dots i.f,.radio.on i{background:CanvasText}
+  .day.sel,.seg2 button.on,.item.on,.radio.on,.cswatch.on,.on .sw,.tbtn.on,.mininav .round.on,.nav button.on{outline:3px solid Highlight;outline-offset:2px}
+  .day.today{outline:1px dashed CanvasText}
+  .cswatch,.sw,.cdot{forced-color-adjust:none}
+  .tbtn,.mininav .round,.mininav .minisec button{border:1px solid ButtonText}
+}
+@media (prefers-reduced-transparency: reduce){
+  .titlebar{background:#e2f1f8;backdrop-filter:none}
+}
+
+/* Mini-Memoras (só no app de Windows): a janela do tamanho do Cynote (643 × 523), uma coisa por vez.
+   Os mesmos materiais do app (vidro, gel, papel), com medidas compactas, em qualquer tema. */
+html[data-mini]{--tb:34px;--docfs:17px}
+html[data-mini] .stage{min-height:0}
+html[data-mini] .wrap{flex-direction:column;gap:6px;padding:6px 8px 8px}
+html[data-mini] .side{width:auto;flex:1;min-width:0}
+html[data-mini] .main{flex:1;min-height:0}
+html[data-mini] .panel{border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.95), 0 14px 34px -22px rgba(0,50,100,.5)}
+html[data-mini] .side .panel{gap:8px;padding:12px 10px 10px}
+html[data-mini] .sheet{border-radius:18px;padding:18px 22px 28px}
+html[data-mini] .titlebar{gap:7px;padding:0 4px 0 10px}
+html[data-mini] .tbtitle{font-size:13px}
+html[data-mini] .tbtn{width:34px;height:24px;border-radius:7px}
+html[data-mini] .tbtn.close{width:40px}
+html[data-mini] .tbupd{height:24px;padding:0 10px;font-size:12px}
+html[data-mini] .titlebar button:focus-visible,html[data-mini] .mininav button:focus-visible{outline:2px solid var(--acc-d);outline-offset:2px;box-shadow:0 0 0 4px rgba(255,255,255,.9)}
+
+/* Faixa de navegação: as três partes, Busca, Arquivo e lixeira, Ajustes e o "+" */
+.mininav{flex:none;display:flex;align-items:center;gap:6px;height:36px}
+.mininav .minisec{flex:none;padding:3px;background:var(--glass2);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45)}
+.mininav .minisec button{flex:none;display:flex;align-items:center;gap:6px;height:28px;padding:0 12px 0 10px;font-size:14px}
+.mininav .minisec button.on{color:var(--acc-d)}
+.mnbadge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1;background:#fff;color:var(--acc-d);border:1px solid var(--acc-a)}
+.mnspacer{flex:1;min-width:0}
+.mininav .round{width:32px;height:32px}
+.mininav .round.on{color:var(--acc-d);background:rgba(255,255,255,.95);border-color:var(--acc-a);box-shadow:0 0 0 3px var(--ring), inset 0 1px 0 #fff}
+.mininav .mplus{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;min-width:140px;padding:0 14px 0 11px;font-size:14px}
+@media (max-width:599.98px){
+  html[data-mini] .mininav .mplus{min-width:0;width:32px;padding:0}
+  html[data-mini] .mininav .mplus .plbl{display:none}
+}
+
+/* Controles e textos mais compactos */
+html[data-mini] .round{width:32px;height:32px}
+html[data-mini] .round svg{width:18px;height:18px}
+html[data-mini] .pill{height:32px;padding:0 11px;gap:6px;font-size:14px}
+html[data-mini] .pill svg{width:16px;height:16px}
+html[data-mini] .pill.go{padding:0 12px 0 10px}
+html[data-mini] .soft{height:34px;font-size:14px}
+html[data-mini] .gel{height:42px;font-size:16px;padding:0 20px}
+html[data-mini] .glassbtn{height:40px;font-size:15px}
+html[data-mini] .field{height:42px;font-size:15px}
+html[data-mini] .searchbox{height:40px}
+html[data-mini] .searchbox input{font-size:15px}
+html[data-mini] .seg2 button{height:34px}
+html[data-mini] .sw{width:40px;height:40px}
+html[data-mini] .ibar{min-height:48px;padding:8px 10px;gap:6px}
+html[data-mini] .ibar-t{font-size:15px}
+html[data-mini] .ibar-s{font-size:12.5px}
+html[data-mini] .iscroll{padding:0 8px 8px}
+html[data-mini] .vhead{padding:12px 12px 8px;gap:10px}
+html[data-mini] .vlist{padding:0 10px 10px;gap:6px}
+html[data-mini] .vset{padding:12px 10px 14px}
+html[data-mini] .setcard{padding:14px;border-radius:18px;gap:10px}
+html[data-mini] .h1{font-size:21px}
+html[data-mini] .h0{font-size:23px}
+html[data-mini] .name{font-size:20px}
+html[data-mini] .title{font-size:23px}
+html[data-mini] .segtext:not(.docbody){font-size:17px;line-height:1.65}
+html[data-mini] .segtime{font-size:12px}
+html[data-mini] .item{padding:8px 12px;border-radius:14px;gap:2px}
+html[data-mini] .ttl{font-size:15px}
+html[data-mini] .meta{font-size:12.5px}
+html[data-mini] .prev{font-size:13.5px;-webkit-line-clamp:1}
+html[data-mini] .group{font-size:12px}
+html[data-mini] .small{font-size:14px}
+html[data-mini] .p{font-size:15px}
+html[data-mini] .syncpill{height:26px;font-size:12.5px}
+html[data-mini] .doc .ln-h1{font-size:20px}
+html[data-mini] .doc .ln-h2{font-size:18px}
+html[data-mini] .task{min-height:40px}
+html[data-mini] .tasktext{font-size:16px;padding:8px 0}
+html[data-mini] .tick{width:22px;height:22px;border-radius:7px}
+html[data-mini] .task .mini{height:26px;font-size:12.5px;padding:0 9px}
+html[data-mini] .task .mini.x{width:26px;padding:0}
+html[data-mini] .grip{height:30px}
+html[data-mini] .sumhead{font-size:18px}
+html[data-mini] .sumtask{font-size:16px}
+html[data-mini] .sumtask .tick{width:20px;height:20px}
+html[data-mini] .cal{padding:8px 10px;border-radius:16px}
+html[data-mini] .cal .arrow{width:28px;height:28px}
+html[data-mini] .day{height:28px;font-size:13.5px}
+html[data-mini] .calgrid span{font-size:12px}
+html[data-mini] .ctxmenu{width:240px;padding:8px}
+html[data-mini] .ctxitem{min-height:38px;font-size:14px}
+html[data-mini] .ctxcolors{grid-template-columns:repeat(5,30px)}
+html[data-mini] .ctxcolors .cswatch{width:30px;height:30px}
+html[data-mini] .modal>div{max-width:340px;padding:20px 18px 18px;border-radius:26px}
+html[data-mini] .mtitle{font-size:19px}
+html[data-mini] .toast{bottom:12px;min-height:44px;font-size:14px;padding:8px 16px}
+html[data-mini] .toast button{height:32px}
+html[data-mini] .updcard{top:calc(var(--tb) + 6px);width:calc(100% - 16px);padding:10px 12px;border-radius:18px}
+html[data-mini] .updcard strong{font-size:15px}
+html[data-mini] .updcard span{font-size:13px}
+html[data-mini] .updcard .gel,html[data-mini] .updcard .soft{height:34px}
+html[data-mini] .orb.lg{width:56px;height:56px}
+html[data-mini] .orb.md{width:48px;height:48px}
+
+/* PIN e as outras telas de fluxo dentro da janela pequena */
+html[data-mini] .flow{padding:12px}
+html[data-mini] .pincard{max-width:340px;padding:20px 18px 18px;gap:14px}
+html[data-mini] .pinname{font-size:13px}
+html[data-mini] .pintitle{font-size:20px}
+html[data-mini] .dots{gap:16px}
+html[data-mini] .dots i{width:14px;height:14px}
+html[data-mini] .keys{grid-template-columns:repeat(3,52px);gap:10px 18px}
+html[data-mini] .key{width:52px;height:52px;font-size:22px}
+html[data-mini] .key.del{font-size:18px}
+html[data-mini] .flow .card:not(.pincard){zoom:.9}
+html[data-mini] .lock{zoom:.75}
+@media (max-height:479.98px){
+  html[data-mini] .flow{padding:8px}
+  html[data-mini] .pincard{padding:14px 16px 12px;gap:10px}
+  html[data-mini] .pinname{display:none}
+  html[data-mini] .pintitle{font-size:18px}
+  html[data-mini] .keys{grid-template-columns:repeat(3,44px);gap:8px 16px}
+  html[data-mini] .key{width:44px;height:44px;font-size:19px}
+  html[data-mini] .key.del{font-size:16px}
+  html[data-mini] .pinmsg{min-height:18px;font-size:14px}
+}
+
+/* Fundo: as bolhas menores e só duas */
+html[data-mini] .b1{width:76px;height:76px}
+html[data-mini] .b4{width:52px;height:52px}
+html[data-mini] .b2,html[data-mini] .b3{display:none}

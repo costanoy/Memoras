@@ -1,3 +1,5 @@
+import { winApi } from './win';
+
 const bgOf = (a: string, b: string, c: string, d: string) =>
   'radial-gradient(55% 45% at 10% 6%, rgba(255,255,255,.6), rgba(255,255,255,0) 62%), radial-gradient(50% 60% at 90% 16%, ' + a + ' 0%, transparent 60%), radial-gradient(55% 55% at 78% 94%, ' + b + ' 0%, transparent 62%), radial-gradient(32% 34% at 16% 90%, ' + c + ', transparent 70%), ' + d;
 
@@ -52,4 +54,6 @@ export function applyTheme(k: ThemeKey) {
   const t = THEMES[k] ?? THEMES.turquesa, st = document.documentElement.style;
   THEME_KEYS.forEach(p => t[p] ? st.setProperty(p, t[p]) : st.removeProperty(p));
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t['--base']);
+  // No Windows, a janela nasce na cor do tema (sem piscar turquesa ao abrir ou trocar de tamanho).
+  winApi?.setBg?.(t['--base']);
 }

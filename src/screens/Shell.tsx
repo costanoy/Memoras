@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { docPreview, docTitle, todayKey } from '../lib/items';
 import { DAY, H, dayLabel, dayMonth, dispTitle, fmtT, fullText, isEmpty, nd, normMap, preview, same, uid, type Note } from '../lib/notes';
 import {
-  activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, HOME, live, LOCK_AFTER, newDoc, newNote, openDay, openDoc, openMenu, openNew, openNote, plannedDays, reducedMotion, restoreDoc,
-  set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, startUsePin, tasksOn, toast, trashedDocs, typeNew, useApp, archivedDocs, archiveDoc, type Section, type State,
+  activeSorted, archive, askTrash, dayNotesOn, docsOf, editSeg, go, goBack, goSection, HOME, isTool, live, LOCK_AFTER, newDoc, newNote, onePane, openDay, openDoc, openMenu, openNew, openNote, openTool, plannedDays, reducedMotion, restoreDoc,
+  set, setCfg, setNoteColor, setPrefs, setStatus, setTitle, sfx, startChangePin, startCreatePin, startUsePin, tasksOn, toast, trashedDocs, typeNew, useApp, archivedDocs, archiveDoc, openDocOf, openNoteOf, type Section, type State,
 } from '../store';
 import { bioStatus, bioVerify, type BioStatus } from '../native';
 import { friendly, logout, regenRecovery, syncNow } from '../sync';
@@ -16,19 +16,19 @@ import { Summary } from './Summary';
 
 function Calendar({ s, act }: { s: State; act: Note[] }) {
   return <MonthCal y={s.calY} m={s.calM} onMove={(calY, calM) => set({ calY, calM })} has={t => act.some(n => same(nd(n), t))} isSel={t => !!s.day && same(s.day, t)}
-    onPick={t => { const sel = !!s.day && same(s.day, t); set({ day: sel ? null : t, screen: s.mobile || (s.screen !== 'editor' && s.screen !== 'history') ? 'history' : s.screen }); }} />;
+    onPick={t => {
+      const sel = !!s.day && same(s.day, t);
+      set({ day: sel ? null : t, screen: onePane(s) || (s.screen !== 'editor' && s.screen !== 'history') ? 'history' : s.screen, ...(s.mini ? { calOpen: false } : {}) });
+    }} />;
 }
 
 const SECTIONS: [Section, string][] = [['diario', 'Diário'], ['cadernos', 'Cadernos'], ['agenda', 'Agenda']];
-// Entrar em Cadernos volta ao caderno que estava aberto; se nenhum estava, nada abre sozinho.
-const goSection = (s: State, k: Section) => k === 'cadernos'
-  ? go('docs', { docSel: docsOf(s).some(d => d.id === s.docSel) ? s.docSel : null, docEdit: false })
-  : go(HOME[k]);
+const SECTION_ICON: Record<Section, string> = { diario: 'history', cadernos: 'docs', agenda: 'agenda' };
 
 const NAV = [['search', 'Busca'], ['archive', 'Arquivo'], ['trash', 'Lixeira'], ['settings', 'Ajustes'], ['calendar', 'Calendário']] as const;
 
 function Side({ s }: { s: State }) {
-  const act = activeSorted(s), acc = s.cfg.account, scr = s.screen, isTrash = s.shelf === 'trash', sec = s.section;
+  const act = activeSorted(s), acc = s.cfg.account, scr = s.screen, isTrash = s.shelf === 'trash', sec = s.section, one = onePane(s);
   const list = s.day ? act.filter(n => same(nd(n), s.day!)) : act;
   const groups: { label: string; items: Note[] }[] = [];
   list.forEach(n => {
@@ -37,15 +37,22 @@ function Side({ s }: { s: State }) {
     if (!g || g.label !== label) groups.push(g = { label, items: [] });
     g.items.push(n);
   });
-  const navOther = scr === 'search' || scr === 'archive' || scr === 'settings';
+  const navOther = isTool(scr);
+  const calToggle = (
+    <button className="round press" aria-label="Calendário" title="Calendário" aria-pressed={s.calOpen} onClick={() => set({ calOpen: !s.calOpen })}
+      style={s.calOpen ? { background: 'rgba(255,255,255,.95)', color: 'var(--acc-d)' } : undefined}>
+      <Icon name="calendar" />
+    </button>
+  );
 
   return (
     <div className="side">
       <div className="panel">
-        {s.mobile && sec === 'cadernos' ? (
+        {one && sec === 'cadernos' ? (
           <div className="row" style={{ gap: 10, padding: '0 4px' }}>
             <div className="h1" style={{ flex: 1, minWidth: 0 }}>Cadernos</div>
-            <button className="round press" aria-label="Busca" onClick={() => go('search')}><Icon name="search" sw={2.3} /></button>
+            {s.mobile && <button className="round press" aria-label="Busca" onClick={() => openTool('search')}><Icon name="search" sw={2.3} /></button>}
+            {s.mobile && <button className="round press" aria-label="Arquivo" onClick={() => openTool('archive', { shelf: 'archive' })}><Icon name="archive" /></button>}
           </div>
         ) : (
           <div className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '0 4px' }}>
@@ -54,46 +61,45 @@ function Side({ s }: { s: State }) {
                 onChange={e => setPrefs({ diaryName: e.target.value })}
                 onBlur={() => { if (!s.cfg.diaryName.trim()) setPrefs({ diaryName: 'Meu diário' }); }}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.currentTarget.blur(); } }} />
-              <button className="syncpill press" onClick={() => acc ? (s.sync === 'error' || s.sync === 'synced') && void syncNow() : go('settings')}>
+              <button className="syncpill press" onClick={() => acc ? (s.sync === 'error' || s.sync === 'synced') && void syncNow() : openTool('settings')}>
                 <SyncDot /><span className="lbl">{syncLabel(!!acc, s.sync)}</span>
               </button>
             </div>
-            {/* No celular, Busca e Arquivo ficam aqui em cima; as abas são das três partes do app. */}
+            {/* No celular, Busca e Arquivo ficam aqui em cima; as abas são das três partes do app.
+                No Mini-Memoras, Busca e Arquivo ficam na barra de navegação. */}
             {s.mobile && <>
-              <button className="round press" aria-label="Busca" onClick={() => go('search')}><Icon name="search" sw={2.3} /></button>
-              <button className="round press" aria-label="Arquivo" onClick={() => go('archive')}><Icon name="archive" /></button>
-              <button className="round press" aria-label="Calendário" aria-pressed={s.calOpen} onClick={() => set({ calOpen: !s.calOpen })}
-                style={s.calOpen ? { background: 'rgba(255,255,255,.95)', color: 'var(--acc-d)' } : undefined}>
-                <Icon name="calendar" />
-              </button>
+              <button className="round press" aria-label="Busca" onClick={() => openTool('search')}><Icon name="search" sw={2.3} /></button>
+              <button className="round press" aria-label="Arquivo" onClick={() => openTool('archive', { shelf: 'archive' })}><Icon name="archive" /></button>
             </>}
+            {one && sec === 'diario' && calToggle}
           </div>
         )}
 
-        {!s.mobile && (
+        {!one && (
           <div className="seg2 sections" role="group" aria-label="Partes do Memoras">
-            {SECTIONS.map(([k, label]) => <button key={k} className={'press' + (sec === k ? ' on' : '')} aria-pressed={sec === k} onClick={() => goSection(s, k)}>{label}</button>)}
+            {SECTIONS.map(([k, label], i) => <button key={k} className={'press' + (sec === k ? ' on' : '')} aria-pressed={sec === k} title={label + ' (Ctrl+' + (i + 1) + ')'} onClick={() => goSection(k)}>{label}</button>)}
           </div>
         )}
 
         {sec === 'cadernos' && <DocsList s={s} />}
-        {sec === 'agenda' && !s.mobile && <AgendaSide s={s} />}
+        {sec === 'agenda' && !one && <AgendaSide s={s} />}
 
         {sec === 'diario' && <>
+        {/* No Mini-Memoras o calendário abre logo abaixo do nome, perto do botão. */}
+        {s.calOpen && s.mini && <Calendar s={s} act={act} />}
         {/* Com o calendário aberto, o convite sai para dar espaço a ele. */}
         {!acc && s.cfg.invite && !s.calOpen && (
-          <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 18, background: 'rgba(255,255,255,.72)', border: '1px solid #fff' }}>
+          <div className="row invite">
             <div className="col" style={{ flex: 1, gap: 4, fontSize: 14, lineHeight: 1.4, color: 'var(--ink2)' }}>
               <span>Suas anotações estão só neste aparelho.</span>
               <button className="link" style={{ alignSelf: 'flex-start', padding: 0, fontSize: 14, fontWeight: 700 }} onClick={() => go('auth', { authMode: 'signup', authReturn: 'settings' })}>Criar conta para sincronizar</button>
             </div>
-            <button className="press" aria-label="Dispensar" onClick={() => setCfg({ invite: false })}
-              style={{ flex: 'none', width: 28, height: 28, padding: 0, borderRadius: '50%', border: 'none', background: 'rgba(12,60,90,.08)', color: 'var(--ink2)', fontSize: 16, lineHeight: 1 }}>×</button>
+            <button className="press invx" aria-label="Dispensar" onClick={() => setCfg({ invite: false })}>×</button>
           </div>
         )}
 
-        {!s.mobile && (
-          <button className="gel row" style={{ flex: 'none', justifyContent: 'center', gap: 8, height: 50 }} onClick={newNote}>
+        {!one && (
+          <button className="gel row" style={{ flex: 'none', justifyContent: 'center', gap: 8, height: 50 }} title="Nova anotação (Ctrl+N)" onClick={newNote}>
             <Icon name="plus" size={18} sw={3} />Nova anotação
           </button>
         )}
@@ -111,7 +117,7 @@ function Side({ s }: { s: State }) {
               <div className="group" style={{ padding: '0 8px' }}>{g.label}</div>
               {/* Botão direito (ou toque longo no celular): cor, arquivar e lixeira. */}
               {g.items.map(n => (
-                <button key={n.id} className={'item press' + (!s.mobile && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '') + (s.menu?.id === n.id ? ' ctxon' : '')}
+                <button key={n.id} className={'item press' + (!one && s.sel === n.id && (scr === 'history' || scr === 'editor') ? ' on' : '') + (s.menu?.id === n.id ? ' ctxon' : '')}
                   style={paperStyle(n.color)} onClick={() => openNote(n.id)} {...menuOn((x, y, touch) => openMenu('note', n.id, x, y, touch))}>
                   <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{dispTitle(n)}</span><span className="meta">{fmtT(nd(n))}</span></span>
                   <span className="prev">{preview(n)}</span>
@@ -121,7 +127,7 @@ function Side({ s }: { s: State }) {
           ))}
           {!act.length && (
             <div className="empty" style={{ margin: 'auto 0', gap: 10, padding: '24px 16px' }}>
-              <div className="orb" style={{ width: 64, height: 64 }} />
+              <div className="orb md" />
               <div style={{ fontSize: 18, fontWeight: 700 }}>Nenhuma anotação ainda</div>
               <div className="small" style={{ maxWidth: 240 }}>Escreva o que quiser. Fica tudo guardado aqui, só para você.</div>
               <button className="glassbtn press" style={{ marginTop: 4, height: 44, fontSize: 15, fontWeight: 700 }} onClick={newNote}>Escrever a primeira</button>
@@ -129,17 +135,17 @@ function Side({ s }: { s: State }) {
           )}
         </div>
 
-        {s.calOpen && <Calendar s={s} act={act} />}
+        {s.calOpen && !s.mini && <Calendar s={s} act={act} />}
         </>}
 
-        {!s.mobile && (
+        {!one && (
           <div className="nav">
             {NAV.filter(([k]) => k !== 'calendar' || sec === 'diario').map(([k, label]) => {
               const on = k === 'calendar' ? s.calOpen : k === 'trash' ? scr === 'archive' && isTrash : k === 'archive' ? scr === 'archive' && !isTrash : scr === k;
               const open = on && !(k === 'calendar' && navOther);
-              const click = () => k === 'calendar' ? set({ calOpen: !s.calOpen }) : on ? go(HOME[sec]) : k === 'trash' || k === 'archive' ? go('archive', { shelf: k }) : go(k);
+              const click = () => k === 'calendar' ? set({ calOpen: !s.calOpen }) : on ? goBack() : k === 'trash' || k === 'archive' ? openTool('archive', { shelf: k }) : openTool(k);
               return (
-                <button key={k} className={(on ? 'on' : '') + (open ? ' open' : '')} title={label} aria-label={label} aria-pressed={on} onClick={click}>
+                <button key={k} className={(on ? 'on' : '') + (open ? ' open' : '')} title={k === 'search' ? label + ' (Ctrl+F)' : label} aria-label={label} aria-pressed={on} onClick={click}>
                   <Icon name={k} sw={k === 'search' ? 2.3 : 2.2} />{open && <span>{label}</span>}
                 </button>
               );
@@ -151,6 +157,46 @@ function Side({ s }: { s: State }) {
   );
 }
 
+// Mini-Memoras: as três partes do app, as ferramentas e o "+", numa faixa só, abaixo da barra de título.
+function MiniNav({ s }: { s: State }) {
+  const tool = isTool(s.screen) ? s.screen : null;
+  const left = s.section !== 'agenda' ? tasksOn(s, todayKey()).filter(t => !t.done && t.text.trim()).length : 0;
+  const toolBtn = (k: 'search' | 'archive' | 'settings', label: string, icon: string, hint?: string) => (
+    <button className={'round press' + (tool === k ? ' on' : '')} aria-label={label} title={hint ?? label} aria-pressed={tool === k}
+      onClick={() => tool === k ? goBack() : openTool(k, k === 'archive' ? { shelf: 'archive' } : {})}>
+      <Icon name={icon} size={18} sw={k === 'search' ? 2.3 : 2.2} />
+    </button>
+  );
+  return (
+    <nav className="mininav" aria-label="Navegação do Memoras">
+      <div className="seg2 minisec" role="group" aria-label="Partes do Memoras">
+        {SECTIONS.map(([k, label], i) => (
+          <button key={k} className={'press' + (s.section === k ? ' on' : '')} aria-pressed={s.section === k} aria-keyshortcuts={'Control+' + (i + 1)}
+            aria-label={k === 'agenda' && left ? 'Agenda, ' + left + (left === 1 ? ' tarefa a fazer hoje' : ' tarefas a fazer hoje') : label}
+            title={label + ' (Ctrl+' + (i + 1) + ')'} onClick={() => goSection(k)}>
+            <Icon name={SECTION_ICON[k]} size={16} />{label}
+            {k === 'agenda' && left > 0 && <span className="mnbadge" aria-hidden="true">{left}</span>}
+          </button>
+        ))}
+      </div>
+      <span className="mnspacer" />
+      {toolBtn('search', 'Busca', 'search', 'Busca (Ctrl+F)')}
+      {toolBtn('archive', 'Arquivo e lixeira', 'archive')}
+      {toolBtn('settings', 'Ajustes', 'settings')}
+      <button className="gel mplus" aria-label={NEW_LABEL[s.section]} title={NEW_LABEL[s.section] + ' (Ctrl+N)'} onClick={() => addNew(s)}>
+        <Icon name="plus" size={16} sw={3} /><span className="plbl">{NEW_LABEL[s.section]}</span>
+      </button>
+    </nav>
+  );
+}
+
+// "+" (e Ctrl+N): uma anotação, um caderno ou uma tarefa nova, conforme a parte do app na tela.
+export function addNew(s: State) {
+  if (s.section === 'cadernos') newDoc();
+  else if (s.section === 'agenda') { focusNewTask(); openDay(s.screen === 'agenda' ? s.agDay : todayKey()); }
+  else newNote();
+}
+
 function Editor({ s, cur }: { s: State; cur: Note }) {
   // Trechos esvaziados nesta visita continuam na tela; os que já estavam vazios ficam de fora.
   const touched = useRef(new Set<string>());
@@ -158,7 +204,8 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
   const sheet = useRef<HTMLDivElement>(null);
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick(x => x + 1), 60000); return () => clearInterval(iv); }, []);
-  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'); a?.[a.length - 1]?.focus(); };
+  // Tocar no espaço vazio da página continua o texto: o cursor vai para o fim do último trecho.
+  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'), el = a?.[a.length - 1]; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
   useEffect(() => { if (isEmpty(cur)) focusLast(); }, []);
 
   const segs = cur.segs.filter(g => g.text !== '' || touched.current.has(g.id));
@@ -170,29 +217,29 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
   const archLabel = cur.status === 'archived' ? 'Desarquivar' : 'Arquivar';
 
   return <>
-    <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
-      {s.mobile && <button className="round press" aria-label="Voltar" onClick={() => go('history')}><Icon name="back" sw={2.6} /></button>}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{date}</div>
-        <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
+    <div className="row ibar">
+      {onePane(s) && <button className="round press" aria-label="Voltar" title={s.mini ? 'Voltar (Alt+←)' : 'Voltar'} onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
+      <div className="ibar-txt">
+        <div className="ibar-t">{date}</div>
+        <div className="ibar-s">{sub}</div>
       </div>
       <ColorPick value={cur.color} onPick={c => setNoteColor(cur.id, c)} mobile={s.mobile} label="Cor da anotação" />
-      <button className="pill press" aria-label={archLabel} onClick={() => archive(cur.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
-      <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(cur.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
+      <button className="pill press" aria-label={archLabel} title={archLabel} onClick={() => archive(cur.id)}><Icon name="archive" size={18} />{!s.mobile && <span className="plbl">{archLabel}</span>}</button>
+      <button className="pill press" aria-label="Mover para a lixeira" title="Mover para a lixeira" onClick={() => askTrash(cur.id)}><Icon name="trash" size={18} />{!s.mobile && <span className="plbl">Lixeira</span>}</button>
     </div>
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
+    <div className="iscroll">
       <div className="sheet" ref={sheet} style={paperStyle(cur.color)} onClick={e => e.target === e.currentTarget && focusLast()}>
         <input className="title" value={cur.title} placeholder="Título (opcional)" aria-label="Título" onChange={e => setTitle(cur.id, e.target.value)} />
         {/* O trecho novo nasce com o id que vai ter depois, para o cursor não sair do lugar. */}
         {[...segs, ...(needNew ? [null] : [])].map(g => g ? (
           <div key={g.id} className="col" style={{ marginTop: 22, gap: 4 }}>
             <div className="segtime">{fmtT(g.t)}</div>
-            <AutoArea value={g.text} placeholder="" onChange={v => { touched.current.add(g.id); editSeg(cur.id, g.id, v); }} />
+            <AutoArea value={g.text} placeholder="" label={'Trecho das ' + fmtT(g.t)} onChange={v => { touched.current.add(g.id); editSeg(cur.id, g.id, v); }} />
           </div>
         ) : (
           <div key={pending.current} className="col" style={{ marginTop: 22, gap: 4 }}>
             <div className="segtime" hidden />
-            <AutoArea value="" placeholder={segs.length ? 'Continue escrevendo…' : 'Escreva o que quiser…'}
+            <AutoArea value="" placeholder={segs.length ? 'Continue escrevendo…' : 'Escreva o que quiser…'} label={segs.length ? 'Continuar escrevendo' : 'Texto da anotação'}
               onChange={v => { if (!v) return; const id = pending.current; touched.current.add(id); pending.current = uid(); typeNew(cur.id, id, v); }} />
           </div>
         ))}
@@ -230,15 +277,20 @@ function Search({ s }: { s: State }) {
   const onlyNotes = results.every(r => !r.tag || r.tag === 'Arquivada');
   const count = results.length === 1 ? (onlyNotes ? '1 anotação' : '1 resultado') : results.length + (onlyNotes ? ' anotações' : ' resultados');
   return <>
-    <div className="col" style={{ padding: '22px 20px 12px', gap: 14, flex: 'none' }}>
-      <div className="h1">Busca</div>
+    <div className="col vhead">
+      <div className="row" style={{ gap: 10 }}>
+        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        <div className="h1">Busca</div>
+      </div>
       <label className="searchbox">
         <Icon name="search" sw={2.4} />
-        <input value={s.query} placeholder="Buscar nas anotações" aria-label="Buscar nas anotações" autoFocus={!s.mobile} onChange={e => set({ query: e.target.value })} />
+        {/* Esc apaga o que foi digitado; com o campo vazio, volta para onde estava. */}
+        <input value={s.query} placeholder="Buscar no diário, nos cadernos e na agenda" aria-label="Buscar no diário, nos cadernos e na agenda" autoFocus={!s.mobile}
+          onChange={e => set({ query: e.target.value })} onKeyDown={e => { if (e.key !== 'Escape' || e.nativeEvent.isComposing) return; e.preventDefault(); if (s.query) set({ query: '' }); else goBack(); }} />
       </label>
       {results.length > 0 && <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink4)', padding: '0 6px' }}>{count}</div>}
     </div>
-    <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
+    <div className="scroll vlist">
       {results.map(r => (
         <button key={r.key} className="gcard press" style={{ gap: 4, padding: '14px 16px', ...paperStyle(r.color) }} onClick={r.open}>
           <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{r.title}</span><span className="meta">{r.meta}</span></span>
@@ -249,7 +301,7 @@ function Search({ s }: { s: State }) {
       {q && !results.length && (
         <div className="empty">
           <div style={{ fontSize: 19, fontWeight: 700 }}>Nada encontrado</div>
-          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>Nenhuma anotação tem “{s.query}”. Tente outra palavra.</div>
+          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>Nenhum resultado para “{s.query}”. Tente outra palavra.</div>
         </div>
       )}
       {!q && <div className="empty small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>Busque por qualquer palavra. A busca acontece no aparelho, mesmo offline.</div>}
@@ -262,20 +314,21 @@ function Shelf({ s }: { s: State }) {
   const rows = live(s).filter(n => n.status === (isTrash ? 'trashed' : 'archived')).sort((a, b) => nd(b) - nd(a));
   const docRows = isTrash ? trashedDocs(s) : archivedDocs(s);
   return <>
-    <div className="col" style={{ padding: '22px 20px 12px', gap: 14, flex: 'none' }}>
+    <div className="col vhead">
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
-        <div className="h1">{isTrash ? 'Lixeira' : 'Arquivo'}</div>
+        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        <div className="h1" style={{ flex: 1, minWidth: 0 }}>{isTrash ? 'Lixeira' : 'Arquivo'}</div>
         {isTrash && rows.length + docRows.length > 0 && <button className="glassbtn press danger" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => set({ confirm: { all: true } })}>Esvaziar lixeira</button>}
       </div>
-      {s.mobile && (
+      {onePane(s) && (
         <div className="seg2" style={{ boxShadow: 'none' }}>
           <button className={'press' + (!isTrash ? ' on' : '')} aria-pressed={!isTrash} onClick={() => set({ shelf: 'archive' })}>Arquivadas</button>
           <button className={'press' + (isTrash ? ' on' : '')} aria-pressed={isTrash} onClick={() => set({ shelf: 'trash' })}>Lixeira</button>
         </div>
       )}
-      <div style={{ fontSize: 15, color: 'var(--ink3)', lineHeight: 1.4 }}>{isTrash ? 'Restaure uma anotação ou apague para sempre.' : 'Anotações e cadernos guardados fora das listas. Continuam aparecendo na busca.'}</div>
+      <div style={{ fontSize: 15, color: 'var(--ink3)', lineHeight: 1.4 }}>{isTrash ? 'Restaure anotações e cadernos ou apague para sempre.' : 'Anotações e cadernos guardados fora das listas. Continuam aparecendo na busca.'}</div>
     </div>
-    <div className="scroll" style={{ padding: '0 16px 16px', gap: 8 }}>
+    <div className="scroll vlist">
       {rows.map(n => (
         <div key={n.id} className="gcard" style={{ gap: 10, padding: '14px 16px', ...paperStyle(n.color) }}>
           <div className="col" style={{ gap: 3 }}>
@@ -302,9 +355,9 @@ function Shelf({ s }: { s: State }) {
       ))}
       {!rows.length && !docRows.length && (
         <div className="empty">
-          <div className="orb" style={{ width: 64, height: 64 }} />
+          <div className="orb md" />
           <div style={{ fontSize: 19, fontWeight: 700 }}>{isTrash ? 'Lixeira vazia' : 'Nada arquivado'}</div>
-          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>{isTrash ? 'Anotações que você mandar para a lixeira aparecem aqui.' : 'Arquive anotações e cadernos para tirá-los das listas sem apagar.'}</div>
+          <div className="small" style={{ color: 'var(--ink3)', maxWidth: 280 }}>{isTrash ? 'Anotações e cadernos que você mandar para a lixeira aparecem aqui.' : 'Arquive anotações e cadernos para tirá-los das listas sem apagar.'}</div>
         </div>
       )}
     </div>
@@ -331,10 +384,17 @@ function Settings({ s }: { s: State }) {
     catch (e) { toast(friendly(e)); }
     finally { setBusy(false); }
   };
-  return (
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '22px 16px 20px' }}>
+  return <>
+    {/* No Mini-Memoras o título fica parado em cima, com o Voltar; o resto rola. */}
+    {s.mini && (
+      <div className="row vhead" style={{ gap: 10 }}>
+        <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>
+        <div className="h1">Configurações</div>
+      </div>
+    )}
+    <div className="vset">
       <div className="col" style={{ maxWidth: 620, margin: '0 auto', gap: 14 }}>
-        <div className="h1" style={{ padding: '0 4px' }}>Configurações</div>
+        {!s.mini && <div className="h1" style={{ padding: '0 4px' }}>Configurações</div>}
 
         <div className="gcard setcard" style={{ gap: 10 }}>
           <div className="group">Diário</div>
@@ -418,7 +478,7 @@ function Settings({ s }: { s: State }) {
         <div className="small" style={{ textAlign: 'center', color: 'var(--ink3)', paddingTop: 2 }}>Memoras {__APP_VERSION__}</div>
       </div>
     </div>
-  );
+  </>;
 }
 
 // Só no app de Windows: andamento da atualização e o botão para reiniciar e instalar.
@@ -480,15 +540,15 @@ function usePlusBurst() {
 }
 
 export function Shell() {
-  const s = useApp(), scr = s.screen;
-  const cur = s.notes.find(n => n.id === s.sel && !n.deleted && n.status !== 'trashed');
+  const s = useApp(), scr = s.screen, one = onePane(s);
+  const cur = openNoteOf(s);
   // Caderno arquivado também abre (pela busca), com o botão Desarquivar.
-  const curDoc = s.items.find(i => i.kind === 'doc' && i.id === s.docSel && !i.deleted && i.status !== 'trashed');
-  const showEditor = !!cur && (scr === 'editor' || (!s.mobile && scr === 'history'));
-  const hasNotes = activeSorted(s).length > 0;
-  const showDoc = curDoc?.kind === 'doc' && (scr === 'doc' || (!s.mobile && scr === 'docs'));
-  // No celular, as listas (diário e cadernos) ocupam a tela sozinhas.
-  const listOnly = s.mobile && (scr === 'history' || (scr === 'editor' && !cur) || scr === 'docs' || (scr === 'doc' && !curDoc));
+  const curDoc = openDocOf(s);
+  const showEditor = !!cur && (scr === 'editor' || (!one && scr === 'history'));
+  const hasNotes = s.notes.some(n => !n.deleted && n.status === 'active');
+  const showDoc = !!curDoc && (scr === 'doc' || (!one && scr === 'docs'));
+  // No celular e no Mini-Memoras, as listas (diário e cadernos) ocupam a tela sozinhas.
+  const listOnly = one && (scr === 'history' || (scr === 'editor' && !cur) || scr === 'docs' || (scr === 'doc' && !curDoc));
   // Enquanto escreve ou lê no celular (inclusive o Resumão), o menu inferior sai de cena.
   const tabbar = s.mobile && !showEditor && !showDoc && scr !== 'summary';
   const plus = usePlusBurst();
@@ -498,22 +558,25 @@ export function Shell() {
     else plus.start(btn, openNew, newNote);
   };
   return <>
+    {/* Os filhos ficam sempre na mesma posição (a barra do mini, a lista, o painel): trocar de tamanho
+        não recria o editor, e o cursor continua onde estava. */}
     <div className={'wrap' + (s.mobile ? ' m' : '') + (s.mobile && !tabbar ? ' notab' : '')}>
-      {(!s.mobile || listOnly) && <Side s={s} />}
+      {s.mini && <MiniNav s={s} />}
+      {(!one || listOnly) && <Side s={s} />}
       {!listOnly && (
         <div className="main">
           <div className="panel">
             {showEditor && <Editor key={cur.id} s={s} cur={cur} />}
             {!showEditor && (scr === 'history' || scr === 'editor') && (
               <div className="empty" style={{ gap: 12 }}>
-                <div className="orb" style={{ width: 84, height: 84 }} />
+                <div className="orb lg" />
                 {/* Com anotações, nenhuma abre sozinha: a pessoa escolhe na lista. */}
                 <div style={{ fontSize: 24, fontWeight: 700 }}>{hasNotes ? 'Seu diário' : 'Seu diário está em branco'}</div>
                 <div className="p" style={{ color: 'var(--ink3)', maxWidth: 320 }}>{hasNotes ? 'Escolha uma anotação na lista ou comece uma nova.' : 'Comece com uma frase. Você pode voltar e continuar quando quiser.'}</div>
                 <button className="gel" style={{ marginTop: 6, height: 50, padding: '0 26px' }} onClick={newNote}>Nova anotação</button>
               </div>
             )}
-            {showDoc && curDoc.kind === 'doc' && <DocView key={curDoc.id} s={s} d={curDoc} />}
+            {showDoc && curDoc && <DocView key={curDoc.id} s={s} d={curDoc} />}
             {!showDoc && (scr === 'docs' || scr === 'doc') && <DocsEmpty />}
             {scr === 'summary' && <Summary s={s} />}
             {scr === 'agenda' && <AgendaDay s={s} />}
@@ -528,7 +591,7 @@ export function Shell() {
       <div className="tabbar">
         {TABS.map(([k, label]) => (
           <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label}
-            onClick={e => k === 'new' ? !plus.busy && add(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : k === 'docs' ? goSection(s, 'cadernos') : go(k)}>
+            onClick={e => k === 'new' ? !plus.busy && add(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : k === 'docs' ? goSection('cadernos') : k === 'settings' ? openTool('settings') : go(k)}>
             {k === 'new' ? <span className="plus">+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
           </button>
         ))}

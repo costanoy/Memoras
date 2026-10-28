@@ -2,7 +2,7 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { appAway, appBack, finishDoc, get, go, HOME, isLocked, set } from './store';
+import { appAway, appBack, finishDoc, get, go, goBack, isLocked, set } from './store';
 
 export const isNative = Capacitor.isNativePlatform();
 
@@ -57,15 +57,18 @@ export function setupBackButton() {
     switch (s.screen) {
       case 'loading': return leave();
       case 'history': return s.day || s.calOpen ? set({ day: null, calOpen: false }) : leave();
-      case 'editor': case 'docs': case 'agenda': return go('history');
+      case 'editor': case 'docs': return go('history');
+      case 'agenda': return s.agCal ? set({ agCal: false }) : go('history');
       case 'doc': if (s.docEdit) return finishDoc(); return go('docs');
       case 'summary': return go('docs');
-      case 'search': case 'archive': case 'settings': return go(HOME[s.section]);
+      // Das ferramentas, volta para a tela de onde vieram (com o mesmo item aberto).
+      case 'search': case 'archive': case 'settings': return goBack();
       case 'onboard': return s.onStep > 1 && s.onStep < 4 ? set({ onStep: s.onStep - 1 }) : leave();
       case 'auth': return s.authReturn === 'onboard' ? go('onboard', { onStep: 3 }) : go('settings');
       // Com o app travado, o "Esqueci minha senha" veio do "Esqueci o PIN" e volta para ele, nunca para o login.
       case 'forgot': return isLocked() ? go('forgotPin', { fStep: 1 }) : go('auth', { authMode: 'login', fStep: 1 });
-      case 'forgotPin': return go('pin', { pinMode: 'unlock', pin: '' });
+      // Igual ao Voltar da tela: aberto pelos Ajustes (app destravado), volta a pedir o PIN atual, não o de entrar.
+      case 'forgotPin': return go('pin', { pinMode: isLocked() ? 'unlock' : 'verify', pin: '' });
       case 'pin':
         if (s.pinMode === 'unlock') return leave();
         set({ pinMode: 'unlock', pin: '', pinMsg: '', pinError: false });
@@ -77,8 +80,10 @@ export function setupBackButton() {
 
 // Saídas da tela que o navegador não conta como "página escondida": o celular avisa quando o app
 // vai para segundo plano; o Windows, quando o computador bloqueia ou entra em suspensão.
-// Com PIN, mais de 1 minuto fora trava o app de novo (ver relock em store.ts).
+// Com PIN, passado o tempo escolhido nos Ajustes, o app trava de novo (ver relock em store.ts).
 export function watchAway() {
   if (isNative) void App.addListener('appStateChange', ({ isActive }) => isActive ? appBack() : appAway());
-  (window as unknown as { memorasWin?: { onAway?(cb: (away: boolean) => void): void } }).memorasWin?.onAway?.(away => away ? appAway() : appBack());
+  // No Windows, desbloquear o computador com a janela ainda minimizada ou coberta não conta como volta:
+  // quem fecha a conta é o visibilitychange de quando ela reaparece, com o tempo inteiro fora.
+  (window as unknown as { memorasWin?: { onAway?(cb: (away: boolean) => void): void } }).memorasWin?.onAway?.(away => away ? appAway() : document.visibilityState === 'visible' && appBack());
 }

@@ -41,19 +41,19 @@ export function Pin() {
 
   return (
     <div className="flow">
-      <div className="card" style={{ maxWidth: 360, alignItems: 'center', gap: 22, padding: '34px 24px 28px' }}>
-        <div className="col" style={{ alignItems: 'center', gap: 4, textAlign: 'center' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink4)', letterSpacing: '.04em' }}>{s.cfg.diaryName}</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{title}</div>
+      <div className="card pincard">
+        <div className="col pinhead">
+          <div className="pinname">{s.cfg.diaryName}</div>
+          <div className="pintitle">{title}</div>
         </div>
         <div key={s.shake} className={'dots' + (s.shake ? ' shake' : '') + (s.pinError ? ' bad' : '')}>
           {[0, 1, 2, 3].map(i => <i key={i} className={i < s.pin.length ? 'f' : ''} />)}
         </div>
-        <div className="err" role="status" style={{ minHeight: 22, textAlign: 'center' }}>{msg}</div>
+        <div className="err pinmsg" role="status">{msg}</div>
         <div className={'keys' + (locked ? ' locked' : '')}>
           {KEYS.map((k, i) => (
-            <button key={i} className={'key press' + (s.pressedKey === k && k ? ' hit' : '')} aria-label={k === 'del' ? 'Apagar' : k}
-              style={{ visibility: k ? 'visible' : 'hidden', fontSize: k === 'del' ? 22 : 28 }} onClick={() => k && pressKey(k)}>
+            <button key={i} className={'key press' + (k === 'del' ? ' del' : '') + (s.pressedKey === k && k ? ' hit' : '')} aria-label={k === 'del' ? 'Apagar' : k}
+              style={{ visibility: k ? 'visible' : 'hidden' }} onClick={() => k && pressKey(k)}>
               {k === 'del' ? '⌫' : k}
             </button>
           ))}

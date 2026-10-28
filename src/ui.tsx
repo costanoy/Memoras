@@ -48,7 +48,8 @@ export function ColorPick({ value, onPick, mobile, label }: { value: string; onP
   useEffect(() => {
     if (!open) return;
     const out = (e: Event) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    // Esc só fecha as cores (não volta a tela no Mini-Memoras nem fecha mais nada).
+    const esc = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setOpen(false); } };
     document.addEventListener('pointerdown', out); document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('pointerdown', out); document.removeEventListener('keydown', esc); };
   }, [open]);
@@ -56,7 +57,7 @@ export function ColorPick({ value, onPick, mobile, label }: { value: string; onP
   return (
     <div ref={ref} className="colorpick">
       <button className="pill press" aria-label={label} aria-expanded={open} title={label} onClick={() => setOpen(!open)}>
-        <span className="cdot" style={{ background: cur[0] ? cur[3] : '#fff' }} />{!mobile && 'Cor'}
+        <span className="cdot" style={{ background: cur[0] ? cur[3] : '#fff' }} />{!mobile && <span className="plbl">Cor</span>}
       </button>
       {open && (
         <div className="colorpop" role="group" aria-label={label}>

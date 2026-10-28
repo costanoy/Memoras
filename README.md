@@ -15,6 +15,7 @@ Diário pessoal privado para computador e celular. Um lugar para guardar o que v
 - **Agenda**: o plano de cada dia, com tarefas para marcar, e o Resumão com tudo o que vem pela frente, dia a dia. O que ficou por fazer passa para amanhã.
 - **Sem internet e sem conta**: tudo fica no aparelho. A conta é opcional e serve só para sincronizar entre aparelhos.
 - **Criptografia de ponta a ponta**: o servidor só guarda texto cifrado e nunca recebe a sua senha.
+- **Mini-Memoras** no Windows: um botão na barra de título (ou Ctrl+Shift+M) deixa o app do tamanho de um bloco de notas, para ficar ao lado do que você está fazendo, e pode ficar por cima das outras janelas.
 - **PIN e digital** para trancar a tela, 10 temas, atualização automática no Windows e aviso de versão nova no Android.
 
 ## Como é feito

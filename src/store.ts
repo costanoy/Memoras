@@ -5,6 +5,7 @@ import { blankDayNote, blankDoc, blankTask, isBlankItem, keyTime, nextOrder, tod
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
 import { playSound, type Sound } from './sounds';
 import { applyTheme, THEMES, type ThemeKey } from './themes';
+import { startsMini } from './win';
 
 export type Screen = 'loading' | 'pin' | 'forgotPin' | 'pinkey' | 'onboard' | 'auth' | 'recovery' | 'forgot' | 'history' | 'editor' | 'docs' | 'doc' | 'summary' | 'agenda' | 'search' | 'archive' | 'settings';
 export type Section = 'diario' | 'cadernos' | 'agenda';
@@ -33,6 +34,10 @@ export interface Cfg {
 
 export interface State {
   mobile: boolean;
+  // Mini-Memoras (só no app de Windows): a janela do tamanho do Cynote, uma coisa por vez na tela.
+  mini: boolean; onTop: boolean;
+  // De onde a Busca, o Arquivo ou os Ajustes foram abertos (o Voltar e o Esc voltam para lá).
+  from: Screen | null;
   screen: Screen;
   unlocked: boolean;
   cfg: Cfg;
@@ -76,7 +81,7 @@ export const reducedMotion = () => rmq.matches;
 
 const now = new Date();
 const initial = (): State => ({
-  mobile: mq.matches, screen: 'loading', unlocked: false, cfg: { ...defaultCfg }, sync: navigator.onLine ? 'synced' : 'offline',
+  mobile: mq.matches && !startsMini, mini: startsMini, onTop: false, from: null, screen: 'loading', unlocked: false, cfg: { ...defaultCfg }, sync: navigator.onLine ? 'synced' : 'offline',
   notes: [], sel: null, query: '', shelf: 'archive',
   items: [], section: 'diario', docSel: null, docEdit: false,
   agDay: todayKey(), agY: now.getFullYear(), agM: now.getMonth(), agCal: false,
@@ -97,7 +102,11 @@ export function set(p: Partial<State> | ((s: State) => Partial<State>)) {
   subs.forEach(f => f());
 }
 export const useApp = () => useSyncExternalStore(f => { subs.add(f); return () => subs.delete(f); }, get);
-mq.addEventListener('change', () => set({ mobile: mq.matches }));
+// No Mini-Memoras a janela é estreita, mas o layout é o dele, não o de celular.
+mq.addEventListener('change', () => { if (!state.mini) set({ mobile: mq.matches }); });
+export const phoneWidth = () => mq.matches;
+// Uma coisa por vez na tela: no celular e no Mini-Memoras (a lista ou o item aberto).
+export const onePane = (s: State) => s.mobile || s.mini;
 
 // A sincronização se pendura aqui para saber quando algo mudou.
 // away: o app saiu da tela (a sincronização envia na hora o que falta).
@@ -173,11 +182,55 @@ export function go(target: Screen, extra: Partial<State> = {}) {
   // Quem chega ao diário por outro caminho (login, link de senha) não revê o primeiro uso.
   if (inApp(screen) && !state.cfg.onboarded) setCfg({ onboarded: true });
   const sel = extra.sel !== undefined ? extra.sel : state.sel;
-  const keep = target === 'editor' || (target === 'history' && !state.mobile) ? sel : null;
+  const keep = target === 'editor' || (target === 'history' && !onePane(state)) ? sel : null;
   const docSel = extra.docSel !== undefined ? extra.docSel : state.docSel;
-  const keepDoc = target === 'doc' || (target === 'docs' && !state.mobile) ? docSel : null;
+  const keepDoc = target === 'doc' || (target === 'docs' && !onePane(state)) ? docSel : null;
   const section = SECTION[screen];
   set({ screen, confirm: null, menu: null, ...(section ? { section } : {}), ...extra, notes: cleaned(state.notes, keep), items: cleanItems(state.items, keepDoc) });
+}
+
+// Busca, Arquivo e Ajustes abrem por cima da parte em que a pessoa está. O Voltar (e o Esc fora dos
+// campos) volta para a tela de onde vieram, com a mesma anotação, caderno ou dia abertos.
+const TOOLS: Screen[] = ['search', 'archive', 'settings'];
+export const isTool = (s: Screen) => TOOLS.includes(s);
+export function openTool(k: 'search' | 'archive' | 'settings', extra: Partial<State> = {}) {
+  go(k, { from: isTool(state.screen) ? state.from : state.screen, ...extra });
+}
+export const openNoteOf = (s: State) => s.notes.find(n => n.id === s.sel && !n.deleted && n.status !== 'trashed');
+export const openDocOf = (s: State) => s.items.find((i): i is Doc => i.kind === 'doc' && i.id === s.docSel && !i.deleted && i.status !== 'trashed');
+export function goBack() {
+  const s = state;
+  if (isTool(s.screen)) {
+    const f = s.from;
+    if (f === 'editor' && !openNoteOf(s)) return go('history', { from: null });
+    if (f === 'doc' && !openDocOf(s)) return go('docs', { from: null });
+    return go(f && inApp(f) && !isTool(f) ? f : HOME[s.section], { from: null });
+  }
+  switch (s.screen) {
+    case 'editor': return go('history', s.mini ? { sel: null } : {});
+    case 'doc': return go('docs', { docSel: s.mini ? null : s.docSel, docEdit: false });
+    case 'summary': return go('docs');
+    case 'history': return s.calOpen ? set({ calOpen: false }) : s.day ? set({ day: null }) : undefined;
+    case 'agenda': return s.agCal ? set({ agCal: false }) : undefined;
+  }
+}
+// As três partes do app. No Mini-Memoras cada uma lembra o que estava aberto (como as abas do
+// Cynote); tocar na parte que já está na tela volta ao começo dela.
+export function goSection(k: Section) {
+  const s = state;
+  if (s.mini) {
+    if (k !== s.section || isTool(s.screen)) {
+      if (k === 'diario') return go(openNoteOf(s) ? 'editor' : 'history');
+      if (k === 'cadernos') return go(openDocOf(s) ? 'doc' : 'docs', { docEdit: false });
+      return go('agenda');
+    }
+    if (k === 'diario') return go('history', { sel: null, day: null, calOpen: false });
+    if (k === 'cadernos') return go('docs', { docSel: null, docEdit: false });
+    return openDay(todayKey());
+  }
+  // Entrar em Cadernos volta ao caderno que estava aberto; se nenhum estava, nada abre sozinho.
+  if (k === 'cadernos') return go('docs', { docSel: docsOf(s).some(d => d.id === s.docSel) ? s.docSel : null, docEdit: false });
+  go(HOME[k]);
 }
 
 export const openMenu = (kind: MenuKind, id: string, x: number, y: number, touch = false) => set({ menu: { kind, id, x, y, touch } });
@@ -275,12 +328,15 @@ export const setTitle = (id: string, title: string) => upd(id, n => { n.title = 
 export const setStatus = (id: string, status: Status) => upd(id, n => { n.status = status; n.statusTs = Date.now(); });
 export const setNoteColor = (id: string, color: string) => upd(id, n => { n.color = color; n.colorTs = Date.now(); });
 
+// Desfazer volta para a anotação que estava aberta (no Mini-Memoras, de volta no editor).
+const reopenNote = (id: string) => state.mini ? go('editor', { sel: id }) : set({ sel: id });
 // A anotação aberta é a escolhida no diário (no celular, a do editor).
 const isOpenNote = (id: string) => state.sel === id && (state.screen === 'editor' || state.screen === 'history');
 // Saiu da lista a anotação aberta: abre a próxima. Tirada pelo menu da lista, o que está aberto continua.
 function afterRemove(id: string, open: boolean) {
   if (!open) return;
-  const next = activeSorted(state).find(n => n.id !== id);
+  // No Mini-Memoras volta para a lista sem nada aberto (uma coisa por vez na tela).
+  const next = state.mini ? undefined : activeSorted(state).find(n => n.id !== id);
   set({ sel: next ? next.id : null, screen: 'history', section: 'diario' });
 }
 function drop(ids: string[]) {
@@ -299,14 +355,14 @@ export function archive(id: string) {
   if (n.status === 'archived') { setStatus(id, 'active'); toast('Anotação desarquivada'); return; }
   const open = isOpenNote(id);
   setStatus(id, 'archived'); afterRemove(id, open); sfx('archive');
-  toast('Anotação arquivada', () => { setStatus(id, 'active'); if (open) set({ sel: id }); });
+  toast('Anotação arquivada', () => { setStatus(id, 'active'); if (open) reopenNote(id); });
 }
 export function trash(id: string) {
   const n = state.notes.find(x => x.id === id); if (!n) return;
   const prev = n.status, open = isOpenNote(id);
   if (isEmpty(n)) { drop([id]); afterRemove(id, open); return; }
   setStatus(id, 'trashed'); afterRemove(id, open); sfx('trash');
-  toast('Movida para a lixeira', () => { setStatus(id, prev); if (open) set({ sel: id }); });
+  toast('Movida para a lixeira', () => { setStatus(id, prev); if (open) reopenNote(id); });
 }
 // Mandar para a lixeira pergunta antes (o "Desfazer" continua depois). Anotação ou caderno vazio some direto.
 export function askTrash(id: string) {
@@ -381,7 +437,7 @@ export function trashDoc(id: string) {
     setDocStatus(id, 'trashed'); sfx('trash');
     toast('Caderno movido para a lixeira', () => { setDocStatus(id, 'active'); if (open) go('doc', { docSel: id, docEdit: false }); });
   }
-  if (open) go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
+  if (open) go('docs', { docSel: next && !onePane(state) ? next.id : null, docEdit: false });
 }
 export function restoreDoc(id: string) { setDocStatus(id, 'active'); toast('Caderno restaurado'); }
 // Arquivar tira o caderno da lista sem apagar: ele fica no Arquivo e continua aparecendo na busca.
@@ -394,7 +450,7 @@ export function archiveDoc(id: string) {
     setDocStatus(id, 'archived'); sfx('archive');
     toast('Caderno arquivado', () => { setDocStatus(id, 'active'); if (open) go('doc', { docSel: id, docEdit: false }); });
   }
-  if (open) go('docs', { docSel: next && !state.mobile ? next.id : null, docEdit: false });
+  if (open) go('docs', { docSel: next && !onePane(state) ? next.id : null, docEdit: false });
 }
 
 export function openDay(date: string) {
@@ -446,7 +502,7 @@ export function setDayNote(date: string, id: string, text: string) {
 }
 async function resetDiary() {
   await wipeAll();
-  state = { ...initial(), screen: 'onboard', unlocked: true };
+  state = { ...initial(), mini: state.mini, mobile: state.mobile, onTop: state.onTop, screen: 'onboard', unlocked: true };
   applyTheme(state.cfg.theme);
   subs.forEach(f => f());
   toast('Diário apagado neste aparelho');

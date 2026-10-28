@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { addDays, dayKey, keyTime, todayKey, type Task } from '../lib/items';
 import { dayLabel, dayMonth, uid } from '../lib/notes';
-import { addTask, dayNotesOn, deleteTask, doneDays, get, insertTaskAfter, moveTask, openDay, openMenu, plannedDays, reorderTask, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
+import { addTask, dayNotesOn, deleteTask, doneDays, get, go, insertTaskAfter, moveTask, onePane, openDay, openMenu, plannedDays, reorderTask, set, setDayNote, setTaskText, tasksOn, toggleTask, type State } from '../store';
 import { AutoArea, editing, Icon, menuOn, MonthCal } from '../ui';
 
 // "Hoje", "Amanhã", "Ontem" ou o dia da semana com a data.
@@ -21,7 +21,7 @@ let focusTaskId: string | null = null;
 function AgendaCal({ s }: { s: State }) {
   const planned = plannedDays(s), done = doneDays(s);
   return <MonthCal y={s.agY} m={s.agM} all onMove={(agY, agM) => set({ agY, agM })} has={t => planned.has(dayKey(t))} done={t => done.has(dayKey(t))} isSel={t => dayKey(t) === s.agDay}
-    onPick={t => { openDay(dayKey(t)); if (s.mobile) set({ agCal: false }); }} />;
+    onPick={t => { openDay(dayKey(t)); if (onePane(s)) set({ agCal: false }); }} />;
 }
 
 // Barra lateral do computador: calendário e os próximos dias com plano.
@@ -170,24 +170,31 @@ export function AgendaDay({ s }: { s: State }) {
   const k = s.agDay, today = todayKey(), tasks = tasksOn(s, k), left = tasks.filter(t => !t.done).length;
   const sub = !tasks.length ? 'Nada planejado ainda' : !left ? 'Tudo feito' : left === 1 ? '1 tarefa a fazer' : left + ' tarefas a fazer';
   return <>
-    <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fullLabel(k)}</div>
-        <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
+    <div className="row ibar">
+      <div className="ibar-txt">
+        <div className="ibar-t">{fullLabel(k)}</div>
+        <div className="ibar-s">{sub}</div>
       </div>
       {k !== today && <button className="pill press" onClick={() => openDay(today)}>Hoje</button>}
-      <button className="round press" aria-label="Dia anterior" onClick={() => openDay(addDays(k, -1))}><Icon name="back" sw={2.6} /></button>
-      <button className="round press flip" aria-label="Próximo dia" onClick={() => openDay(addDays(k, 1))}><Icon name="back" sw={2.6} /></button>
-      {s.mobile && (
-        <button className="round press" aria-label="Calendário" aria-pressed={s.agCal} onClick={() => set({ agCal: !s.agCal })}
+      <button className="round press" aria-label="Dia anterior" title="Dia anterior" onClick={() => openDay(addDays(k, -1))}><Icon name="back" sw={2.6} /></button>
+      <button className="round press flip" aria-label="Próximo dia" title="Próximo dia" onClick={() => openDay(addDays(k, 1))}><Icon name="back" sw={2.6} /></button>
+      {onePane(s) && (
+        <button className="round press" aria-label="Calendário" title="Calendário" aria-pressed={s.agCal} onClick={() => set({ agCal: !s.agCal })}
           style={s.agCal ? { background: 'rgba(255,255,255,.95)', color: 'var(--acc-d)' } : undefined}>
           <Icon name="calendar" />
         </button>
       )}
     </div>
-    {s.mobile && s.agCal && <div style={{ padding: '0 12px 10px', flex: 'none' }}><AgendaCal s={s} /></div>}
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
-      <DayBody key={k} s={s} k={k} />
+    {onePane(s) && s.agCal && (
+      <div className="agcal">
+        <AgendaCal s={s} />
+        {/* No Mini-Memoras, o Resumão fica a um clique daqui (ele mora em Cadernos). */}
+        {s.mini && <button className="link" style={{ alignSelf: 'center', fontSize: 14, fontWeight: 700 }} onClick={() => go('summary')}>Ver o Resumão</button>}
+      </div>
+    )}
+    {/* Cada dia começa do alto (o painel não herda a rolagem do dia anterior). */}
+    <div key={k} className="iscroll">
+      <DayBody s={s} k={k} />
     </div>
   </>;
 }

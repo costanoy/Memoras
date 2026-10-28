@@ -18,6 +18,8 @@ const ICONS: Record<string, ReactNode> = {
   pin: <><line x1="8.5" y1="3.5" x2="15.5" y2="3.5" /><path d="M10 3.5v5.2L6.5 13h11L14 8.7V3.5" /><line x1="12" y1="13" x2="12" y2="20.5" /></>,
   check: <polyline points="5 12.5 10 17.5 19 7" />,
   forward: <><line x1="5" y1="12" x2="18.5" y2="12" /><polyline points="13.5 7 18.5 12 13.5 17" /></>,
+  // "Manter por cima" do Mini-Memoras: o alfinete inclinado (o reto é o "Fixar no alto" dos cadernos).
+  ontop: <g transform="rotate(45 12 12)"><line x1="8.5" y1="3.5" x2="15.5" y2="3.5" /><path d="M10 3.5v5.2L6.5 13h11L14 8.7V3.5" /><line x1="12" y1="13" x2="12" y2="20.5" /></g>,
 };
 
 export function Icon({ name, size = 20, sw = 2.2 }: { name: string; size?: number; sw?: number }) {

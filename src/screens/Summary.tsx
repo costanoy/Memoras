@@ -1,4 +1,4 @@
-import { go, openDay, toggleTask, upcoming, type State } from '../store';
+import { go, goBack, onePane, openDay, toggleTask, upcoming, type State } from '../store';
 import { Icon } from '../ui';
 import { fullLabel } from './Agenda';
 
@@ -10,15 +10,15 @@ export function Summary({ s }: { s: State }) {
   const sub = !days.length ? 'Nada planejado daqui para frente' : !left ? 'Tudo feito por enquanto'
     : (left === 1 ? '1 tarefa a fazer' : left + ' tarefas a fazer') + (busy === 1 ? ' em 1 dia' : ' em ' + busy + ' dias');
   return <>
-    <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
-      {s.mobile && <button className="round press" aria-label="Voltar" onClick={() => go('docs')}><Icon name="back" sw={2.6} /></button>}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Resumão</div>
-        <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
+    <div className="row ibar">
+      {onePane(s) && <button className="round press" aria-label="Voltar" title={s.mini ? 'Voltar (Alt+←)' : 'Voltar'} onClick={() => s.mini ? goBack() : go('docs')}><Icon name="back" sw={2.6} /></button>}
+      <div className="ibar-txt">
+        <div className="ibar-t">Resumão</div>
+        <div className="ibar-s">{sub}</div>
       </div>
-      <button className="pill press" aria-label="Abrir a Agenda" onClick={() => go('agenda')}><Icon name="agenda" size={18} />{!s.mobile && 'Abrir a Agenda'}</button>
+      <button className="pill press" aria-label="Abrir a Agenda" title="Abrir a Agenda" onClick={() => go('agenda')}><Icon name="agenda" size={18} />{!s.mobile && <span className="plbl">Abrir a Agenda</span>}</button>
     </div>
-    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
+    <div className="iscroll">
       <div className="sheet">
         <div className="title doctitle">Resumão</div>
         <p className="dochint" style={{ marginTop: -6 }}>Todas as tarefas de hoje em diante, separadas por dia. Ele se atualiza sozinho com a Agenda.</p>

@@ -5,6 +5,8 @@
 - Versões do app de Windows saem pelos Releases de `costanoy/Memoras` (`npm run release`); o app instalado se atualiza por eles.
 - O `.env` (fora do Git) tem a URL e a chave publishable do Supabase. Sem ele o app sai sem contas, e o `npm run release` cancela.
 - Com o app travado pelo PIN, nenhuma tela leva a login ou cadastro: entrar em outra conta enviaria o diário do aparelho para ela. Quem garante são `WHILE_LOCKED` em `src/store.ts` e `lockedGuard` em `src/sync.ts`; mantenha os dois em qualquer fluxo novo.
+- Mini-Memoras (só no Windows): o modo e o tamanho das duas janelas ficam em `janela.json`, na pasta de dados do app (`electron/main.cjs`), fora do IndexedDB. Nunca passe o modo pela URL: a origem `app://memoras` não pode mudar. No CSS, o mini é `html[data-mini]` (a classe `.mini` já é dos botões das tarefas).
+- No CSS, use só `backdrop-filter`, sem o `-webkit-backdrop-filter`: o build juntava os dois e ficava com o prefixado, que o Chromium do app não aplica (o vidro saía sem desfoque).
 - O link de "Esqueci minha senha" abre o app por `memoras://senha` (fluxo PKCE). Esse endereço está em `src/sync.ts`, `electron/main.cjs`, `AndroidManifest.xml` e nas Redirect URLs do Supabase: mude nos quatro ou em nenhum.
 
 ## Nunca perder anotações numa atualização

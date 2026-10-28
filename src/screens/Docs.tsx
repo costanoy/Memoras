@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react';
 import { docLines, docPreview, docTitle, lineStarts, type Doc, type Line } from '../lib/items';
 import { DAY, dayMonth, fmtT, same } from '../lib/notes';
-import { archiveDoc, askTrash, docsOf, finishDoc, go, lastEdit, newDoc, openDoc, openMenu, set, setDocBody, setDocColor, setDocTitle, upcoming, type State } from '../store';
+import { archiveDoc, askTrash, docsOf, finishDoc, go, goBack, lastEdit, newDoc, onePane, openDoc, openMenu, set, setDocBody, setDocColor, setDocTitle, upcoming, type State } from '../store';
 import { paperStyle } from '../themes';
 import { AutoArea, ColorPick, Icon, menuOn } from '../ui';
 import { agendaLabel } from './Agenda';
@@ -14,7 +14,7 @@ function SummaryCard({ s }: { s: State }) {
   const days = upcoming(s), left = days.reduce((n, d) => n + d.tasks.filter(t => !t.done).length, 0);
   const prev = days.map(d => [agendaLabel(d.k), d.tasks.filter(t => !t.done).map(t => t.text.trim()).join(', ')]).filter(([, t]) => t).map(([l, t]) => l + ': ' + t).join(' · ');
   return (
-    <button className={'item press sumcard' + (!s.mobile && s.screen === 'summary' ? ' on' : '')} onClick={() => go('summary')}>
+    <button className={'item press sumcard' + (!onePane(s) && s.screen === 'summary' ? ' on' : '')} onClick={() => go('summary')}>
       <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}>
         <span className="ttl"><Icon name="agenda" size={16} sw={2.4} />Resumão</span><span className="meta">{left ? left + ' a fazer' : ''}</span>
       </span>
@@ -28,7 +28,7 @@ function SummaryCard({ s }: { s: State }) {
 export function DocsList({ s }: { s: State }) {
   const docs = docsOf(s), pinned = docs.filter(d => d.pinned), rest = docs.filter(d => !d.pinned);
   const card = (d: Doc) => (
-    <button key={d.id} className={'item press' + (!s.mobile && s.docSel === d.id && (s.screen === 'docs' || s.screen === 'doc') ? ' on' : '') + (s.menu?.id === d.id ? ' ctxon' : '')}
+    <button key={d.id} className={'item press' + (!onePane(s) && s.docSel === d.id && (s.screen === 'docs' || s.screen === 'doc') ? ' on' : '') + (s.menu?.id === d.id ? ' ctxon' : '')}
       style={paperStyle(d.color)} onClick={() => openDoc(d.id)} {...menuOn((x, y, touch) => openMenu('doc', d.id, x, y, touch))}>
       <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}>
         <span className="ttl">{docTitle(d)}</span>
@@ -39,8 +39,8 @@ export function DocsList({ s }: { s: State }) {
     </button>
   );
   return <>
-    {!s.mobile && (
-      <button className="gel row" style={{ flex: 'none', justifyContent: 'center', gap: 8, height: 50 }} onClick={() => newDoc()}>
+    {!onePane(s) && (
+      <button className="gel row" style={{ flex: 'none', justifyContent: 'center', gap: 8, height: 50 }} title="Novo caderno (Ctrl+N)" onClick={() => newDoc()}>
         <Icon name="plus" size={18} sw={3} />Novo caderno
       </button>
     )}
@@ -143,7 +143,8 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
     } else if (sc) {
       const top = sc.getBoundingClientRect().top;
       const first = [...sc.querySelectorAll<HTMLElement>('[data-line]')].find(el => el.getBoundingClientRect().bottom > top + 4);
-      if (first) anchor.current = { line: +first.dataset.line!, col: 0, y: viewY(first), focus: false };
+      // No computador, Editar já deixa o cursor no começo da primeira linha à vista.
+      if (first) anchor.current = { line: +first.dataset.line!, col: 0, y: viewY(first), focus: !s.mobile };
     }
     set({ docEdit: true });
   };
@@ -203,33 +204,37 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
   };
 
   return <>
-    <div className="row" style={{ gap: 8, padding: '12px 14px', flex: 'none' }}>
-      {s.mobile && <button className="round press" aria-label="Voltar" onClick={() => { finishDoc(); go('docs'); }}><Icon name="back" sw={2.6} /></button>}
-      <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
-        <div style={{ fontSize: 16, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title || d.body ? edited(lastEdit(d)) : 'Caderno novo'}</div>
-        <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{sub}</div>
+    <div className="row ibar">
+      {onePane(s) && <button className="round press" aria-label="Voltar" title={s.mini ? 'Voltar (Alt+←)' : 'Voltar'} onClick={() => { if (s.mini) goBack(); else { finishDoc(); go('docs'); } }}><Icon name="back" sw={2.6} /></button>}
+      <div className="ibar-txt">
+        <div className="ibar-t">{d.title || d.body ? edited(lastEdit(d)) : 'Caderno novo'}</div>
+        <div className="ibar-s">{sub}</div>
       </div>
       <ColorPick value={d.color} onPick={c => setDocColor(d.id, c)} mobile={s.mobile} label="Cor do caderno" />
       {/* Escrevendo no celular, Arquivar e Lixeira saem para sobrar espaço (continuam no toque longo da lista). */}
       {!(edit && s.mobile) && <>
-        <button className="pill press" aria-label={archLabel} onClick={() => archiveDoc(d.id)}><Icon name="archive" size={18} />{!s.mobile && archLabel}</button>
-        <button className="pill press" aria-label="Mover para a lixeira" onClick={() => askTrash(d.id)}><Icon name="trash" size={18} />{!s.mobile && 'Lixeira'}</button>
+        <button className="pill press" aria-label={archLabel} title={archLabel} onClick={() => archiveDoc(d.id)}><Icon name="archive" size={18} />{!s.mobile && <span className="plbl">{archLabel}</span>}</button>
+        <button className="pill press" aria-label="Mover para a lixeira" title="Mover para a lixeira" onClick={() => askTrash(d.id)}><Icon name="trash" size={18} />{!s.mobile && <span className="plbl">Lixeira</span>}</button>
       </>}
       {/* Editar e Pronto ficam por último; Pronto, em destaque, termina a edição. */}
       {edit
-        ? <button className="pill press go" onClick={stopEdit}><Icon name="check" size={18} sw={2.8} />Pronto</button>
-        : <button className="pill press" aria-label="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && 'Editar'}</button>}
+        ? <button key="done" className="pill press go" title="Pronto (Ctrl+Enter)" onClick={stopEdit}><Icon name="check" size={18} sw={2.8} />Pronto</button>
+        : <button key="edit" className="pill press" aria-label="Editar" title="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && <span className="plbl">Editar</span>}</button>}
     </div>
-    <div ref={scRef} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '0 12px 12px' }}>
+    <div ref={scRef} className="iscroll">
       {edit ? (
         <div className="sheet" style={paperStyle(d.color)}>
-          <input ref={titleRef} className="title doctitle" value={d.title} placeholder="Título do caderno" aria-label="Título do caderno" onChange={e => setDocTitle(d.id, e.target.value)} />
-          <AutoArea areaRef={areaRef} className="segtext docbody" value={d.body} label="Texto do caderno" placeholder="Escreva aqui o que você quer reler depois." onChange={v => setDocBody(d.id, v)} />
+          {/* Enter no título vai para o texto; Ctrl+Enter (no título ou no texto) é o Pronto. */}
+          <input ref={titleRef} className="title doctitle" value={d.title} placeholder="Título do caderno" aria-label="Título do caderno" onChange={e => setDocTitle(d.id, e.target.value)}
+            onKeyDown={e => { if (e.key !== 'Enter' || e.nativeEvent.isComposing) return; e.preventDefault(); if (e.ctrlKey) stopEdit(); else { const ta = areaRef.current; ta?.focus(); ta?.setSelectionRange(0, 0); } }} />
+          <div onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey && !e.nativeEvent.isComposing) { e.preventDefault(); stopEdit(); } }}>
+            <AutoArea areaRef={areaRef} className="segtext docbody" value={d.body} label="Texto do caderno" placeholder="Escreva aqui o que você quer reler depois." onChange={v => setDocBody(d.id, v)} />
+          </div>
         </div>
       ) : (
         <div className="sheet doc" style={paperStyle(d.color)} onPointerDown={down} onPointerUp={up} onPointerCancel={() => { tap.current.t = 0; }}>
           {d.title.trim() && <div className="title doctitle">{d.title}</div>}
-          {d.body.trim() ? <Lines lines={lines} /> : <p className="dochint">Este caderno está vazio. Toque duas vezes aqui ou em Editar para escrever.</p>}
+          {d.body.trim() ? <Lines lines={lines} /> : <p className="dochint">Este caderno está vazio. {s.mobile ? 'Toque duas vezes aqui' : 'Clique duas vezes aqui'} ou em Editar para escrever.</p>}
         </div>
       )}
     </div>
