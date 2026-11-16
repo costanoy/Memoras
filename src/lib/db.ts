@@ -23,7 +23,8 @@ function db() {
       res(d);
     };
     r.onerror = () => { dbp = null; rej(r.error); };
-    r.onblocked = () => { dbp = null; rej(new Error('Memoras: banco bloqueado por outra janela')); };
+    // Outra janela com versão antiga segura o upgrade: só avisa e continua esperando (o onsuccess vem quando ela fechar).
+    r.onblocked = () => dbHooks.blocked();
   });
 }
 
@@ -35,7 +36,7 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
   }));
 }
 // Se o aparelho recusar uma gravação (sem espaço, por exemplo), o app avisa em vez de seguir como se tivesse salvo.
-export const dbHooks = { writeFailed: (_e: unknown) => {}, outdated: () => {} };
+export const dbHooks = { writeFailed: (_e: unknown) => {}, outdated: () => {}, blocked: () => {} };
 const quiet = (p: Promise<unknown>) => p.then(() => {}, e => { console.error('Memoras: falha ao gravar', e); dbHooks.writeFailed(e); });
 
 // Leitura que falha de verdade em vez de fingir que o banco está vazio (usada ao abrir o app).

@@ -286,6 +286,7 @@ export function toast(text: string, undo?: () => void) {
   set({ toast: { text, undo } });
   toastTimer = window.setTimeout(() => set({ toast: null }), 5000);
 }
+dbHooks.blocked = () => toast('Há outra janela do Memoras aberta numa versão antiga. Feche-a para continuar.');
 dbHooks.outdated = () => toast('O Memoras foi atualizado em outra janela. Feche e abra o app de novo.');
 let lastWriteWarn = 0;
 dbHooks.writeFailed = () => {
