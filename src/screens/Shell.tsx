@@ -571,6 +571,18 @@ export function Shell() {
   // Enquanto escreve ou lê no celular (inclusive o Resumão), o menu inferior sai de cena.
   const tabbar = s.mobile && !showEditor && !showDoc && scr !== 'summary';
   const plus = usePlusBurst();
+  // Dicas de toque longo no celular: cada uma aparece uma vez por aparelho (localStorage, sem sincronizar).
+  const nDocs = docsOf(s).length, nTasks = tasksOn(s, s.agDay).filter(t => t.text.trim()).length;
+  useEffect(() => {
+    if (!s.mobile || s.toast || s.confirm || s.menu) return;
+    const dica = (key: string, text: string) => {
+      try { if (localStorage.getItem(key)) return; } catch { return; }
+      toast(text);
+      try { localStorage.setItem(key, '1'); } catch { /* sem armazenamento: a dica só some com o toast */ }
+    };
+    if (scr === 'history' && hasNotes || scr === 'docs' && nDocs > 0) dica('memoras:dicaToque', 'Segure um item para ver mais opções');
+    else if (scr === 'agenda' && nTasks > 0) dica('memoras:dicaToqueAgenda', 'Segure uma tarefa para ver mais opções');
+  }, [s.mobile, s.toast, scr, hasNotes, nDocs, nTasks]);
   const add = (btn: HTMLElement) => {
     if (s.section === 'cadernos') plus.start(btn, () => newDoc(true), () => newDoc());
     else if (s.section === 'agenda') { focusNewTask(); openDay(todayKey()); }
