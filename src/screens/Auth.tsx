@@ -64,9 +64,9 @@ export function Auth() {
             aria-describedby={[errField === 'password' ? 'auth-err' : '', signup ? 'auth-min' : ''].filter(Boolean).join(' ') || undefined}
             onChange={e => { setPassword(e.target.value); clear(); }} />
         </label>
-        <button type="button" className="link" style={{ alignSelf: 'flex-start', padding: '4px 0' }} aria-pressed={ver} onClick={() => setVer(!ver)}>{ver ? 'Esconder senha' : 'Mostrar senha'}</button>
         {signup && <div className="meta" id="auth-min">Mínimo 8 caracteres</div>}
         {err && errField === 'password' && <div className="err" id="auth-err" role="alert">{err}</div>}
+        <button type="button" className="link" style={{ alignSelf: 'flex-start', padding: '4px 0', margin: '-8px 0' }} aria-pressed={ver} onClick={() => setVer(!ver)}>{ver ? 'Esconder senha' : 'Mostrar senha'}</button>
         {err && !errField && <div className="err" role="alert">{err}</div>}
         {info && <div className="small" role="status">{info}</div>}
         <button className={'gel' + (busy ? ' off' : '')} type="submit" aria-busy={busy}>{busy ? (signup ? 'Criando conta…' : 'Entrando…') : signup ? 'Criar conta' : 'Entrar'}</button>
