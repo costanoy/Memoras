@@ -35,8 +35,8 @@ export function Onboard() {
   return (
     <div className="flow">
       <div className="card" style={{ gap: 22, padding: '34px 30px 30px' }}>
-        <div className="row" style={{ gap: 6 }}>
-          {[1, 2, 3, 4].map(i => <div key={i} style={{ height: 6, flex: 1, borderRadius: 3, background: i <= step ? 'var(--gel)' : 'rgba(12,60,90,.12)' }} />)}
+        <div className="row obar" style={{ gap: 6 }} role="progressbar" aria-valuemin={1} aria-valuenow={step} aria-valuemax={4} aria-label={'Passo ' + step + ' de 4'}>
+          {[1, 2, 3, 4].map(i => <div key={i} className={i <= step ? 'on' : undefined} style={{ height: 6, flex: 1, borderRadius: 3, background: i <= step ? 'var(--gel)' : 'rgba(12,60,90,.12)' }} />)}
         </div>
 
         {step === 1 && <>
