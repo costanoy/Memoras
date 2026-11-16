@@ -69,7 +69,7 @@ strong{font-weight:700}
 .soft{height:42px;border-radius:999px;padding:0 18px;font-size:15px;font-weight:600;white-space:nowrap;color:var(--ink);background:rgba(255,255,255,.9);border:1px solid rgba(12,60,90,.15)}
 .soft.danger,.danger{color:#a3203f}
 .soft.danger{font-weight:700;border-color:rgba(163,32,63,.25)}
-.link{background:none;border:none;padding:8px;color:var(--acc-d);font-size:15px;font-weight:600}
+.link{min-height:44px;display:inline-flex;align-items:center;background:none;border:none;padding:8px;color:var(--acc-d);font-size:15px;font-weight:600}
 .link.u{text-decoration:underline;text-underline-offset:3px}
 .round{flex:none;width:44px;height:44px;padding:0;border-radius:50%;display:grid;place-items:center;color:var(--ink);background:var(--glass2);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45)}
 .pill{flex:none;display:flex;align-items:center;gap:7px;height:44px;padding:0 14px;border-radius:999px;font-size:15px;font-weight:600;color:var(--ink);background:var(--glass2);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff, 0 6px 14px -8px rgba(0,60,110,.45)}
@@ -78,6 +78,7 @@ strong{font-weight:700}
 .field{width:100%;height:52px;border-radius:16px;border:1px solid rgba(12,60,90,.2);background:rgba(255,255,255,.9);box-shadow:inset 0 2px 4px rgba(0,40,80,.08);padding:0 16px;font-size:17px;font-weight:400;color:var(--ink);outline:none}
 textarea.field{height:auto;padding:14px 16px;resize:none}
 .field:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--ring)}
+.field[aria-invalid="true"],.field[aria-invalid="true"]:focus{border-color:#b0284a}
 .label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--ink4)}
 .seg2{display:flex;padding:4px;border-radius:999px;background:rgba(12,60,90,.08);box-shadow:inset 0 1px 3px rgba(0,40,80,.12)}
 .seg2 button{flex:1;height:40px;border-radius:999px;border:none;font-size:15px;font-weight:700;color:var(--ink);background:transparent}
@@ -89,6 +90,7 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .check{display:flex;align-items:center;gap:12px;padding:6px 2px;background:none;border:none;text-align:left;color:var(--ink);font-size:17px;font-weight:600}
 .check i{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:16px;color:var(--gel-fg);background:rgba(255,255,255,.9);border:2px solid #8aa6b6}
 .check.on i{background:var(--gel);border-color:var(--acc-dd)}
+.check.warn i{border-color:#b0284a;box-shadow:0 0 0 3px rgba(176,40,74,.18)}
 
 /* Telas de fluxo */
 .flow{position:absolute;inset:0;overflow:auto;display:flex;justify-content:center;padding:calc(32px + var(--sat)) 20px calc(32px + var(--sab))}
@@ -184,14 +186,15 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 }
 /* No celular: dias e setas grandes para o dedo, e o calendário não estica além de 400 px. */
 .wrap.m .cal{width:100%;max-width:400px;margin-left:auto;margin-right:auto}
-.wrap.m .cal .arrow{width:40px;height:40px}
-.wrap.m .day{height:38px}
+.wrap.m .cal .arrow{width:44px;height:44px}
+.wrap.m .day{height:44px}
 /* Barras de rolagem finas e discretas, sem as setas do Windows. */
-::-webkit-scrollbar{width:8px;height:8px}
-::-webkit-scrollbar-button{display:none}
-::-webkit-scrollbar-thumb{background:rgba(12,60,90,.28);border-radius:4px}
-::-webkit-scrollbar-thumb:hover{background:rgba(12,60,90,.42)}
-::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+/* Só com mouse (desktop): no celular a barra do sistema fica como está. */
+@media (hover:hover) and (pointer:fine){::-webkit-scrollbar{width:8px;height:8px}}
+@media (hover:hover) and (pointer:fine){::-webkit-scrollbar-button{display:none}}
+@media (hover:hover) and (pointer:fine){::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ink2) 30%,transparent);border-radius:4px}}
+@media (hover:hover) and (pointer:fine){::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--ink2) 48%,transparent)}}
+@media (hover:hover) and (pointer:fine){::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}}
 .day.has{font-weight:700;color:var(--ink);cursor:pointer}
 .day.has::after{content:'';position:absolute;left:50%;bottom:3px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--acc)}
 .day.today{background:rgba(255,255,255,.95);box-shadow:inset 0 0 0 1.5px var(--acc)}
@@ -290,12 +293,20 @@ input.doctitle{height:1.2em}
 .mini.x{width:30px;padding:0;font-size:19px;line-height:1}
 .task .tick,.task .grip{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
+/* Toque no celular: só a área de toque cresce (44 px), o desenho continua o mesmo */
+.wrap.m .tick{position:relative}
+.wrap.m .tick::after{content:'';position:absolute;inset:-9px -15px -9px -3px}
+.wrap.m .sumtask .tick::after{inset:-10px}
+.wrap.m .grip{position:relative}
+.wrap.m .grip::after{content:'';position:absolute;inset:-4px 0 -4px -8px}
+
 /* Menu de opções de um item (botão direito do mouse ou toque longo) */
 .ctxmenu{position:fixed;z-index:46;width:262px;max-width:calc(100vw - 20px);display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:22px;background:var(--glass2);backdrop-filter:var(--blur);border:1px solid #fff;box-shadow:inset 0 1px 0 #fff, 0 22px 44px -18px rgba(0,30,60,.55);animation:mIn .12s cubic-bezier(.2,.8,.2,1);-webkit-user-select:none;user-select:none}
 .ctxtitle{padding:4px 10px 8px;font-size:14px;font-weight:700;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ctxlabel{padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink4)}
 .ctxcolors{display:grid;grid-template-columns:repeat(5,36px);justify-content:space-between;gap:8px;padding:8px 10px 10px}
-.ctxcolors .cswatch{width:36px;height:36px}
+.ctxcolors .cswatch{position:relative;width:36px;height:36px}
+.ctxcolors .cswatch::after{content:'';position:absolute;inset:-4px}
 .ctxitem{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border:none;border-radius:14px;background:transparent;color:var(--ink);font-size:15px;font-weight:600;text-align:left}
 .ctxitem.danger{color:#a3203f}
 .ctxitem:focus-visible{outline:none;background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 2px var(--acc-a)}
@@ -397,7 +408,7 @@ input.doctitle{height:1.2em}
 .key.del{font-size:22px}
 /* PIN em janelas baixas (laptops de 768 px, janelas pequenas): o teclado inteiro cabe sem rolar */
 @media (max-height:760px){
-  html:not([data-mini]) .flow{padding-top:12px;padding-bottom:12px}
+  html:not([data-mini]) .flow{padding-top:calc(12px + var(--sat));padding-bottom:calc(12px + var(--sab))}
   html:not([data-mini]) .pincard{gap:12px;padding:22px 20px 18px}
   html:not([data-mini]) .keys{grid-template-columns:repeat(3,60px);gap:10px 18px}
   html:not([data-mini]) .key{width:60px;height:60px;font-size:24px}
@@ -408,7 +419,8 @@ input.doctitle{height:1.2em}
 .main .panel{container-type:inline-size}
 @container (max-width:600px){
   .ibar .plbl{display:none}
-  .ibar .pill:not(.go){width:44px;padding:0;justify-content:center}
+  .ibar .pill:not(.go):not(.txt){width:44px;padding:0;justify-content:center}
+  .ibar .pill.txt{height:44px;padding:0 14px}
 }
 
 /* Barra de título: o separador do botão do Mini-Memoras e o "Manter por cima" ligado */
@@ -436,6 +448,11 @@ input.doctitle{height:1.2em}
   .day.today{outline:1px dashed CanvasText}
   .cswatch,.sw,.cdot{forced-color-adjust:none}
   .tbtn,.mininav .round,.mininav .minisec button{border:1px solid ButtonText}
+  .gel,.soft,.pill{border:1px solid ButtonText}
+  .day.has::after,.sdot{forced-color-adjust:none;background:CanvasText}
+  .obar > *{border:1px solid CanvasText}
+  .obar > .on{forced-color-adjust:none;background:CanvasText !important}
+  .item.ctxon,.task.ctxon,.task:focus-within{outline:2px solid Highlight}
 }
 @media (prefers-reduced-transparency: reduce){
   .titlebar{background:#e2f1f8;backdrop-filter:none}
