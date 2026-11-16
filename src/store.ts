@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { dbHooks, itemDel, itemPut, itemsRead, kvDel, kvRead, kvSet, kvSetStrict, noteDel, notePut, notesRead, wipeAll } from './lib/db';
 import { hashSecret, normCode, randomCode, verifySecret } from './lib/crypto';
-import { blankDayNote, blankDoc, blankTask, isBlankItem, keyTime, nextOrder, todayKey, tombstoneItem, type DayNote, type Doc, type Item, type Task } from './lib/items';
+import { addDays, blankDayNote, blankDoc, blankTask, isBlankItem, keyTime, nextOrder, todayKey, tombstoneItem, type DayNote, type Doc, type Item, type Task } from './lib/items';
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
 import { playSound, type Sound } from './sounds';
 import { applyTheme, THEMES, type ThemeKey } from './themes';
@@ -489,7 +489,7 @@ export function moveTask(id: string, date: string) {
   const t = state.items.find(i => i.id === id); if (!t || t.kind !== 'task') return;
   const prev = { date: t.date, order: t.order };
   placeTask(id, date, nextOrder());
-  toast('Tarefa passada para amanhã', () => placeTask(id, prev.date, prev.order));
+  toast(date === addDays(todayKey(), 1) ? 'Tarefa passada para amanhã' : 'Tarefa passada para o dia seguinte', () => placeTask(id, prev.date, prev.order));
 }
 export function deleteTask(id: string) {
   const t = state.items.find(i => i.id === id); if (!t || t.kind !== 'task') return;
@@ -503,10 +503,11 @@ export function setDayNote(date: string, id: string, text: string) {
   if (text) addItem({ ...blankDayNote(id, date), text, textTs: Date.now(), rev: 1 });
 }
 async function resetDiary() {
-  await wipeAll();
+  // Primeiro a tela e a conta saem do estado (a sincronização em andamento para de gravar); só então o banco é esvaziado.
   state = { ...initial(), mini: state.mini, mobile: state.mobile, onTop: state.onTop, screen: 'onboard', unlocked: true };
   applyTheme(state.cfg.theme);
   subs.forEach(f => f());
+  await wipeAll();
   toast('Diário apagado neste aparelho');
 }
 
@@ -525,6 +526,7 @@ const MAX_LOCK = LOCK_S[LOCK_S.length - 1] * 1000;
 export const lockLeft = () => Math.min(Math.max(0, state.cfg.lockUntil - Date.now()), MAX_LOCK);
 export function fixLockClock() { if (state.cfg.lockUntil - Date.now() > MAX_LOCK) setCfg({ lockUntil: Date.now() + MAX_LOCK }); }
 
+let pinQueue: Promise<void> = Promise.resolve();
 export function pressKey(d: string) {
   const s = state;
   fixLockClock();
@@ -534,12 +536,14 @@ export function pressKey(d: string) {
   sfx('pin-key');
   const pin = s.pin + d;
   set({ pin, pinError: false, pinMsg: '' });
-  if (pin.length === 4) setTimeout(() => void submitPin(pin), 140);
+  // As conferências rodam uma depois da outra: tentativas seguidas, mesmo com a conferência lenta, contam todas.
+  if (pin.length === 4) setTimeout(() => { pinQueue = pinQueue.then(() => submitPin(pin)).catch(e => console.error('Memoras: erro ao conferir o PIN', e)); }, 140);
 }
-function pinFail(msg: string, extra: Partial<State> = {}) {
+function pinFail(failed: string, msg: string, extra: Partial<State> = {}) {
   sfx('pin-error');
   set(s => ({ pinError: true, pinMsg: msg, shake: s.shake + 1, ...extra }));
-  setTimeout(() => set({ pin: '' }), 420);
+  // Só limpa os pontos se ainda forem os da tentativa que falhou (a pessoa pode já ter escrito de novo).
+  setTimeout(() => { if (state.pin === failed) set({ pin: '' }); }, 420);
 }
 
 // Sem conta, o PIN novo só vale depois que a pessoa confirma que guardou a chave.
@@ -563,15 +567,17 @@ async function submitPin(pin: string) {
       return;
     }
     // Errar o PIN atual conta igual a errar no desbloqueio, com a mesma pausa.
-    const fails = c.pinFails + 1;
+    // Lê de novo depois da espera: outra tentativa pode ter somado erros enquanto esta era conferida.
+    const cur = state.cfg;
+    const fails = cur.pinFails + 1;
     if (fails >= 5) {
-      const locks = c.pinLocks + 1;
+      const locks = cur.pinLocks + 1;
       setCfg({ pinFails: 0, pinLocks: locks, lockUntil: Date.now() + LOCK_S[Math.min(locks, LOCK_S.length) - 1] * 1000 });
-      pinFail('');
+      pinFail(pin, '');
     }
     else {
       setCfg({ pinFails: fails });
-      pinFail(fails >= 3 ? 'PIN incorreto. ' + (5 - fails) + (5 - fails === 1 ? ' tentativa' : ' tentativas') + ' antes de uma pausa.' : 'PIN incorreto. Tente de novo.');
+      pinFail(pin, fails >= 3 ? 'PIN incorreto. ' + (5 - fails) + (5 - fails === 1 ? ' tentativa' : ' tentativas') + ' antes de uma pausa.' : 'PIN incorreto. Tente de novo.');
     }
   } else if (s.pinMode === 'create') {
     set({ pinMode: 'confirm', pinTmp: pin, pin: '' });
@@ -591,7 +597,7 @@ async function submitPin(pin: string) {
     hooks.changed();
     go(s.pinReturn);
     toast(changing ? 'PIN alterado em todos os seus aparelhos' : 'PIN ativado');
-  } else pinFail('Os PINs não coincidem. Crie de novo.', { pinMode: 'create', pinTmp: '' });
+  } else pinFail(pin, 'Os PINs não coincidem. Crie de novo.', { pinMode: 'create', pinTmp: '' });
 }
 
 // PIN certo ou digital reconhecida: abre o app e volta para onde a pessoa estava. Quem digitou o PIN
@@ -691,6 +697,7 @@ export async function init() {
   if (saved?.awayAt && !hiddenGrace) void kvSet('cfg', cfg);
   const unlocked = !cfg.pinOn || grace;
   // Abre sem nenhuma anotação aberta: nada do diário aparece sem a pessoa escolher.
-  if (hooks.recoveryPending) set({ unlocked, screen: 'forgot', fStep: 2 });
+  // Travado, segue o caminho normal (tela de PIN): a troca de senha só abre com o app destravado.
+  if (hooks.recoveryPending && unlocked) set({ unlocked, screen: 'forgot', fStep: 2 });
   else set({ unlocked, screen: !cfg.onboarded ? 'onboard' : !unlocked ? 'pin' : 'history', sel: null, docSel: null });
 }
