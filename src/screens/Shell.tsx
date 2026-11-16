@@ -205,14 +205,18 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick(x => x + 1), 60000); return () => clearInterval(iv); }, []);
   // Tocar no espaço vazio da página continua o texto: o cursor vai para o fim do último trecho.
-  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'), el = a?.[a.length - 1]; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
+  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'), el = a?.[a.length - 1]; if (el) { el.focus({ preventScroll: true }); el.setSelectionRange(el.value.length, el.value.length); } };
   useEffect(() => { if (isEmpty(cur)) focusLast(); }, []);
 
   const segs = cur.segs.filter(g => g.text !== '' || touched.current.has(g.id));
   // Regra das 2 horas: depois desse tempo sem escrever, o próximo texto abre um trecho com horário novo.
   const needNew = !segs.length || Date.now() - cur.last >= 2 * H;
   const t0 = nd(cur), acc = s.cfg.account;
-  const date = dayLabel(t0) + (same(t0, Date.now()) || same(t0, Date.now() - DAY) ? ', ' + dayMonth(t0) : '');
+  // No celular, o mês vai abreviado ("Hoje, 16 nov") para a data caber inteira; a completa fica no title.
+  const shortDM = (t: number) => new Date(t).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace(/ de /g, ' ').replace(/\.$/, '');
+  const recent = same(t0, Date.now()) || same(t0, Date.now() - DAY);
+  const fullDate = dayLabel(t0) + (recent ? ', ' + dayMonth(t0) : '');
+  const date = s.mobile && recent ? dayLabel(t0) + ', ' + shortDM(t0) : fullDate;
   const sub = cur.status === 'archived' ? 'Arquivada' : !acc ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo';
   const archLabel = cur.status === 'archived' ? 'Desarquivar' : 'Arquivar';
 
@@ -220,7 +224,7 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
     <div className="row ibar">
       {onePane(s) && <button className="round press" aria-label="Voltar" title={s.mini ? 'Voltar (Alt+←)' : 'Voltar'} onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
       <div className="ibar-txt">
-        <div className="ibar-t">{date}</div>
+        <div className="ibar-t" title={fullDate}>{date}</div>
         <div className="ibar-s">{sub}</div>
       </div>
       <ColorPick value={cur.color} onPick={c => setNoteColor(cur.id, c)} mobile={s.mobile} label="Cor da anotação" />
