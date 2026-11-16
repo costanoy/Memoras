@@ -179,7 +179,7 @@ export function AgendaDay({ s }: { s: State }) {
         <div className="ibar-t">{fullLabel(k)}</div>
         <div className="ibar-s">{sub}</div>
       </div>
-      {k !== today && <button className="pill press" onClick={() => openDay(today)}>Hoje</button>}
+      {k !== today && <button className="pill press txt" onClick={() => openDay(today)}>Hoje</button>}
       <button className="round press" aria-label="Dia anterior" title="Dia anterior" onClick={() => openDay(addDays(k, -1))}><Icon name="back" sw={2.6} /></button>
       <button className="round press flip" aria-label="Próximo dia" title="Próximo dia" onClick={() => openDay(addDays(k, 1))}><Icon name="back" sw={2.6} /></button>
       {onePane(s) && (
