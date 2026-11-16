@@ -33,7 +33,7 @@ export function AgendaSide({ s }: { s: State }) {
     <div className="scroll" style={{ gap: 6, padding: '2px 2px 8px', margin: '0 -2px' }}>
       {next.length > 0 && <div className="group" style={{ padding: '2px 8px 0' }}>Próximos dias</div>}
       {next.map(k => {
-        const ts = tasksOn(s, k), left = ts.filter(t => !t.done).length;
+        const ts = tasksOn(s, k).filter(t => t.text.trim()), left = ts.filter(t => !t.done).length;
         return (
           <button key={k} className={'item press' + (k === s.agDay && s.screen === 'agenda' ? ' on' : '')} onClick={() => openDay(k)}>
             <span className="row" style={{ gap: 8, alignItems: 'baseline', width: '100%' }}><span className="ttl">{fullLabel(k)}</span><span className="meta">{!ts.length ? '' : left ? left + ' a fazer' : 'Tudo feito'}</span></span>
@@ -104,8 +104,12 @@ function TaskRow({ t, k, i, drag, grab, rowRef, mobile, menuOpen }: { t: Task; k
 function NewTask({ k }: { k: string }) {
   const [v, setV] = useState(''), [on, setOn] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
+  // Texto e dia atuais: ao sair da tela sem tirar o foco (atalho de teclado), o que foi digitado ainda é salvo.
+  const val = useRef(''), dia = useRef(k);
+  val.current = v; dia.current = k;
   useEffect(() => { if (wantFocus) { wantFocus = false; ref.current?.focus(); } });
-  const add = () => { if (v.trim()) { addTask(k, v); setV(''); } };
+  useEffect(() => () => { const t = val.current.trim(); if (t) { val.current = ''; addTask(dia.current, t); } }, []);
+  const add = () => { if (val.current.trim()) { addTask(k, val.current); val.current = ''; setV(''); } };
   return (
     <div className="task add">
       <span className="gripspace" aria-hidden="true" />
@@ -117,7 +121,7 @@ function NewTask({ k }: { k: string }) {
 }
 
 function DayBody({ s, k }: { s: State; k: string }) {
-  const tasks = tasksOn(s, k), notes = dayNotesOn(s, k), done = tasks.filter(t => t.done).length;
+  const tasks = tasksOn(s, k), notes = dayNotesOn(s, k), real = tasks.filter(t => t.text.trim()), done = real.filter(t => t.done).length;
   // A observação nova nasce com este id, para o cursor não sair do lugar ao digitar a primeira letra.
   const pending = useRef(uid());
   const areas = notes.length ? notes : [{ id: pending.current, text: '' }];
@@ -147,7 +151,7 @@ function DayBody({ s, k }: { s: State; k: string }) {
     <div className="sheet">
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
         <div className="group">Tarefas</div>
-        {tasks.length > 0 && <span className="meta">{done} de {tasks.length} {tasks.length === 1 ? 'feita' : 'feitas'}</span>}
+        {real.length > 0 && <span className="meta">{done} de {real.length} {real.length === 1 ? 'feita' : 'feitas'}</span>}
       </div>
       <div className="col" style={{ marginTop: 8 }}>
         {tasks.map((t, i) => <TaskRow key={t.id} t={t} k={k} i={i} drag={drag} grab={grab} mobile={s.mobile} menuOpen={s.menu?.id === t.id}
@@ -167,7 +171,7 @@ function DayBody({ s, k }: { s: State; k: string }) {
 
 // O plano de um dia: tarefas com caixinha e observações.
 export function AgendaDay({ s }: { s: State }) {
-  const k = s.agDay, today = todayKey(), tasks = tasksOn(s, k), left = tasks.filter(t => !t.done).length;
+  const k = s.agDay, today = todayKey(), tasks = tasksOn(s, k).filter(t => t.text.trim()), left = tasks.filter(t => !t.done).length;
   const sub = !tasks.length ? 'Nada planejado ainda' : !left ? 'Tudo feito' : left === 1 ? '1 tarefa a fazer' : left + ' tarefas a fazer';
   return <>
     <div className="row ibar">
