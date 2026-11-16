@@ -428,15 +428,16 @@ export async function syncNow() {
         // A linha não existe mais no servidor: o próximo ciclo manda de novo pelo upsert.
         set(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, srv: undefined } as Item : x) }));
         const cur = get().items.find(x => x.id === it.id); if (cur) void itemPut(cur);
+        again = true;
       } else {
         try {
           const obj = JSON.parse(await openText(key, row.data));
           if (gone()) return;
           const parsed = obj && typeof obj === 'object' && 'kind' in obj ? parseItem(obj) : null;
-          if (parsed) applyItems([{ id: row.id, c: parsed, srv: row.updated_at }]);
+          if (parsed) { applyItems([{ id: row.id, c: parsed, srv: row.updated_at }]); again = true; }
+          else console.warn('Memoras: item de outra versão, fica para o próximo ciclo', row.id);
         } catch { console.warn('Memoras: item ilegível ignorado', row.id); }
       }
-      again = true;
     }
     const plain = dirtyItems.filter(i => !cond(i));
     for (let i = 0; i < plain.length; i += 100) {
