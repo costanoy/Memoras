@@ -11,3 +11,6 @@ assets/icon-only.png
 video/out
 release-test
 portfolio-preview/
+
+.claude/
+CLAUDE.md
