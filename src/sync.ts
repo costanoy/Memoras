@@ -216,6 +216,36 @@ export async function verifyAccount(email: string, password: string) {
   return true;
 }
 
+// Junta no estado e no banco local os cadernos, observações e tarefas que chegaram do servidor.
+// srv: o updated_at do servidor nessa linha (só local; serve ao envio condicional).
+type IncomingItem = { id: string; c: ItemContent; srv: string };
+function applyItems(list: IncomingItem[]) {
+  if (!list.length) return;
+  const touched: Item[] = [];
+  set(s => {
+    const byId = new Map(s.items.map(i => [i.id, i]));
+    for (const r of list) {
+      const local = byId.get(r.id), bt = baseText(r.c);
+      const synced = (c: ItemContent, rev: number, syncedRev: number) => ({ ...c, rev, syncedRev, pushed: true, ...(bt !== null ? { base: bt, srv: r.srv } : {}) });
+      let n: Item;
+      if (!local) n = { id: r.id, ...synced(r.c, 0, 0) } as Item;
+      else {
+        const { merged, copy } = mergeItem(local, r.c);
+        const rev = sameItem(merged, local) ? local.rev : local.rev + 1;
+        n = { ...local, ...synced(merged, rev, sameItem(merged, r.c) ? rev : -1) } as Item;
+        // Texto mudado nos dois aparelhos: o de lá vira uma cópia, para nada se perder.
+        if (copy) { const cp = { ...copy, id: uid(), rev: 1, syncedRev: -1, pushed: false, ...(baseText(copy) !== null ? { base: null } : {}) } as Item; byId.set(cp.id, cp); touched.push(cp); }
+        // Nada mudou: não regrava nem marca como tocado (a lápide, por exemplo, não é reenviada).
+        const l = local as Doc | DayNote, x = n as Doc | DayNote;
+        if (!copy && n.rev === local.rev && n.syncedRev === local.syncedRev && local.pushed && x.base === l.base && x.srv === l.srv) continue;
+      }
+      byId.set(r.id, n); touched.push(n);
+    }
+    return { items: [...byId.values()] };
+  });
+  touched.forEach(i => void itemPut(i));
+}
+
 // Sincronização
 let running = false, again = false, timer = 0;
 // Promessa que termina quando não há sincronização rodando nem na fila.
@@ -284,7 +314,7 @@ export async function syncNow() {
     // gravação, então algo de outro aparelho pode chegar depois do último pull com horário anterior:
     // rever o último minuto pega esses casos (juntar de novo o que já está aqui não muda nada).
     const incoming: { id: string; c: NoteContent }[] = [];
-    const incomingItems: { id: string; c: ItemContent }[] = [];
+    const incomingItems: IncomingItem[] = [];
     let lastPull = c.lastPull;
     const lastT = c.lastPull ? Date.parse(c.lastPull) : NaN;
     const since = Number.isNaN(lastT) ? c.lastPull : new Date(lastT - 60000).toISOString();
@@ -302,7 +332,7 @@ export async function syncNow() {
       try {
         // Cadernos e Agenda trazem "kind"; anotações do diário, não. Tipo desconhecido fica de fora.
         const obj = JSON.parse(await openText(key, r.data));
-        if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it }); }
+        if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it, srv: r.updated_at }); }
         else incoming.push({ id: r.id, c: content(obj) });
       }
       catch { console.warn('Memoras: anotação ilegível ignorada', r.id); }
@@ -324,31 +354,7 @@ export async function syncNow() {
       });
       touched.forEach(n => void notePut(n));
     }
-    if (incomingItems.length) {
-      const touched: Item[] = [];
-      set(s => {
-        const byId = new Map(s.items.map(i => [i.id, i]));
-        for (const r of incomingItems) {
-          const local = byId.get(r.id), bt = baseText(r.c);
-          const synced = (c: ItemContent, rev: number, syncedRev: number) => ({ ...c, rev, syncedRev, pushed: true, ...(bt !== null ? { base: bt } : {}) });
-          let n: Item;
-          if (!local) n = { id: r.id, ...synced(r.c, 0, 0) } as Item;
-          else {
-            const { merged, copy } = mergeItem(local, r.c);
-            const rev = sameItem(merged, local) ? local.rev : local.rev + 1;
-            n = { ...local, ...synced(merged, rev, sameItem(merged, r.c) ? rev : -1) } as Item;
-            // Texto mudado nos dois aparelhos: o de lá vira uma cópia, para nada se perder.
-            if (copy) { const cp = { ...copy, id: uid(), rev: 1, syncedRev: -1, pushed: false, ...(baseText(copy) !== null ? { base: null } : {}) } as Item; byId.set(cp.id, cp); touched.push(cp); }
-            // Nada mudou: não regrava nem marca como tocado (a lápide, por exemplo, não é reenviada).
-            const l = local as Doc | DayNote;
-            if (!copy && n.rev === local.rev && n.syncedRev === local.syncedRev && local.pushed && (n as Doc | DayNote).base === l.base) continue;
-          }
-          byId.set(r.id, n); touched.push(n);
-        }
-        return { items: [...byId.values()] };
-      });
-      touched.forEach(i => void itemPut(i));
-    }
+    applyItems(incomingItems);
 
     // Envia o que mudou aqui, já cifrado.
     const dirty = get().notes.filter(n => n.rev !== n.syncedRev && (n.deleted || n.pushed || !isEmpty(n)));
@@ -362,17 +368,47 @@ export async function syncNow() {
       get().notes.forEach(n => { if (sent.has(n.id)) void notePut(n); });
     }
     const dirtyItems = get().items.filter(i => i.rev !== i.syncedRev && (i.deleted || i.pushed || !isBlankItem(i)));
-    for (let i = 0; i < dirtyItems.length; i += 100) {
-      const chunk = dirtyItems.slice(i, i + 100);
-      const rows = await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })));
-      const { error } = await sb.from('notes').upsert(rows);
+    // Caderno e observação já enviados saem com escrita condicional: só grava se o servidor ainda está
+    // como foi visto por último. Se outro aparelho gravou no meio, junta a linha dele (o texto dele
+    // vira "(outra versão)") e o resultado sai no próximo ciclo.
+    const cond = (it: Item) => it.pushed && baseText(it) !== null && !!(it as Doc | DayNote).srv;
+    for (const it of dirtyItems.filter(cond)) {
+      const data = await sealText(key, JSON.stringify(itemContent(it)));
+      const { data: res, error } = await sb.from('notes').update({ data }).eq('user_id', acc.userId).eq('id', it.id).eq('updated_at', (it as Doc | DayNote).srv!).select('id,updated_at');
       if (error) throw error;
+      if (res.length) {
+        const srv = res[0].updated_at, bt = baseText(it)!;
+        set(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, syncedRev: it.rev, pushed: true, base: bt, srv } as Item : x) }));
+        const cur = get().items.find(x => x.id === it.id); if (cur) void itemPut(cur);
+        continue;
+      }
+      const { data: row, error: e2 } = await sb.from('notes').select('id,data,updated_at').eq('user_id', acc.userId).eq('id', it.id).maybeSingle();
+      if (e2) throw e2;
+      if (!row) {
+        // A linha não existe mais no servidor: o próximo ciclo manda de novo pelo upsert.
+        set(s => ({ items: s.items.map(x => x.id === it.id ? { ...x, srv: undefined } as Item : x) }));
+        const cur = get().items.find(x => x.id === it.id); if (cur) void itemPut(cur);
+      } else {
+        try {
+          const obj = JSON.parse(await openText(key, row.data)), parsed = obj && typeof obj === 'object' && 'kind' in obj ? parseItem(obj) : null;
+          if (parsed) applyItems([{ id: row.id, c: parsed, srv: row.updated_at }]);
+        } catch { console.warn('Memoras: item ilegível ignorado', row.id); }
+      }
+      again = true;
+    }
+    const plain = dirtyItems.filter(i => !cond(i));
+    for (let i = 0; i < plain.length; i += 100) {
+      const chunk = plain.slice(i, i + 100);
+      const rows = await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })));
+      const { data: back, error } = await sb.from('notes').upsert(rows).select('id,updated_at');
+      if (error) throw error;
+      const srvOf = new Map(back.map(r => [r.id, r.updated_at]));
       const sent = new Map(chunk.map(it => [it.id, it]));
       set(s => ({
         items: s.items.map(it => {
           const x = sent.get(it.id); if (!x) return it;
           const bt = baseText(x);
-          return { ...it, syncedRev: x.rev, pushed: true, ...(bt !== null ? { base: bt } : {}) } as Item;
+          return { ...it, syncedRev: x.rev, pushed: true, ...(bt !== null ? { base: bt, srv: srvOf.get(it.id) } : {}) } as Item;
         }),
       }));
       get().items.forEach(it => { if (sent.has(it.id)) void itemPut(it); });
