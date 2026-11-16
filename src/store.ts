@@ -263,8 +263,8 @@ export const saveCfg = () => kvSet('cfg', state.cfg);
 export function relock() {
   const s = state;
   if (!s.cfg.pinOn || !s.unlocked || s.screen === 'loading' || (s.screen === 'pin' && s.pinMode === 'unlock')) return;
-  // Trocando o PIN nos ajustes: depois de desbloquear, volta aos ajustes.
-  const resume = s.screen === 'pin' ? s.pinReturn : s.screen === 'forgotPin' ? 'settings' : s.screen;
+  // Conferindo ou trocando o PIN (ajustes ou onboarding): depois de desbloquear, volta à tela de origem (pinReturn).
+  const resume = s.screen === 'pin' || s.screen === 'forgotPin' ? s.pinReturn : s.screen;
   set({ unlocked: false, screen: 'pin', resume, pinMode: 'unlock', pin: '', pinTmp: '', pinMsg: '', pinError: false, confirm: null, toast: null, menu: null, bioOffer: false });
 }
 document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' ? appAway() : appBack());
