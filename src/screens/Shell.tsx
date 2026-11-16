@@ -474,7 +474,7 @@ function Settings({ s }: { s: State }) {
           <div className="gcard setcard" style={{ gap: 10 }}>
             <div className="group">Chave de recuperação</div>
             <div className="small">Criada no cadastro e mostrada uma única vez. Se você perdeu a sua, gere uma nova. A anterior deixa de funcionar.</div>
-            <button className={'soft press' + (busy ? ' off' : '')} style={{ alignSelf: 'flex-start' }} onClick={regen}>Gerar nova chave</button>
+            <button className={'soft press' + (busy ? ' off' : '')} style={{ alignSelf: 'flex-start' }} aria-busy={busy} onClick={regen}>{busy ? 'Gerando…' : 'Gerar nova chave'}</button>
           </div>
         )}
 
