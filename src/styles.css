@@ -397,7 +397,7 @@ input.doctitle{height:1.2em}
 .key.del{font-size:22px}
 /* PIN em janelas baixas (laptops de 768 px, janelas pequenas): o teclado inteiro cabe sem rolar */
 @media (max-height:760px){
-  html:not([data-mini]) .flow{padding-top:12px;padding-bottom:12px}
+  html:not([data-mini]) .flow{padding-top:calc(12px + var(--sat));padding-bottom:calc(12px + var(--sab))}
   html:not([data-mini]) .pincard{gap:12px;padding:22px 20px 18px}
   html:not([data-mini]) .keys{grid-template-columns:repeat(3,60px);gap:10px 18px}
   html:not([data-mini]) .key{width:60px;height:60px;font-size:24px}
