@@ -3,14 +3,15 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json' with { type: 'json' };
 
-// App de Windows: a página só roda os próprios scripts e só conversa com o Supabase do .env.
+// Versões de Windows e web: a página só roda os próprios scripts e só conversa com o Supabase do .env
+// e com o GitHub (busca de atualização).
 // Se um dia algum texto virar código por engano, ele não roda nem manda nada para fora.
 function csp(supabase = '') {
   const sb = supabase ? ' ' + supabase + ' ' + supabase.replace(/^http/, 'ws') : '';
   const policy = [
     "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:",
-    "font-src 'self' data:", "media-src 'self' data: blob:", "connect-src 'self'" + sb,
-    "object-src 'none'", "base-uri 'none'", "form-action 'none'",
+    "font-src 'self' data:", "media-src 'self' data: blob:", "connect-src 'self' https://api.github.com" + sb,
+    "worker-src 'self'", "manifest-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'none'",
   ].join('; ');
   return {
     name: 'memoras-csp',
@@ -20,11 +21,13 @@ function csp(supabase = '') {
 
 // `--mode desktop` e `--mode mobile` geram os pacotes que vão dentro do .exe e do .apk:
 // sem service worker, porque ali os arquivos já estão no aparelho.
-export default defineConfig(({ mode }) => ({
+// A política vale em todo build (nunca no `vite dev`, onde quebraria o recarregamento do React).
+// O pacote do Android ainda fica sem ela: falta conferir num aparelho que o app abre sem violação de CSP.
+export default defineConfig(({ mode, command }) => ({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
-    mode === 'desktop' && csp(loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL),
+    command === 'build' && mode !== 'mobile' && csp(loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL),
     mode !== 'desktop' && mode !== 'mobile' && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon-512.png'],
