@@ -78,6 +78,7 @@ strong{font-weight:700}
 .field{width:100%;height:52px;border-radius:16px;border:1px solid rgba(12,60,90,.2);background:rgba(255,255,255,.9);box-shadow:inset 0 2px 4px rgba(0,40,80,.08);padding:0 16px;font-size:17px;font-weight:400;color:var(--ink);outline:none}
 textarea.field{height:auto;padding:14px 16px;resize:none}
 .field:focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--ring)}
+.field[aria-invalid="true"],.field[aria-invalid="true"]:focus{border-color:#b0284a}
 .label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--ink4)}
 .seg2{display:flex;padding:4px;border-radius:999px;background:rgba(12,60,90,.08);box-shadow:inset 0 1px 3px rgba(0,40,80,.12)}
 .seg2 button{flex:1;height:40px;border-radius:999px;border:none;font-size:15px;font-weight:700;color:var(--ink);background:transparent}
@@ -89,6 +90,7 @@ textarea.field{height:auto;padding:14px 16px;resize:none}
 .check{display:flex;align-items:center;gap:12px;padding:6px 2px;background:none;border:none;text-align:left;color:var(--ink);font-size:17px;font-weight:600}
 .check i{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:16px;color:var(--gel-fg);background:rgba(255,255,255,.9);border:2px solid #8aa6b6}
 .check.on i{background:var(--gel);border-color:var(--acc-dd)}
+.check.warn i{border-color:#b0284a;box-shadow:0 0 0 3px rgba(176,40,74,.18)}
 
 /* Telas de fluxo */
 .flow{position:absolute;inset:0;overflow:auto;display:flex;justify-content:center;padding:calc(32px + var(--sat)) 20px calc(32px + var(--sab))}
