@@ -50,10 +50,15 @@ export const paperStyle = (k: string | undefined) => { const p = paperOf(k); ret
 
 const THEME_KEYS = ['--gel-fg', '--glass', '--glass2', '--bg', '--gel', '--acc', '--acc-d', '--acc-dd', '--ring', '--acc-a', '--gel-bd', '--gel-sh', '--gel-ts', '--ink', '--ink2', '--ink3', '--ink4', '--base', '--lock'];
 
+// Espelho do tema em localStorage: o main.tsx o aplica antes de desenhar, para o app não abrir turquesa
+// e trocar de cor depois. A fonte da verdade continua sendo o IndexedDB (o init aplica de novo).
+export const THEME_MIRROR = 'memoras:tema';
+
 export function applyTheme(k: ThemeKey) {
   const t = THEMES[k] ?? THEMES.turquesa, st = document.documentElement.style;
   THEME_KEYS.forEach(p => t[p] ? st.setProperty(p, t[p]) : st.removeProperty(p));
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t['--base']);
   // No Windows, a janela nasce na cor do tema (sem piscar turquesa ao abrir ou trocar de tamanho).
   winApi?.setBg?.(t['--base']);
+  try { localStorage.setItem(THEME_MIRROR, k); } catch { /* sem localStorage: só perde o espelho */ }
 }
