@@ -18,9 +18,17 @@ create table if not exists public.notes (
   primary key (user_id, id)
 );
 
+-- Limite de tamanho do texto cifrado (1 MiB). Protegido para rodar o arquivo de novo num banco existente.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'notes_data_tamanho' and conrelid = 'public.notes'::regclass) then
+    alter table public.notes add constraint notes_data_tamanho check (octet_length(data) < 1048576);
+  end if;
+end $$;
+
 create index if not exists notes_user_updated on public.notes (user_id, updated_at);
 
-create or replace function public.memoras_touch() returns trigger language plpgsql as $$
+create or replace function public.memoras_touch() returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at = now();
   return new;
@@ -38,9 +46,9 @@ alter table public.vaults enable row level security;
 alter table public.notes enable row level security;
 
 drop policy if exists "vault do dono" on public.vaults;
-create policy "vault do dono" on public.vaults for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "vault do dono" on public.vaults for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
 drop policy if exists "notas do dono" on public.notes;
-create policy "notas do dono" on public.notes for all
-  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "notas do dono" on public.notes for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);

@@ -72,13 +72,15 @@ async function adopt(userId: string, email: string, dk: Uint8Array, dkId: string
   void syncNow();
 }
 
+// Devolve null quando o cofre já existe (código 23505): nunca sobrescreve um cofre existente,
+// que apagaria a chave das anotações que já estão no servidor.
 async function createVault(userId: string, kek: CryptoKey) {
   const dk = randomBytes(32), dkId = uid(), recKey = randomCode('MEMO', 5);
-  const { error } = await need().from('vaults').upsert({
+  const { error } = await need().from('vaults').insert({
     user_id: userId, dk_id: dkId, prefs: null,
     wrapped_pw: await seal(kek, dk), wrapped_rk: await seal(await kekFromCode(recKey), dk),
   });
-  if (error) throw error;
+  if (error) { if (error.code === '23505') return null; throw error; }
   return { dk, dkId, recKey };
 }
 
@@ -91,6 +93,8 @@ export async function signUp(email: string, password: string): Promise<{ recKey?
   if (error) throw error;
   if (!data.session || !data.user) return { confirm: true };
   const v = await createVault(data.user.id, kek);
+  // Já existe cofre (conta de outro aparelho): segue como um login comum.
+  if (!v) return login(email, password);
   await adopt(data.user.id, email, v.dk, v.dkId, auth);
   return { recKey: v.recKey };
 }
@@ -103,12 +107,21 @@ export async function login(email: string, password: string): Promise<{ recKey?:
   const { data, error } = await sb.auth.signInWithPassword({ email, password: auth });
   if (error) throw error;
   const userId = data.user.id;
-  const { data: vault, error: e2 } = await sb.from('vaults').select('dk_id,wrapped_pw,prefs').eq('user_id', userId).maybeSingle();
-  if (e2) throw e2;
+  const readVault = async () => {
+    const r = await sb.from('vaults').select('dk_id,wrapped_pw,prefs').eq('user_id', userId).maybeSingle();
+    if (r.error) throw r.error;
+    return r.data;
+  };
+  let vault = await readVault();
   if (!vault) {
     const v = await createVault(userId, kek);
-    await adopt(userId, email, v.dk, v.dkId, auth);
-    return { recKey: v.recKey };
+    if (v) {
+      await adopt(userId, email, v.dk, v.dkId, auth);
+      return { recKey: v.recKey };
+    }
+    // Outro aparelho criou o cofre agora há pouco: relê e segue pelo cofre existente.
+    vault = await readVault();
+    if (!vault) throw new AppError('Não deu certo agora. Tente de novo.');
   }
   let dk: Uint8Array;
   try { dk = await open(kek, vault.wrapped_pw); }
@@ -187,7 +200,11 @@ export async function startFresh(): Promise<{ recKey: string }> {
   if (!pending) throw new AppError('Entre com a senha nova para continuar.');
   const { error } = await sb.from('notes').delete().eq('user_id', u.id);
   if (error) throw error;
+  // Recomeçar é escolha explícita da pessoa: o cofre antigo (que não abre mais) sai e entra um novo.
+  const { error: ev } = await sb.from('vaults').delete().eq('user_id', u.id);
+  if (ev) throw ev;
   const v = await createVault(u.id, pending.kek);
+  if (!v) throw new AppError('Não deu certo agora. Tente de novo.');
   await adopt(u.id, u.email, v.dk, v.dkId, pending.auth);
   pending = null;
   return { recKey: v.recKey };
