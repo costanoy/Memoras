@@ -158,8 +158,9 @@ function cleaned(notes: Note[], keep: string | null) {
   const out: Note[] = [];
   for (const n of notes) {
     if (n.deleted || n.id === keep || n.status !== 'active' || !isEmpty(n)) { out.push(n); continue; }
-    if (n.pushed) { const t = tombstone(n); out.push(t); void notePut(t); hooks.changed(); }
-    else void noteDel(n.id);
+    // Já enviada: fica como está (apagar de vez a levaria da lista de outro aparelho). Só a que nunca saiu daqui some.
+    if (n.pushed) { out.push(n); continue; }
+    void noteDel(n.id);
   }
   return out;
 }
@@ -273,8 +274,8 @@ function cleanItems(items: Item[], keep: string | null) {
   const out: Item[] = [];
   for (const i of items) {
     if (i.kind !== 'doc' || i.deleted || i.id === keep || !isBlankItem(i)) { out.push(i); continue; }
-    if (i.pushed) { const t = tombstoneItem(i); out.push(t); void itemPut(t); hooks.changed(); }
-    else void itemDel(i.id);
+    if (i.pushed) { out.push(i); continue; }
+    void itemDel(i.id);
   }
   return out;
 }
