@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { normCode, verifySecret } from '../lib/crypto';
 import { go, isLocked, set, setCfg, startCreatePin, toast, useApp } from '../store';
 import { friendly, reopenWithKey, sendReset, setNewPassword, startFresh, verifyAccount } from '../sync';
 
+const BUSY = ['Enviando…', 'Salvando…', 'Reabrindo…', 'Salvando…'];
 const CTA = ['Enviar link de redefinição', 'Salvar nova senha', 'Reabrir anotações', 'Ir para o diário'];
 
 export function Forgot() {
@@ -17,12 +18,14 @@ export function Forgot() {
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const fieldRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const bad = (msg: string) => { setErr(msg); fieldRef.current?.focus(); };
 
   const next = async () => {
     if (busy) return;
-    if (step === 1 && !/.+@.+\..+/.test(email)) return setErr('Digite o email da sua conta.');
-    if (step === 2 && pass.length < 8) return setErr('A senha precisa ter pelo menos 8 caracteres.');
-    if (step === 3 && !noKey && normCode(key).length < 20) return setErr('Chave incompleta. Confira e tente de novo.');
+    if (step === 1 && !/.+@.+\..+/.test(email)) return bad('Digite o email da sua conta.');
+    if (step === 2 && pass.length < 8) return bad('A senha precisa ter pelo menos 8 caracteres.');
+    if (step === 3 && !noKey && normCode(key).length < 20) return bad('Chave incompleta. Confira e tente de novo.');
     if (step === 4) return go('history', { fStep: 1 });
     setBusy(true); setErr('');
     try {
@@ -48,20 +51,22 @@ export function Forgot() {
             <span><strong>1. Nova senha:</strong> para voltar a entrar na conta.</span>
             <span><strong>2. Chave de recuperação:</strong> para reabrir suas anotações. A senha nova sozinha não abre o diário.</span>
           </div>
-          <input className="field" type="email" autoComplete="email" aria-label="Seu email" placeholder="Seu email" value={email} readOnly={!!fixed} onChange={e => { setEmail(e.target.value); setErr(''); setSent(false); }} />
+          <input ref={fieldRef} className="field" type="email" autoComplete="email" aria-label="Seu email" placeholder="Seu email" value={email} readOnly={!!fixed}
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'forgot-err' : undefined} onChange={e => { setEmail(e.target.value); setErr(''); setSent(false); }} />
           {sent && <div className="small" role="status">Enviamos um link para {s.fEmail}. Abra o link neste aparelho para continuar.</div>}
         </>}
         {step === 2 && <>
           <div className="h1">Crie uma nova senha</div>
           <div className="p">Abrimos o link enviado para {s.fEmail || 'seu email'}.</div>
-          <input className="field" type="password" autoComplete="new-password" aria-label="Nova senha" placeholder="Nova senha, mínimo 8 caracteres" value={pass} onChange={e => { setPass(e.target.value); setErr(''); }} />
+          <input ref={fieldRef} className="field" type="password" autoComplete="new-password" aria-label="Nova senha" placeholder="Nova senha, mínimo 8 caracteres" value={pass}
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'forgot-err' : undefined} onChange={e => { setPass(e.target.value); setErr(''); }} />
         </>}
         {step === 3 && <>
           <div className="h1">Agora, reabra suas anotações</div>
           <div style={{ padding: '14px 16px', borderRadius: 18, background: 'rgba(214,242,255,.85)', border: '1px solid #fff', fontSize: 15, lineHeight: 1.45, color: '#0c3a56' }}>
             Sua senha foi trocada. As anotações são criptografadas e só abrem com a <strong>chave de recuperação</strong> que você guardou no cadastro.
           </div>
-          <textarea className="field mono" rows={2} aria-label="Chave de recuperação" placeholder="MEMO-XXXX-XXXX-XXXX-XXXX-XXXX" value={key} onChange={e => { setKey(e.target.value); setErr(''); }} />
+          <textarea ref={fieldRef} className="field mono" rows={2} aria-label="Chave de recuperação" aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'forgot-err' : undefined} placeholder="MEMO-XXXX-XXXX-XXXX-XXXX-XXXX" value={key} onChange={e => { setKey(e.target.value); setErr(''); }} />
           <button className="link u" style={{ alignSelf: 'flex-start', padding: 0 }} aria-pressed={noKey} onClick={() => { setNoKey(!noKey); setErr(''); }}>Não tenho a chave</button>
           {noKey && <div className="small">Sem a chave, as anotações antigas não podem ser reabertas, nem por nós. Você pode continuar usando a conta com um diário novo.</div>}
         </>}
@@ -69,8 +74,8 @@ export function Forgot() {
           <div className="h1">Tudo certo</div>
           <div className="p">Sua senha nova já funciona e suas anotações foram reabertas neste aparelho.</div>
         </>}
-        {err && <div className="err" role="alert">{err}</div>}
-        <button className={'gel' + (busy ? ' off' : '')} onClick={next}>{step === 3 && noKey ? 'Começar diário novo' : CTA[step - 1]}</button>
+        {err && <div className="err" id="forgot-err" role="alert">{err}</div>}
+        <button className={'gel' + (busy ? ' off' : '')} aria-busy={busy} onClick={next}>{busy ? BUSY[step - 1] : step === 3 && noKey ? 'Começar diário novo' : CTA[step - 1]}</button>
         {locked
           ? <button className="link" style={{ alignSelf: 'center', padding: 6 }} onClick={() => go('forgotPin', { fStep: 1 })}>Voltar</button>
           : <button className="link" style={{ alignSelf: 'center', padding: 6 }} onClick={() => go('auth', { authMode: 'login', fStep: 1 })}>Voltar para o login</button>}
@@ -88,16 +93,18 @@ export function ForgotPin() {
   const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null), passRef = useRef<HTMLInputElement>(null), keyRef = useRef<HTMLTextAreaElement>(null);
+  const bad = (msg: string) => { setErr(msg); (acc ? (!/.+@.+\..+/.test(email) ? emailRef : passRef) : keyRef).current?.focus(); };
   // Travado, volta ao PIN; vindo dos ajustes ou do primeiro uso (conferir o PIN), volta para lá.
   const back = () => go('pin', { pinMode: isLocked() ? 'unlock' : 'verify', pin: '' });
 
   const submit = async () => {
     if (busy) return;
-    if (acc && (!/.+@.+\..+/.test(email) || !pass)) return setErr('Digite o email e a senha da conta.');
+    if (acc && (!/.+@.+\..+/.test(email) || !pass)) return bad('Digite o email e a senha da conta.');
     setBusy(true); setErr('');
     try {
       const ok = acc ? await verifyAccount(email, pass) : await verifySecret(normCode(key), s.cfg.pinKeySalt, s.cfg.pinKeyHash);
-      if (!ok) return setErr(acc ? 'Email ou senha incorretos.' : 'Chave não confere. Confira e tente de novo.');
+      if (!ok) return bad(acc ? 'Email ou senha incorretos.' : 'Chave não confere. Confira e tente de novo.');
       setPass('');
       setCfg({ lockUntil: 0, pinFails: 0, pinLocks: 0 });
       set({ unlocked: true, pinError: false, pinMsg: '', resume: null });
@@ -117,10 +124,12 @@ export function ForgotPin() {
         </> : acc ? <>
           <div className="h1">Esqueci o PIN</div>
           <div className="p">Entre com o email e a senha da sua conta para criar um PIN novo. Suas anotações continuam aqui.</div>
-          <input className="field" type="email" autoComplete="email" aria-label="Email" placeholder="Email" value={email} onChange={e => { setEmail(e.target.value); setErr(''); }} />
-          <input className="field" type="password" autoComplete="current-password" aria-label="Senha" placeholder="Senha" value={pass} onChange={e => { setPass(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && submit()} />
-          {err && <div className="err" role="alert">{err}</div>}
-          <button className={'gel' + (busy ? ' off' : '')} onClick={submit}>Confirmar</button>
+          <input ref={emailRef} className="field" type="email" autoComplete="email" aria-label="Email" placeholder="Email" value={email}
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'fpin-err' : undefined} onChange={e => { setEmail(e.target.value); setErr(''); }} />
+          <input ref={passRef} className="field" type="password" autoComplete="current-password" aria-label="Senha" placeholder="Senha" value={pass}
+            aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'fpin-err' : undefined} onChange={e => { setPass(e.target.value); setErr(''); }} onKeyDown={e => e.key === 'Enter' && submit()} />
+          {err && <div className="err" id="fpin-err" role="alert">{err}</div>}
+          <button className={'gel' + (busy ? ' off' : '')} aria-busy={busy} onClick={submit}>{busy ? 'Salvando…' : 'Confirmar'}</button>
           <div className="row" style={{ justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
             <button className="link" style={{ padding: '6px 0' }} onClick={back}>Voltar</button>
             <button className="link" style={{ padding: '6px 0' }} onClick={() => go('forgot', { fStep: 1, fEmail: email, authReturn: 'settings' })}>Esqueci minha senha</button>
@@ -128,9 +137,9 @@ export function ForgotPin() {
         </> : <>
           <div className="h1">Esqueci o PIN</div>
           <div className="p">Digite a chave do PIN que você guardou quando ativou o PIN neste aparelho.</div>
-          <textarea className="field mono" rows={1} style={{ fontSize: 18 }} aria-label="Chave do PIN" placeholder="PIN-XXXX-XXXX-XXXX" value={key} onChange={e => { setKey(e.target.value); setErr(''); }} />
-          {err && <div className="err" role="alert">{err}</div>}
-          <button className={'gel' + (busy ? ' off' : '')} onClick={submit}>Confirmar</button>
+          <textarea ref={keyRef} className="field mono" rows={1} style={{ fontSize: 18 }} aria-label="Chave do PIN" aria-invalid={err ? 'true' : undefined} aria-describedby={err ? 'fpin-err' : undefined} placeholder="PIN-XXXX-XXXX-XXXX" value={key} onChange={e => { setKey(e.target.value); setErr(''); }} />
+          {err && <div className="err" id="fpin-err" role="alert">{err}</div>}
+          <button className={'gel' + (busy ? ' off' : '')} aria-busy={busy} onClick={submit}>{busy ? 'Salvando…' : 'Confirmar'}</button>
           <button className="link u" style={{ alignSelf: 'flex-start', padding: 0 }} aria-pressed={noKey} onClick={() => setNoKey(!noKey)}>Não tenho a chave</button>
           {noKey && (
             <div className="amber col" style={{ gap: 12, background: 'rgba(255,236,190,.85)' }}>
