@@ -124,7 +124,7 @@ type Anchor = { line: number; col: number; y: number; focus: boolean; title?: bo
 export function DocView({ s, d }: { s: State; d: Doc }) {
   const edit = s.docEdit, acc = s.cfg.account;
   const titleRef = useRef<HTMLInputElement>(null), areaRef = useRef<HTMLTextAreaElement>(null), scRef = useRef<HTMLDivElement>(null);
-  const anchor = useRef<Anchor | null>(null), tap = useRef({ t: 0, x: 0, y: 0, sx: 0, sy: 0 });
+  const editBtn = useRef<HTMLButtonElement>(null), anchor = useRef<Anchor | null>(null), tap = useRef({ t: 0, x: 0, y: 0, sx: 0, sy: 0 });
   useEffect(() => { if (edit && !d.title && !d.body) titleRef.current?.focus(); }, [edit]);
   const lines = edit ? [] : docLines(d.body);
   const sub = d.status === 'archived' ? 'Arquivado' : !acc ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo';
@@ -168,6 +168,8 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
       anchor.current = { line, col: 0, y: taY + caretTop(ta, pos), focus: false };
     }
     finishDoc();
+    // Pronto some e o Editar aparece: o foco do teclado vai para ele, em vez de cair no body.
+    requestAnimationFrame(() => { if (!document.activeElement || document.activeElement === document.body) editBtn.current?.focus({ preventScroll: true }); });
   };
 
   useLayoutEffect(() => {
@@ -219,7 +221,7 @@ export function DocView({ s, d }: { s: State; d: Doc }) {
       {/* Editar e Pronto ficam por último; Pronto, em destaque, termina a edição. */}
       {edit
         ? <button key="done" className="pill press go" title="Pronto (Ctrl+Enter)" onClick={stopEdit}><Icon name="check" size={18} sw={2.8} />Pronto</button>
-        : <button key="edit" className="pill press" aria-label="Editar" title="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && <span className="plbl">Editar</span>}</button>}
+        : <button key="edit" ref={editBtn} className="pill press" aria-label="Editar" title="Editar" onClick={() => startEdit()}><Icon name="edit" size={18} />{!s.mobile && <span className="plbl">Editar</span>}</button>}
     </div>
     <div ref={scRef} className="iscroll">
       {edit ? (
