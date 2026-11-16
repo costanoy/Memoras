@@ -279,7 +279,7 @@ function Search({ s }: { s: State }) {
   return <>
     <div className="col vhead">
       <div className="row" style={{ gap: 10 }}>
-        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        {onePane(s) && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
         <div className="h1">Busca</div>
       </div>
       <label className="searchbox">
@@ -316,7 +316,7 @@ function Shelf({ s }: { s: State }) {
   return <>
     <div className="col vhead">
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
-        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        {onePane(s) && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
         <div className="h1" style={{ flex: 1, minWidth: 0 }}>{isTrash ? 'Lixeira' : 'Arquivo'}</div>
         {isTrash && rows.length + docRows.length > 0 && <button className="glassbtn press danger" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => set({ confirm: { all: true } })}>Esvaziar lixeira</button>}
       </div>
@@ -512,7 +512,7 @@ function Updates() {
 // Abas do celular: as três partes do app, o + e os ajustes.
 const TABS = [['history', 'Diário'], ['docs', 'Cadernos'], ['new', ''], ['agenda', 'Agenda'], ['settings', 'Ajustes']] as const;
 const NEW_LABEL: Record<Section, string> = { diario: 'Nova anotação', cadernos: 'Novo caderno', agenda: 'Nova tarefa' };
-const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', summary: 'docs', agenda: 'agenda', settings: 'settings' };
+const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', summary: 'docs', agenda: 'agenda', settings: 'settings', search: 'history', archive: 'history' };
 
 // O "+" do celular: o botão gira e uma bolha de gel cresce a partir dele até
 // cobrir a tela; o item novo abre por baixo e a bolha se desfaz.
@@ -590,7 +590,7 @@ export function Shell() {
     {tabbar && (
       <div className="tabbar">
         {TABS.map(([k, label]) => (
-          <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label}
+          <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label} aria-current={TAB_OF[scr] === k ? 'page' : undefined}
             onClick={e => k === 'new' ? !plus.busy && add(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : k === 'docs' ? goSection('cadernos') : k === 'settings' ? openTool('settings') : go(k)}>
             {k === 'new' ? <span className="plus">+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
           </button>
