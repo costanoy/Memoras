@@ -269,6 +269,15 @@ export async function flushSync() {
 export async function syncNow() {
   const acc = get().cfg.account;
   if (!acc || !supabase) return;
+  // Depois de cada await, antes de gravar: se a conta mudou ou sumiu (sair da conta, apagar o diário),
+  // o ciclo para sem gravar. Sem conta mas com a chave em memória, a sessão é encerrada só neste aparelho.
+  // Com dkCache nulo (login, espera da chave, troca de senha) existe sessão sem conta e ela fica.
+  const gone = () => {
+    const cur = get().cfg.account;
+    if (cur?.userId === acc.userId) return false;
+    if (!cur && dkCache !== null) { dkCache = null; void supabase!.auth.signOut({ scope: 'local' }).catch(() => {}); }
+    return true;
+  };
   if (!navigator.onLine) { set({ sync: 'offline' }); return; }
   if (running) { again = true; return; }
   running = true; again = false;
@@ -277,7 +286,9 @@ export async function syncNow() {
   set({ sync: 'syncing' });
   try {
     const sb = supabase, key = await dkKey();
+    if (gone()) return;
     const { data: sess, error: se } = await sb.auth.getSession();
+    if (gone()) return;
     if (!sess.session) {
       // Falha de rede ao renovar o acesso não encerra a sessão: tenta de novo na próxima vez.
       // Só sai da conta quando o servidor recusa a sessão ou ela já não existe.
@@ -286,6 +297,7 @@ export async function syncNow() {
     }
 
     const { data: vault, error: ve } = await sb.from('vaults').select('dk_id,prefs').eq('user_id', acc.userId).maybeSingle();
+    if (gone()) return;
     if (ve) throw ve;
     if (!vault || vault.dk_id !== acc.dkId) { await logout(); toast('Sua conta mudou em outro aparelho. Entre de novo para sincronizar.'); return; }
 
@@ -295,6 +307,7 @@ export async function syncNow() {
     if (vault.prefs) {
       try {
         const p = JSON.parse(await openText(key, vault.prefs)) as { diaryName: string; theme: ThemeKey; ts: number; pin?: unknown };
+        if (gone()) return;
         remoteTs = p.ts;
         if (p.ts > get().cfg.prefsTs && THEMES[p.theme]) setCfg({ diaryName: p.diaryName, theme: p.theme, prefsTs: p.ts });
         if (isPin(p.pin)) { remotePin = p.pin; takeAccountPin(p.pin); }
@@ -306,7 +319,9 @@ export async function syncNow() {
     if (c.prefsTs > remoteTs || !vault.prefs || (c.pinHash && (!remotePin || c.pinTs > remotePin.ts))) {
       const pin: AccountPin | undefined = c.pinHash ? { hash: c.pinHash, salt: c.pinSalt, ts: c.pinTs } : undefined;
       const blob = await sealText(key, JSON.stringify({ diaryName: c.diaryName, theme: c.theme, ts: c.prefsTs, ...(pin ? { pin } : {}) }));
+      if (gone()) return;
       const { error } = await sb.from('vaults').update({ prefs: blob }).eq('user_id', acc.userId);
+      if (gone()) return;
       if (error) throw error;
     }
 
@@ -325,6 +340,7 @@ export async function syncNow() {
       else if (pq.after !== undefined) q = q.gt('updated_at', pq.after);
       else if (pq.from) q = q.gte('updated_at', pq.from);
       const { data, error } = await q;
+      if (gone()) throw new AppError('conta mudou');
       if (error) throw error;
       return data;
     }, since, r => rowsIn.push(r));
@@ -332,12 +348,14 @@ export async function syncNow() {
       try {
         // Cadernos e Agenda trazem "kind"; anotações do diário, não. Tipo desconhecido fica de fora.
         const obj = JSON.parse(await openText(key, r.data));
+        if (gone()) return;
         if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it, srv: r.updated_at }); }
         else incoming.push({ id: r.id, c: content(obj) });
       }
       catch { console.warn('Memoras: anotação ilegível ignorada', r.id); }
       if (!lastPull || r.updated_at > lastPull) lastPull = r.updated_at;
     }
+    if (gone()) return;
     if (incoming.length) {
       const touched: Note[] = [];
       set(s => {
@@ -361,7 +379,9 @@ export async function syncNow() {
     for (let i = 0; i < dirty.length; i += 100) {
       const chunk = dirty.slice(i, i + 100);
       const rows = await Promise.all(chunk.map(async n => ({ user_id: acc.userId, id: n.id, data: await sealText(key, JSON.stringify(content(n))) })));
+      if (gone()) return;
       const { error } = await sb.from('notes').upsert(rows);
+      if (gone()) return;
       if (error) throw error;
       const sent = new Map(chunk.map(n => [n.id, n.rev]));
       set(s => ({ notes: s.notes.map(n => sent.has(n.id) ? { ...n, syncedRev: sent.get(n.id)!, pushed: true } : n) }));
@@ -374,7 +394,9 @@ export async function syncNow() {
     const cond = (it: Item) => it.pushed && baseText(it) !== null && !!(it as Doc | DayNote).srv;
     for (const it of dirtyItems.filter(cond)) {
       const data = await sealText(key, JSON.stringify(itemContent(it)));
+      if (gone()) return;
       const { data: res, error } = await sb.from('notes').update({ data }).eq('user_id', acc.userId).eq('id', it.id).eq('updated_at', (it as Doc | DayNote).srv!).select('id,updated_at');
+      if (gone()) return;
       if (error) throw error;
       if (res.length) {
         const srv = res[0].updated_at, bt = baseText(it)!;
@@ -383,6 +405,7 @@ export async function syncNow() {
         continue;
       }
       const { data: row, error: e2 } = await sb.from('notes').select('id,data,updated_at').eq('user_id', acc.userId).eq('id', it.id).maybeSingle();
+      if (gone()) return;
       if (e2) throw e2;
       if (!row) {
         // A linha não existe mais no servidor: o próximo ciclo manda de novo pelo upsert.
@@ -390,7 +413,9 @@ export async function syncNow() {
         const cur = get().items.find(x => x.id === it.id); if (cur) void itemPut(cur);
       } else {
         try {
-          const obj = JSON.parse(await openText(key, row.data)), parsed = obj && typeof obj === 'object' && 'kind' in obj ? parseItem(obj) : null;
+          const obj = JSON.parse(await openText(key, row.data));
+          if (gone()) return;
+          const parsed = obj && typeof obj === 'object' && 'kind' in obj ? parseItem(obj) : null;
           if (parsed) applyItems([{ id: row.id, c: parsed, srv: row.updated_at }]);
         } catch { console.warn('Memoras: item ilegível ignorado', row.id); }
       }
@@ -400,7 +425,9 @@ export async function syncNow() {
     for (let i = 0; i < plain.length; i += 100) {
       const chunk = plain.slice(i, i + 100);
       const rows = await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })));
+      if (gone()) return;
       const { data: back, error } = await sb.from('notes').upsert(rows).select('id,updated_at');
+      if (gone()) return;
       if (error) throw error;
       const srvOf = new Map(back.map(r => [r.id, r.updated_at]));
       const sent = new Map(chunk.map(it => [it.id, it]));
@@ -414,11 +441,12 @@ export async function syncNow() {
       get().items.forEach(it => { if (sent.has(it.id)) void itemPut(it); });
     }
 
+    if (gone()) return;
     if (lastPull !== c.lastPull) setCfg({ lastPull });
     set({ sync: 'synced' });
   } catch (e) {
     console.warn('Memoras: sincronização falhou', e);
-    set({ sync: navigator.onLine ? 'error' : 'offline' });
+    if (get().cfg.account?.userId === acc.userId) set({ sync: navigator.onLine ? 'error' : 'offline' });
   } finally {
     running = false;
     if (again) void syncNow();
