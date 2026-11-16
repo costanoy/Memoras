@@ -107,7 +107,7 @@ export function ItemMenu() {
       {doc && <Item icon="archive" label={doc.status === 'archived' ? 'Desarquivar' : 'Arquivar'} onClick={run(() => archiveDoc(doc.id))} />}
       {task && !task.done && <Item icon="forward" label={task.date === todayKey() ? 'Passar para amanhã' : 'Passar para o dia seguinte'} onClick={run(() => moveTask(task.id, addDays(task.date, 1)))} />}
       {task && <Item icon="check" label={task.done ? 'Desmarcar' : 'Marcar como feita'} onClick={run(() => toggleTask(task.id))} />}
-      {(note || doc) && <Item icon="trash" label="Mover para a lixeira" danger onClick={run(() => askTrash((note ?? doc)!.id))} />}
+      {(note || doc) && <Item icon="trash" label="Mover para a lixeira" danger onClick={run(() => { if (back.current?.isConnected) back.current.focus({ preventScroll: true }); askTrash((note ?? doc)!.id); })} />}
       {task && <Item icon="trash" label="Apagar tarefa" danger onClick={run(() => deleteTask(task.id))} />}
     </div>
   );

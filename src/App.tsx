@@ -58,15 +58,31 @@ export function App() {
   const s = useApp(), scr = s.screen, c = s.confirm, isDoc = !!c?.id && s.items.some(i => i.id === c.id);
   useShortcuts();
   // Esc fecha a confirmação de apagar, como o Cancelar. Ao fechar, o foco volta para quem abriu.
-  const before = useRef<HTMLElement | null>(null);
+  const before = useRef<HTMLElement | null>(null), lastFocus = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (c) return;
+    // Sem confirmação aberta, guarda o último elemento focado no app (origem de verdade, mesmo se o foco cair no body).
+    const on = (e: FocusEvent) => { const t = e.target as HTMLElement | null; if (t && t !== document.body && t.closest('.contents')) lastFocus.current = t; };
+    document.addEventListener('focusin', on);
+    return () => document.removeEventListener('focusin', on);
+  }, [c]);
   useEffect(() => {
     if (!c) {
       const b = before.current;
       before.current = null;
-      if (b?.isConnected && (!document.activeElement || document.activeElement === document.body)) b.focus({ preventScroll: true });
+      if (!document.activeElement || document.activeElement === document.body) {
+        if (b?.isConnected) b.focus({ preventScroll: true });
+        else if (b) {
+          // A origem sumiu (o item foi para a lixeira): o foco vai para o primeiro botão disponível, nunca fica no body.
+          const nx = [...document.querySelectorAll<HTMLElement>('.contents button')].find(x => !(x as HTMLButtonElement).disabled && x.getClientRects().length > 0);
+          nx?.focus({ preventScroll: true });
+        }
+      }
       return;
     }
-    before.current ??= document.activeElement as HTMLElement | null;
+    const act = document.activeElement as HTMLElement | null;
+    // O diálogo pode já ter pego o foco (autofoco do filho): aí vale o último foco de dentro do app.
+    before.current ??= act && act.closest('.contents') ? act : lastFocus.current;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') set({ confirm: null }); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -77,9 +93,8 @@ export function App() {
     <div className="stage">
       <div className="deco haze" /><div className="deco b1" /><div className="deco b2" /><div className="deco b3" /><div className="deco b4" />
       {/* Com a confirmação aberta, o resto do app fica fora de alcance (Tab não escapa para trás dela). */}
+      <TitleBar />
       <div className="contents" inert={!!c}>
-        <TitleBar />
-
         {scr === 'pin' && <Pin />}
         {scr === 'onboard' && <Onboard />}
         {scr === 'auth' && <Auth />}
