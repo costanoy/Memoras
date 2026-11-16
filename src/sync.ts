@@ -433,17 +433,24 @@ export function startSync() {
   window.addEventListener('offline', () => set({ sync: 'offline' }));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleSync(300); });
   window.setInterval(() => { if (document.visibilityState === 'visible') void syncNow(); }, 60000);
+  if (earlyRecovery) { const r = earlyRecovery; earlyRecovery = null; openRecovery(r.userId, r.email); }
   void syncNow();
 }
 
 // O link de redefinição de senha abre o app já no passo 2.
+// Se chegar durante o carregamento, a configuração ainda não foi lida e a trava não vale: guarda
+// o pedido e confere de novo no startSync, que roda depois do init.
+let earlyRecovery: { userId: string; email: string } | null = null;
+function openRecovery(userId: string | undefined, email: string) {
+  // App travado: só segue o link da conta deste aparelho.
+  if (isLocked() && userId !== get().cfg.account?.userId) return;
+  hooks.recoveryPending = true;
+  set({ screen: 'forgot', fStep: 2, fEmail: email });
+}
 supabase?.auth.onAuthStateChange((event, session) => {
   if (event !== 'PASSWORD_RECOVERY') return;
-  // App travado: só segue o link da conta deste aparelho.
-  if (isLocked() && session?.user.id !== get().cfg.account?.userId) return;
-  hooks.recoveryPending = true;
-  if (get().screen !== 'loading') set({ screen: 'forgot', fStep: 2, fEmail: session?.user.email ?? '' });
-  else set({ fEmail: session?.user.email ?? '' });
+  if (get().screen === 'loading') { earlyRecovery = { userId: session?.user.id ?? '', email: session?.user.email ?? '' }; return; }
+  openRecovery(session?.user.id, session?.user.email ?? '');
 });
 
 // Links memoras:// que abrem o app: no Windows chegam pela ponte do Electron, no Android pelo plugin App.
