@@ -99,6 +99,8 @@ export function AutoArea({ value, placeholder, onChange, className = 'segtext', 
 // Calendário do mês. "all": qualquer dia pode ser escolhido (agenda); sem ele, só os marcados (diário).
 // done: dias com todas as tarefas feitas (agenda), marcados com ✓.
 const DOW = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const DOW_FULL = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 export function MonthCal({ y, m, onMove, has, isSel, onPick, all, done }: {
   y: number; m: number; onMove: (y: number, m: number) => void; has: (t: number) => boolean; isSel: (t: number) => boolean; onPick: (t: number) => void; all?: boolean; done?: (t: number) => boolean;
 }) {
@@ -115,13 +117,14 @@ export function MonthCal({ y, m, onMove, has, isSel, onPick, all, done }: {
         <button className="arrow press" aria-label="Próximo mês" onClick={() => move(1)}>›</button>
       </div>
       <div className="calgrid">
-        {DOW.map((w, i) => <span key={i}>{w}</span>)}
+        {DOW.map((w, i) => <span key={i} aria-label={DOW_FULL[i]}>{w}</span>)}
         {Array.from({ length: first.getDay() }, (_, i) => <i key={'e' + i} />)}
         {Array.from({ length: dim }, (_, i) => {
-          const t = new Date(y, m, i + 1).getTime(), h = has(t), sel = isSel(t), can = all || h, ok = h && !!done?.(t);
+          const t = new Date(y, m, i + 1).getTime(), h = has(t), sel = isSel(t), can = all || h, ok = h && !!done?.(t), hoje = same(t, Date.now());
+          const label = (i + 1) + ' de ' + MESES[m] + (hoje ? ', hoje' : '') + (h ? ', com anotações' : '') + (ok ? ', tudo feito' : '');
           return (
-            <button key={i} className={'day' + (h ? ' has' : '') + (ok ? ' alldone' : '') + (can ? ' press pick' : '') + (same(t, Date.now()) ? ' today' : '') + (sel ? ' sel' : '')} tabIndex={can ? 0 : -1} aria-pressed={sel}
-              aria-label={ok ? (i + 1) + ', tudo feito' : undefined} title={ok ? 'Tudo feito' : undefined} onClick={() => can && onPick(t)}>
+            <button key={i} className={'day' + (h ? ' has' : '') + (ok ? ' alldone' : '') + (can ? ' press pick' : '') + (hoje ? ' today' : '') + (sel ? ' sel' : '')} tabIndex={can ? 0 : -1} aria-pressed={sel}
+              aria-label={label} title={ok ? 'Tudo feito' : undefined} onClick={() => can && onPick(t)}>
               {i + 1}
             </button>
           );

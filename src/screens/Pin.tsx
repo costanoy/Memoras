@@ -46,7 +46,7 @@ export function Pin() {
           <div className="pinname">{s.cfg.diaryName}</div>
           <div className="pintitle">{title}</div>
         </div>
-        <div key={s.shake} className={'dots' + (s.shake ? ' shake' : '') + (s.pinError ? ' bad' : '')}>
+        <div key={s.shake} role="img" aria-label={s.pin.length + ' de 4 dígitos'} className={'dots' + (s.shake ? ' shake' : '') + (s.pinError ? ' bad' : '')}>
           {[0, 1, 2, 3].map(i => <i key={i} className={i < s.pin.length ? 'f' : ''} />)}
         </div>
         <div className="err pinmsg" role="status">{msg}</div>
