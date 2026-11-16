@@ -15,8 +15,15 @@ function db() {
       // Versão 2: Cadernos e Agenda.
       if (e.oldVersion < 2) r.result.createObjectStore('items', { keyPath: 'id' });
     };
-    r.onsuccess = () => res(r.result);
+    r.onsuccess = () => {
+      const d = r.result;
+      // Outra janela subiu a versão do banco: solta este para não bloquear a atualização e avisa.
+      d.onversionchange = () => { d.close(); dbp = null; dbHooks.outdated(); };
+      d.onclose = () => { dbp = null; };
+      res(d);
+    };
     r.onerror = () => { dbp = null; rej(r.error); };
+    r.onblocked = () => { dbp = null; rej(new Error('Memoras: banco bloqueado por outra janela')); };
   });
 }
 
@@ -28,7 +35,7 @@ function run<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore)
   }));
 }
 // Se o aparelho recusar uma gravação (sem espaço, por exemplo), o app avisa em vez de seguir como se tivesse salvo.
-export const dbHooks = { writeFailed: (_e: unknown) => {} };
+export const dbHooks = { writeFailed: (_e: unknown) => {}, outdated: () => {} };
 const quiet = (p: Promise<unknown>) => p.then(() => {}, e => { console.error('Memoras: falha ao gravar', e); dbHooks.writeFailed(e); });
 
 // Leitura que falha de verdade em vez de fingir que o banco está vazio (usada ao abrir o app).
