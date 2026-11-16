@@ -408,7 +408,8 @@ input.doctitle{height:1.2em}
 .main .panel{container-type:inline-size}
 @container (max-width:600px){
   .ibar .plbl{display:none}
-  .ibar .pill:not(.go){width:44px;padding:0;justify-content:center}
+  .ibar .pill:not(.go):not(.txt){width:44px;padding:0;justify-content:center}
+  .ibar .pill.txt{height:44px;padding:0 14px}
 }
 
 /* Barra de título: o separador do botão do Mini-Memoras e o "Manter por cima" ligado */
