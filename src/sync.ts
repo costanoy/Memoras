@@ -4,6 +4,7 @@ import { createClient, isAuthApiError } from '@supabase/supabase-js';
 import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomBytes, randomCode, seal, sealText, unb64, verifySecret } from './lib/crypto';
 import { itemPut, notePut } from './lib/db';
 import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Doc, type DayNote, type Item, type ItemContent } from './lib/items';
+import { PULL_PAGE, pullAll } from './lib/pull';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
 import { get, hooks, isLocked, set, setCfg, takeAccountPin, toast } from './store';
 import { THEMES, type ThemeKey } from './themes';
@@ -287,22 +288,25 @@ export async function syncNow() {
     let lastPull = c.lastPull;
     const lastT = c.lastPull ? Date.parse(c.lastPull) : NaN;
     const since = Number.isNaN(lastT) ? c.lastPull : new Date(lastT - 60000).toISOString();
-    for (let from = 0; ; from += 500) {
-      let q = sb.from('notes').select('id,data,updated_at').eq('user_id', acc.userId).order('updated_at').order('id').range(from, from + 499);
-      if (since) q = q.gte('updated_at', since);
+    const rowsIn: { id: string; data: string; updated_at: string }[] = [];
+    await pullAll<{ id: string; data: string; updated_at: string }>(async pq => {
+      let q = sb.from('notes').select('id,data,updated_at').eq('user_id', acc.userId).order('updated_at').order('id').limit(PULL_PAGE);
+      if (pq.exact !== undefined) q = q.eq('updated_at', pq.exact).range(pq.offset ?? 0, (pq.offset ?? 0) + PULL_PAGE - 1);
+      else if (pq.after !== undefined) q = q.gt('updated_at', pq.after);
+      else if (pq.from) q = q.gte('updated_at', pq.from);
       const { data, error } = await q;
       if (error) throw error;
-      for (const r of data) {
-        try {
-          // Cadernos e Agenda trazem "kind"; anotações do diário, não. Tipo desconhecido fica de fora.
-          const obj = JSON.parse(await openText(key, r.data));
-          if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it }); }
-          else incoming.push({ id: r.id, c: content(obj) });
-        }
-        catch { console.warn('Memoras: anotação ilegível ignorada', r.id); }
-        if (!lastPull || r.updated_at > lastPull) lastPull = r.updated_at;
+      return data;
+    }, since, r => rowsIn.push(r));
+    for (const r of rowsIn) {
+      try {
+        // Cadernos e Agenda trazem "kind"; anotações do diário, não. Tipo desconhecido fica de fora.
+        const obj = JSON.parse(await openText(key, r.data));
+        if (obj && typeof obj === 'object' && 'kind' in obj) { const it = parseItem(obj); if (it) incomingItems.push({ id: r.id, c: it }); }
+        else incoming.push({ id: r.id, c: content(obj) });
       }
-      if (data.length < 500) break;
+      catch { console.warn('Memoras: anotação ilegível ignorada', r.id); }
+      if (!lastPull || r.updated_at > lastPull) lastPull = r.updated_at;
     }
     if (incoming.length) {
       const touched: Note[] = [];
