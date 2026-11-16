@@ -18,11 +18,11 @@ create table if not exists public.notes (
   primary key (user_id, id)
 );
 
--- Limite de tamanho do texto cifrado (1 MiB). Protegido para rodar o arquivo de novo num banco existente.
+-- Limite de tamanho do texto cifrado (1 MiB), "not valid" para não falhar com linhas antigas maiores (vale para as novas). Protegido para rodar o arquivo de novo num banco existente.
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'notes_data_tamanho' and conrelid = 'public.notes'::regclass) then
-    alter table public.notes add constraint notes_data_tamanho check (octet_length(data) < 1048576);
+    alter table public.notes add constraint notes_data_tamanho check (octet_length(data) < 1048576) not valid;
   end if;
 end $$;
 

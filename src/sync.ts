@@ -264,6 +264,15 @@ function applyItems(list: IncomingItem[]) {
 }
 
 // Sincronização
+// O banco recusa linhas de 1 MiB ou mais (notes_data_tamanho). Linha grande demais fica de fora do envio, sem derrubar o resto do ciclo.
+const MAX_ROW = 1048576;
+let bigWarned = false;
+function fitsServer(data: string, id: string) {
+  if (data.length < MAX_ROW) return true;
+  console.warn('Memoras: anotação grande demais para sincronizar', id);
+  if (!bigWarned) { bigWarned = true; toast('Caderno grande demais para sincronizar'); }
+  return false;
+}
 let running = false, again = false, timer = 0;
 // Promessa que termina quando não há sincronização rodando nem na fila.
 let idle: Promise<void> | null = null, idleDone = () => {};
@@ -395,12 +404,13 @@ export async function syncNow() {
     const dirty = get().notes.filter(n => n.rev !== n.syncedRev && (n.deleted || n.pushed || !isEmpty(n)));
     for (let i = 0; i < dirty.length; i += 100) {
       const chunk = dirty.slice(i, i + 100);
-      const rows = await Promise.all(chunk.map(async n => ({ user_id: acc.userId, id: n.id, data: await sealText(key, JSON.stringify(content(n))) })));
+      const rows = (await Promise.all(chunk.map(async n => ({ user_id: acc.userId, id: n.id, data: await sealText(key, JSON.stringify(content(n))) })))).filter(r => fitsServer(r.data, r.id));
       if (gone()) return;
+      if (!rows.length) continue;
       const { error } = await sb.from('notes').upsert(rows);
       if (gone()) return;
       if (error) throw error;
-      const sent = new Map(chunk.map(n => [n.id, n.rev]));
+      const sent = new Map(chunk.filter(n => rows.some(r => r.id === n.id)).map(n => [n.id, n.rev]));
       set(s => ({ notes: s.notes.map(n => sent.has(n.id) ? { ...n, syncedRev: sent.get(n.id)!, pushed: true } : n) }));
       get().notes.forEach(n => { if (sent.has(n.id)) void notePut(n); });
     }
@@ -412,6 +422,7 @@ export async function syncNow() {
     for (const it of dirtyItems.filter(cond)) {
       const data = await sealText(key, JSON.stringify(itemContent(it)));
       if (gone()) return;
+      if (!fitsServer(data, it.id)) continue;
       const { data: res, error } = await sb.from('notes').update({ data }).eq('user_id', acc.userId).eq('id', it.id).eq('updated_at', (it as Doc | DayNote).srv!).select('id,updated_at');
       if (gone()) return;
       if (error) throw error;
@@ -442,13 +453,14 @@ export async function syncNow() {
     const plain = dirtyItems.filter(i => !cond(i));
     for (let i = 0; i < plain.length; i += 100) {
       const chunk = plain.slice(i, i + 100);
-      const rows = await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })));
+      const rows = (await Promise.all(chunk.map(async it => ({ user_id: acc.userId, id: it.id, data: await sealText(key, JSON.stringify(itemContent(it))) })))).filter(r => fitsServer(r.data, r.id));
       if (gone()) return;
+      if (!rows.length) continue;
       const { data: back, error } = await sb.from('notes').upsert(rows).select('id,updated_at');
       if (gone()) return;
       if (error) throw error;
       const srvOf = new Map(back.map(r => [r.id, r.updated_at]));
-      const sent = new Map(chunk.map(it => [it.id, it]));
+      const sent = new Map(chunk.filter(it => rows.some(r => r.id === it.id)).map(it => [it.id, it]));
       set(s => ({
         items: s.items.map(it => {
           const x = sent.get(it.id); if (!x) return it;
