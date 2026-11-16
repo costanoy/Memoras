@@ -20,8 +20,8 @@ function KeyActions({ value, heading, file }: { value: string; heading: string; 
   );
 }
 
-function Kept({ on, toggle }: { on: boolean; toggle: () => void }) {
-  return <button className={'check press' + (on ? ' on' : '')} aria-pressed={on} onClick={toggle}><i>{on ? '✓' : ''}</i>Guardei minha chave</button>;
+function Kept({ on, toggle, warn }: { on: boolean; toggle: () => void; warn?: boolean }) {
+  return <button className={'check press' + (on ? ' on' : '') + (warn && !on ? ' warn' : '')} aria-pressed={on} onClick={toggle}><i>{on ? '✓' : ''}</i>Guardei minha chave</button>;
 }
 
 // Email de quem tem a conta, com o @ escrito normalmente: codificado (%40), alguns apps de email
@@ -32,6 +32,7 @@ export function Recovery() {
   const s = useApp(), key = s.shownKey, email = s.cfg.account?.email ?? '';
   const [emailed, setEmailed] = useState(false);
   const [kept, setKept] = useState(false);
+  const [need, setNeed] = useState(false);
   // O app de email abre já com o endereço da conta, o assunto e a chave: a chave sai deste aparelho
   // direto para a caixa de email da pessoa, sem passar pelo servidor do Memoras.
   const mail = () => {
@@ -40,7 +41,7 @@ export function Recovery() {
       + '&body=' + encodeURIComponent('Minha chave de recuperação do Memoras:\n\n' + key + '\n\nGuarde este email. Quem tiver esta chave pode reabrir o diário.'));
   };
   const done = () => {
-    if (!kept) return;
+    if (!kept) return setNeed(true);
     if (s.recReturn === 'onboardPin') go('onboard', { onStep: 4, shownKey: '' });
     else { go('settings', { shownKey: '' }); toast('Nova chave guardada'); }
   };
@@ -62,7 +63,8 @@ export function Recovery() {
           <strong>Quem acessar seu email poderá abrir seu diário.</strong>
           <span>Se enviar a chave por email, ative a verificação em duas etapas na sua conta de email.</span>
         </div>
-        <Kept on={kept} toggle={() => setKept(!kept)} />
+        <Kept on={kept} warn={need} toggle={() => { setKept(!kept); setNeed(false); }} />
+        {need && !kept && <div role="status" className="err">Marque que guardou a chave para continuar.</div>}
         <button className={'gel' + (kept ? '' : ' off')} aria-disabled={!kept} onClick={done}>Continuar</button>
       </div>
     </div>
@@ -72,8 +74,9 @@ export function Recovery() {
 export function PinKey() {
   const s = useApp();
   const [kept, setKept] = useState(false);
+  const [need, setNeed] = useState(false);
   const done = () => {
-    if (!kept) return;
+    if (!kept) return setNeed(true);
     commitPendingPin();
     go(s.pkReturn, { shownKey: '' });
     toast(s.pkMsg || 'PIN ativado');
@@ -88,7 +91,8 @@ export function PinKey() {
         <div className="keybox mono" style={{ fontSize: 21, letterSpacing: '.05em' }}>{s.shownKey}</div>
         <KeyActions value={s.shownKey} heading="Chave do PIN do Memoras" file="memoras-chave-do-pin.txt" />
         <div className="small">Guarde fora deste aparelho: num gerenciador de senhas, impressa ou anotada em papel.</div>
-        <Kept on={kept} toggle={() => setKept(!kept)} />
+        <Kept on={kept} warn={need} toggle={() => { setKept(!kept); setNeed(false); }} />
+        {need && !kept && <div role="status" className="err">Marque que guardou a chave para continuar.</div>}
         <button className={'gel' + (kept ? '' : ' off')} aria-disabled={!kept} onClick={done}>Continuar</button>
       </div>
     </div>
