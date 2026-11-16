@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blankDayNote, blankDoc, blankTask, itemContent, mergeItem, parseItem, type Doc, type DocContent } from '../src/lib/items';
+import { blankDayNote, blankDoc, blankTask, itemContent, mergeItem, parseItem, sameItem, type Doc, type DocContent } from '../src/lib/items';
 
 const doc = (o: Partial<Doc> = {}): Doc => ({ ...blankDoc('d1'), created: 1000, title: 'Caderno', titleTs: 5, body: 'texto', bodyTs: 5, ...o });
 
@@ -57,5 +57,11 @@ describe('items: compatibilidade com versões antigas', () => {
     expect(parseItem('x')).toBeNull();
   });
 
-  it.todo('lápide estável: juntar duas vezes dá o mesmo conteúdo (ligar depois do lote-1)');
+  it('lápide estável: juntar duas lápides nas duas ordens dá o mesmo conteúdo', () => {
+    const a = doc({ id: 'd1', deleted: true, title: '', titleTs: 7, body: '', bodyTs: 6, status: 'trashed', statusTs: 9, color: 'azul', colorTs: 3 });
+    const b = doc({ id: 'd1', deleted: true, title: '', titleTs: 8, body: '', bodyTs: 4, status: 'trashed', statusTs: 5, color: 'verde', colorTs: 3, pinned: true, pinnedTs: 2 });
+    const ab = mergeItem(a, itemContent(b)).merged, ba = mergeItem(b, itemContent(a)).merged;
+    expect(sameItem(ab, ba)).toBe(true);
+    expect(sameItem(mergeItem({ ...a, ...ab } as Doc, itemContent(b)).merged, ab)).toBe(true);
+  });
 });
