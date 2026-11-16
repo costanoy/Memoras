@@ -1,0 +1,313 @@
+{
+  "shots": [
+    {
+      "arquivo": "celular-primeiro-uso-boas-vindas.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "celular-onboard-passo-2.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "celular-onboard-passo-3.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "celular-onboard-passo-4.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "celular-onboard-opcao-pin.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "celular-criar-pin-1-digito-novo.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "celular-criar-pin-confirmar.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "celular-chave-do-pin.png",
+      "tela": "chave-do-pin"
+    },
+    {
+      "arquivo": "celular-principal-vazia.png",
+      "tela": "principal-vazia"
+    },
+    {
+      "arquivo": "celular-busca-sem-resultado.png",
+      "tela": "busca-sem-resultado"
+    },
+    {
+      "arquivo": "celular-ajustes.png",
+      "tela": "ajustes"
+    },
+    {
+      "arquivo": "celular-ajustes-pagina-inteira.png",
+      "tela": "ajustes"
+    },
+    {
+      "arquivo": "celular-tema-noite.png",
+      "tela": "tema-noite"
+    },
+    {
+      "arquivo": "celular-tema-turquesa.png",
+      "tela": "tema-turquesa"
+    },
+    {
+      "arquivo": "celular-login-vazio.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "celular-login-erro-email-invalido.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "celular-login-erro-sem-senha.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "celular-cadastro-senha-curta.png",
+      "tela": "cadastro"
+    },
+    {
+      "arquivo": "celular-esqueci-senha-passo-1.png",
+      "tela": "esqueci-senha"
+    },
+    {
+      "arquivo": "celular-esqueci-senha-email-invalido.png",
+      "tela": "esqueci-senha"
+    },
+    {
+      "arquivo": "celular-tela-pin.png",
+      "tela": "tela-pin"
+    },
+    {
+      "arquivo": "celular-pin-errado.png",
+      "tela": "tela-pin"
+    },
+    {
+      "arquivo": "celular-esqueci-pin.png",
+      "tela": "esqueci-pin"
+    },
+    {
+      "arquivo": "celular-editor-nova-anotacao-vazia.png",
+      "tela": "principal-com-dados"
+    },
+    {
+      "arquivo": "celular-editor-anotacao.png",
+      "tela": "editor-anotacao"
+    },
+    {
+      "arquivo": "celular-principal-muitos-dados.png",
+      "tela": "principal-muitos-dados"
+    },
+    {
+      "arquivo": "celular-menu-contexto-anotacao.png",
+      "tela": "menu-contexto-anotacao"
+    },
+    {
+      "arquivo": "celular-dialogo-lixeira-anotacao.png",
+      "tela": "dialogo-lixeira"
+    },
+    {
+      "arquivo": "celular-busca-com-resultado.png",
+      "tela": "busca-com-resultado"
+    },
+    {
+      "arquivo": "celular-cadernos-vazio.png",
+      "tela": "cadernos-vazio"
+    },
+    {
+      "arquivo": "celular-caderno-editor-novo.png",
+      "tela": "caderno-editor"
+    },
+    {
+      "arquivo": "celular-cadernos-com-dados.png",
+      "tela": "cadernos-com-dados"
+    },
+    {
+      "arquivo": "celular-resumao.png",
+      "tela": "resumao"
+    },
+    {
+      "arquivo": "celular-agenda-vazia.png",
+      "tela": "agenda-vazia"
+    },
+    {
+      "arquivo": "celular-agenda-com-tarefas.png",
+      "tela": "agenda-com-tarefas"
+    },
+    {
+      "arquivo": "celular-agenda-calendario.png",
+      "tela": "agenda-calendario"
+    },
+    {
+      "arquivo": "celular-ajustes-sem-conexao.png",
+      "tela": "sem-conexao"
+    },
+    {
+      "arquivo": "desktop-primeiro-uso-boas-vindas.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "desktop-onboard-passo-2.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "desktop-onboard-passo-3.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "desktop-onboard-passo-4.png",
+      "tela": "primeiro-uso"
+    },
+    {
+      "arquivo": "desktop-onboard-opcao-pin.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "desktop-criar-pin-1-digito-novo.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "desktop-criar-pin-confirmar.png",
+      "tela": "criar-pin"
+    },
+    {
+      "arquivo": "desktop-chave-do-pin.png",
+      "tela": "chave-do-pin"
+    },
+    {
+      "arquivo": "desktop-principal-vazia.png",
+      "tela": "principal-vazia"
+    },
+    {
+      "arquivo": "desktop-busca-sem-resultado.png",
+      "tela": "busca-sem-resultado"
+    },
+    {
+      "arquivo": "desktop-ajustes.png",
+      "tela": "ajustes"
+    },
+    {
+      "arquivo": "desktop-ajustes-pagina-inteira.png",
+      "tela": "ajustes"
+    },
+    {
+      "arquivo": "desktop-tema-noite.png",
+      "tela": "tema-noite"
+    },
+    {
+      "arquivo": "desktop-tema-turquesa.png",
+      "tela": "tema-turquesa"
+    },
+    {
+      "arquivo": "desktop-login-vazio.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "desktop-login-erro-email-invalido.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "desktop-login-erro-sem-senha.png",
+      "tela": "login"
+    },
+    {
+      "arquivo": "desktop-cadastro-senha-curta.png",
+      "tela": "cadastro"
+    },
+    {
+      "arquivo": "desktop-esqueci-senha-passo-1.png",
+      "tela": "esqueci-senha"
+    },
+    {
+      "arquivo": "desktop-esqueci-senha-email-invalido.png",
+      "tela": "esqueci-senha"
+    },
+    {
+      "arquivo": "desktop-tela-pin.png",
+      "tela": "tela-pin"
+    },
+    {
+      "arquivo": "desktop-pin-errado.png",
+      "tela": "tela-pin"
+    },
+    {
+      "arquivo": "desktop-esqueci-pin.png",
+      "tela": "esqueci-pin"
+    },
+    {
+      "arquivo": "desktop-editor-nova-anotacao-vazia.png",
+      "tela": "principal-com-dados"
+    },
+    {
+      "arquivo": "desktop-editor-anotacao.png",
+      "tela": "editor-anotacao"
+    },
+    {
+      "arquivo": "desktop-principal-muitos-dados.png",
+      "tela": "principal-muitos-dados"
+    },
+    {
+      "arquivo": "desktop-menu-contexto-anotacao.png",
+      "tela": "menu-contexto-anotacao"
+    },
+    {
+      "arquivo": "desktop-dialogo-lixeira-anotacao.png",
+      "tela": "dialogo-lixeira"
+    },
+    {
+      "arquivo": "desktop-busca-com-resultado.png",
+      "tela": "busca-com-resultado"
+    },
+    {
+      "arquivo": "desktop-cadernos-vazio.png",
+      "tela": "cadernos-vazio"
+    },
+    {
+      "arquivo": "desktop-caderno-editor-novo.png",
+      "tela": "caderno-editor"
+    },
+    {
+      "arquivo": "desktop-cadernos-com-dados.png",
+      "tela": "cadernos-com-dados"
+    },
+    {
+      "arquivo": "desktop-resumao.png",
+      "tela": "resumao"
+    },
+    {
+      "arquivo": "desktop-agenda-vazia.png",
+      "tela": "agenda-vazia"
+    },
+    {
+      "arquivo": "desktop-agenda-com-tarefas.png",
+      "tela": "agenda-com-tarefas"
+    },
+    {
+      "arquivo": "desktop-agenda-calendario.png",
+      "tela": "agenda-calendario"
+    },
+    {
+      "arquivo": "desktop-ajustes-sem-conexao.png",
+      "tela": "sem-conexao"
+    }
+  ],
+  "falhas": [
+    {
+      "vp": "desktop",
+      "passo": "calendário da agenda",
+      "erro": "locator.click: Timeout 3000ms exceeded."
+    },
+    {
+      "vp": "desktop",
+      "passo": "fechar calendário",
+      "erro": "locator.click: Timeout 3000ms exceeded."
+    }
+  ],
+  "consoleLog": []
+}

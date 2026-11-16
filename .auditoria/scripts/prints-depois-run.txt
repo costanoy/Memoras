@@ -1,0 +1,155 @@
+16:46:48 celular primeiro-uso > onboard passo 1
+16:46:50 celular primeiro-uso > onboard passo 2
+16:46:51 celular primeiro-uso > onboard passo 3
+16:46:53 celular criar-pin > criar PIN
+16:46:55 celular criar-pin > digitar PIN
+16:46:58 celular criar-pin > confirmar PIN
+16:47:00 celular chave-do-pin > guardar chave do PIN
+16:47:02 celular busca-sem-resultado > abrir busca
+16:47:03 celular busca-sem-resultado > buscar sem resultado
+16:47:04 celular busca-sem-resultado > sair da busca
+16:47:05 celular ajustes > abrir ajustes
+16:47:06 celular tema-noite > tema noite
+16:47:08 celular tema-turquesa > tema turquesa
+16:47:09 celular login > abrir login
+16:47:12 celular login > login email inválido
+16:47:14 celular login > login sem senha
+16:47:15 celular cadastro > ir para cadastro
+16:47:17 celular esqueci-senha > esqueci a senha
+16:47:19 celular esqueci-senha > esqueci a senha email inválido
+16:47:25 celular tela-pin > PIN errado
+16:47:29 celular esqueci-pin > esqueci o PIN
+16:47:30 celular esqueci-pin > voltar do esqueci o PIN
+16:47:30 celular desbloqueio > desbloquear com PIN certo
+16:47:32 celular principal-com-dados > ir ao diário
+16:47:33 celular principal-com-dados > anotação 1
+16:47:36 celular principal-com-dados > anotação 2
+16:47:39 celular principal-com-dados > anotação 3
+16:47:42 celular principal-com-dados > anotação 4
+16:47:44 celular principal-com-dados > anotação 5
+16:47:47 celular principal-com-dados > anotação 6
+16:47:50 celular principal-com-dados > anotação 7
+16:47:52 celular principal-com-dados > anotação 8
+16:47:55 celular principal-com-dados > anotação 9
+16:47:57 celular principal-com-dados > anotação 10
+16:47:59 celular principal-com-dados > anotação 11
+16:48:01 celular principal-com-dados > anotação 12
+16:48:04 celular principal-com-dados > anotação 13
+16:48:07 celular principal-com-dados > anotação 14
+16:48:09 celular principal-com-dados > anotação 15
+16:48:11 celular principal-com-dados > anotação 16
+16:48:13 celular principal-com-dados > anotação 17
+16:48:15 celular principal-com-dados > anotação 18
+16:48:18 celular principal-com-dados > anotação 19
+16:48:20 celular principal-com-dados > anotação 20
+16:48:23 celular principal-com-dados > anotação 21
+16:48:25 celular principal-com-dados > anotação 22
+16:48:27 celular principal-com-dados > anotação 23
+16:48:30 celular principal-com-dados > anotação 24
+16:48:33 celular principal-com-dados > anotação 25
+16:48:36 celular principal-com-dados > anotação longa
+16:48:40 celular editor-anotacao > voltar do editor
+16:48:41 celular principal-muitos-dados > ir ao diário (dados)
+16:48:42 celular menu-contexto-anotacao > menu do botão direito
+16:48:44 celular dialogo-lixeira > abrir anotação para lixeira
+16:48:45 celular dialogo-lixeira > cancelar diálogo
+16:48:45 celular dialogo-lixeira > voltar após diálogo
+16:48:46 celular busca-com-resultado > busca com resultado
+16:48:47 celular busca-com-resultado > sair da busca com resultado
+16:48:48 celular cadernos-vazio > ir a cadernos
+16:48:49 celular caderno-editor > caderno 1
+16:48:50 celular caderno-editor > caderno 2
+16:48:52 celular caderno-editor > caderno 3
+16:48:53 celular cadernos-com-dados > ir a cadernos com dados
+16:48:54 celular resumao > abrir Resumão
+16:48:55 celular resumao > voltar do Resumão
+16:48:55 celular agenda-vazia > ir à agenda
+16:48:56 celular agenda-com-tarefas > tarefa Ligar para o dentista
+16:48:56 celular agenda-com-tarefas > tarefa Pagar a conta de luz
+16:48:57 celular agenda-com-tarefas > tarefa Estudar 30 minutos
+16:48:57 celular agenda-com-tarefas > tarefa Comprar pão
+16:48:57 celular agenda-com-tarefas > tarefa Revisar o relatório
+16:48:57 celular agenda-com-tarefas > tarefa Treinar às 7h
+16:48:58 celular agenda-com-tarefas > marcar tarefa feita
+16:48:58 celular agenda-calendario > calendário da agenda
+16:48:59 celular agenda-calendario > fechar calendário
+16:48:59 celular sem-conexao > modo offline
+16:49:01 celular sem-conexao > voltar online
+16:49:05 desktop primeiro-uso > onboard passo 1
+16:49:07 desktop primeiro-uso > onboard passo 2
+16:49:08 desktop primeiro-uso > onboard passo 3
+16:49:10 desktop criar-pin > criar PIN
+16:49:12 desktop criar-pin > digitar PIN
+16:49:14 desktop criar-pin > confirmar PIN
+16:49:17 desktop chave-do-pin > guardar chave do PIN
+16:49:18 desktop busca-sem-resultado > abrir busca
+16:49:19 desktop busca-sem-resultado > buscar sem resultado
+16:49:20 desktop busca-sem-resultado > sair da busca
+16:49:20 desktop ajustes > abrir ajustes
+16:49:22 desktop tema-noite > tema noite
+16:49:23 desktop tema-turquesa > tema turquesa
+16:49:25 desktop login > abrir login
+16:49:26 desktop login > login email inválido
+16:49:28 desktop login > login sem senha
+16:49:29 desktop cadastro > ir para cadastro
+16:49:31 desktop esqueci-senha > esqueci a senha
+16:49:33 desktop esqueci-senha > esqueci a senha email inválido
+16:49:38 desktop tela-pin > PIN errado
+16:49:41 desktop esqueci-pin > esqueci o PIN
+16:49:43 desktop esqueci-pin > voltar do esqueci o PIN
+16:49:43 desktop desbloqueio > desbloquear com PIN certo
+16:49:45 desktop principal-com-dados > ir ao diário
+16:49:45 desktop principal-com-dados > anotação 1
+16:49:49 desktop principal-com-dados > anotação 2
+16:49:51 desktop principal-com-dados > anotação 3
+16:49:54 desktop principal-com-dados > anotação 4
+16:49:56 desktop principal-com-dados > anotação 5
+16:49:59 desktop principal-com-dados > anotação 6
+16:50:01 desktop principal-com-dados > anotação 7
+16:50:04 desktop principal-com-dados > anotação 8
+16:50:07 desktop principal-com-dados > anotação 9
+16:50:09 desktop principal-com-dados > anotação 10
+16:50:12 desktop principal-com-dados > anotação 11
+16:50:15 desktop principal-com-dados > anotação 12
+16:50:18 desktop principal-com-dados > anotação 13
+16:50:20 desktop principal-com-dados > anotação 14
+16:50:23 desktop principal-com-dados > anotação 15
+16:50:26 desktop principal-com-dados > anotação 16
+16:50:29 desktop principal-com-dados > anotação 17
+16:50:32 desktop principal-com-dados > anotação 18
+16:50:35 desktop principal-com-dados > anotação 19
+16:50:38 desktop principal-com-dados > anotação 20
+16:50:41 desktop principal-com-dados > anotação 21
+16:50:44 desktop principal-com-dados > anotação 22
+16:50:47 desktop principal-com-dados > anotação 23
+16:50:50 desktop principal-com-dados > anotação 24
+16:50:53 desktop principal-com-dados > anotação 25
+16:50:56 desktop principal-com-dados > anotação longa
+16:51:03 desktop editor-anotacao > voltar do editor
+16:51:04 desktop principal-muitos-dados > ir ao diário (dados)
+16:51:05 desktop menu-contexto-anotacao > menu do botão direito
+16:51:07 desktop dialogo-lixeira > abrir anotação para lixeira
+16:51:09 desktop dialogo-lixeira > cancelar diálogo
+16:51:09 desktop dialogo-lixeira > voltar após diálogo
+16:51:09 desktop busca-com-resultado > busca com resultado
+16:51:11 desktop busca-com-resultado > sair da busca com resultado
+16:51:12 desktop cadernos-vazio > ir a cadernos
+16:51:13 desktop caderno-editor > caderno 1
+16:51:14 desktop caderno-editor > caderno 2
+16:51:16 desktop caderno-editor > caderno 3
+16:51:17 desktop cadernos-com-dados > ir a cadernos com dados
+16:51:18 desktop resumao > abrir Resumão
+16:51:19 desktop resumao > voltar do Resumão
+16:51:20 desktop agenda-vazia > ir à agenda
+16:51:21 desktop agenda-com-tarefas > tarefa Ligar para o dentista
+16:51:21 desktop agenda-com-tarefas > tarefa Pagar a conta de luz
+16:51:21 desktop agenda-com-tarefas > tarefa Estudar 30 minutos
+16:51:21 desktop agenda-com-tarefas > tarefa Comprar pão
+16:51:21 desktop agenda-com-tarefas > tarefa Revisar o relatório
+16:51:22 desktop agenda-com-tarefas > tarefa Treinar às 7h
+16:51:22 desktop agenda-com-tarefas > marcar tarefa feita
+16:51:23 desktop agenda-calendario > calendário da agenda
+16:51:26 desktop agenda-calendario > fechar calendário
+16:51:29 desktop sem-conexao > modo offline
+16:51:31 desktop sem-conexao > voltar online
+PRINTS 74 FALHAS 2 CONSOLE 0
