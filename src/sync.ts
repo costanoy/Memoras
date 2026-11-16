@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { createClient, isAuthApiError } from '@supabase/supabase-js';
 import { aesKey, b64, derive, hashSecret, kekFromCode, open, openText, randomBytes, randomCode, seal, sealText, unb64, verifySecret } from './lib/crypto';
 import { itemPut, notePut } from './lib/db';
-import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Item, type ItemContent } from './lib/items';
+import { baseText, isBlankItem, itemContent, mergeItem, parseItem, sameItem, type Doc, type DayNote, type Item, type ItemContent } from './lib/items';
 import { content, isEmpty, merge, sameContent, uid, type Note, type NoteContent } from './lib/notes';
 import { get, hooks, isLocked, set, setCfg, takeAccountPin, toast } from './store';
 import { THEMES, type ThemeKey } from './themes';
@@ -335,6 +335,9 @@ export async function syncNow() {
             n = { ...local, ...synced(merged, rev, sameItem(merged, r.c) ? rev : -1) } as Item;
             // Texto mudado nos dois aparelhos: o de lá vira uma cópia, para nada se perder.
             if (copy) { const cp = { ...copy, id: uid(), rev: 1, syncedRev: -1, pushed: false, ...(baseText(copy) !== null ? { base: null } : {}) } as Item; byId.set(cp.id, cp); touched.push(cp); }
+            // Nada mudou: não regrava nem marca como tocado (a lápide, por exemplo, não é reenviada).
+            const l = local as Doc | DayNote;
+            if (!copy && n.rev === local.rev && n.syncedRev === local.syncedRev && local.pushed && (n as Doc | DayNote).base === l.base) continue;
           }
           byId.set(r.id, n); touched.push(n);
         }

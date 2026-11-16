@@ -25,9 +25,10 @@ export type ItemContent = DocContent | TaskContent | DayNoteContent;
 
 // base: o texto que está no servidor desde a última sincronização. Serve para saber,
 // ao juntar, se o texto mudou só aqui, só no outro aparelho ou nos dois.
-export type Doc = DocContent & Local & { base: string | null };
+// srv: o updated_at do servidor visto por último (só local, como base; nunca vai no texto cifrado).
+export type Doc = DocContent & Local & { base: string | null; srv?: string };
 export type Task = TaskContent & Local;
-export type DayNote = DayNoteContent & Local & { base: string | null };
+export type DayNote = DayNoteContent & Local & { base: string | null; srv?: string };
 export type Item = Doc | Task | DayNote;
 
 const fresh = { rev: 0, syncedRev: -1, pushed: false };
@@ -76,13 +77,31 @@ export function tombstoneItem<T extends Item>(i: T): T {
   return { ...i, deleted: true, text: '', rev: i.rev + 1 };
 }
 
+const baseTs = (i: ItemContent) => i.kind === 'doc' ? i.bodyTs : i.kind === 'daynote' ? i.textTs : 0;
+
 // Junta a versão deste aparelho com a do servidor. Nada se perde: se um texto mudou nos dois
 // aparelhos desde a última sincronização, o daqui fica e o de lá vira uma cópia (copy).
 export function mergeItem(l: Item, r: ItemContent): { merged: ItemContent; copy?: ItemContent } {
   const created = Math.min(l.created, r.created);
   const pick = <K extends string>(lv: K, lt: number, rv: K, rt: number): [K, number] => lt > rt || (lt === rt && lv >= rv) ? [lv, lt] : [rv, rt];
   if (l.kind !== r.kind) return { merged: itemContent(l) };
-  if (l.deleted || r.deleted) return { merged: { ...itemContent(tombstoneItem(l)), created } };
+  if (l.deleted || r.deleted) {
+    // Lápide: sem Date.now(), só com os dois lados. Assim o resultado é o mesmo em qualquer aparelho e
+    // a qualquer hora, e a junção com o servidor não parece uma mudança a cada sincronização.
+    const mx = Math.max;
+    if (l.kind === 'doc' && r.kind === 'doc') {
+      const lc = itemContent(l) as DocContent, rc = itemContent(r) as DocContent, [color, colorTs] = pick(lc.color, lc.colorTs, rc.color, rc.colorTs);
+      const [pinned, pinnedTs] = lc.pinnedTs > rc.pinnedTs || (lc.pinnedTs === rc.pinnedTs && lc.pinned) ? [lc.pinned, lc.pinnedTs] : [rc.pinned, rc.pinnedTs];
+      return { merged: { kind: 'doc', created, deleted: true, title: '', titleTs: mx(l.titleTs, r.titleTs), body: '', bodyTs: mx(l.bodyTs, r.bodyTs), status: 'trashed', statusTs: mx(l.statusTs, r.statusTs), color, colorTs, pinned, pinnedTs } };
+    }
+    if (l.kind === 'task' && r.kind === 'task') {
+      const [date] = pick(l.date, l.dateTs, r.date, r.dateTs);
+      const done = l.doneTs > r.doneTs || (l.doneTs === r.doneTs && l.done) ? l.done : r.done;
+      const [order] = l.orderTs >= r.orderTs ? [l.order, l.orderTs] : [r.order, r.orderTs];
+      return { merged: { kind: 'task', created, deleted: true, date, dateTs: mx(l.dateTs, r.dateTs), text: '', textTs: mx(l.textTs, r.textTs), done, doneTs: mx(l.doneTs, r.doneTs), order, orderTs: mx(l.orderTs, r.orderTs) } };
+    }
+    return { merged: { kind: 'daynote', created, deleted: true, date: (l as DayNote).date, text: '', textTs: mx(baseTs(l), baseTs(r)) } };
+  }
   if (l.kind === 'task' && r.kind === 'task') {
     const [date, dateTs] = pick(l.date, l.dateTs, r.date, r.dateTs);
     const [text, textTs] = pick(l.text, l.textTs, r.text, r.textTs);
