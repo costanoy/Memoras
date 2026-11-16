@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { dbHooks, itemDel, itemPut, itemsRead, kvDel, kvRead, kvSet, noteDel, notePut, notesRead, wipeAll } from './lib/db';
+import { dbHooks, itemDel, itemPut, itemsRead, kvDel, kvRead, kvSet, kvSetStrict, noteDel, notePut, notesRead, wipeAll } from './lib/db';
 import { hashSecret, normCode, randomCode, verifySecret } from './lib/crypto';
 import { blankDayNote, blankDoc, blankTask, isBlankItem, keyTime, nextOrder, todayKey, tombstoneItem, type DayNote, type Doc, type Item, type Task } from './lib/items';
 import { blank, isEmpty, nd, tombstone, uid, type Note, type Status } from './lib/notes';
@@ -642,12 +642,18 @@ async function readAll() {
 async function snapshotOnUpgrade(lastVersion: string | undefined, saved: Partial<Cfg> | undefined, stored: Note[], items: Item[]) {
   if (lastVersion === APP_VERSION) return;
   if (lastVersion && (saved || stored.length || items.length)) {
-    const list = (await kvRead<string[]>('backups')) ?? [];
-    const key = 'backup:' + lastVersion;
-    await kvSet(key, { version: lastVersion, at: Date.now(), cfg: saved, notes: stored, items });
-    const keep = [key, ...list.filter(k => k !== key)];
-    for (const old of keep.slice(3)) await kvDel(old);
-    await kvSet('backups', keep.slice(0, 3));
+    try {
+      const list = (await kvRead<string[]>('backups')) ?? [];
+      const key = 'backup:' + lastVersion;
+      await kvSetStrict(key, { version: lastVersion, at: Date.now(), cfg: saved, notes: stored, items });
+      const keep = [key, ...list.filter(k => k !== key)];
+      await kvSetStrict('backups', keep.slice(0, 3));
+      for (const old of keep.slice(3)) await kvDel(old);
+    } catch (e) {
+      // Sem cópia, sem mexer nas antigas e sem marcar a versão: na próxima abertura tenta de novo. O app abre normalmente.
+      console.error('Memoras: não foi possível guardar a cópia de segurança', e);
+      return;
+    }
   }
   await kvSet('appVersion', APP_VERSION);
 }

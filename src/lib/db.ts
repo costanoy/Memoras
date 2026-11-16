@@ -42,6 +42,8 @@ const quiet = (p: Promise<unknown>) => p.then(() => {}, e => { console.error('Me
 export const kvRead = <T>(k: string) => run<T | undefined>('kv', 'readonly', s => s.get(k));
 export const notesRead = () => run<Note[]>('notes', 'readonly', s => s.getAll());
 export const kvSet = (k: string, v: unknown) => quiet(run('kv', 'readwrite', s => s.put(v, k)));
+// Gravação que rejeita quando falha (para a cópia de segurança, que não pode falhar em silêncio).
+export const kvSetStrict = (k: string, v: unknown) => run('kv', 'readwrite', s => s.put(v, k)).then(() => {});
 export const notePut = (n: Note) => quiet(run('notes', 'readwrite', s => s.put(n)));
 export const kvDel = (k: string) => quiet(run('kv', 'readwrite', s => s.delete(k)));
 export const noteDel = (id: string) => quiet(run('notes', 'readwrite', s => s.delete(id)));
