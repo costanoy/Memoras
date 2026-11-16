@@ -84,7 +84,7 @@ async function createVault(userId: string, kek: CryptoKey) {
   return { dk, dkId, recKey };
 }
 
-export async function signUp(email: string, password: string): Promise<{ recKey?: string; confirm?: boolean }> {
+export async function signUp(email: string, password: string): Promise<{ recKey?: string; confirm?: boolean; needKey?: boolean; loggedIn?: boolean }> {
   const sb = need();
   lockedGuard();
   email = email.trim();
@@ -94,7 +94,7 @@ export async function signUp(email: string, password: string): Promise<{ recKey?
   if (!data.session || !data.user) return { confirm: true };
   const v = await createVault(data.user.id, kek);
   // Já existe cofre (conta de outro aparelho): segue como um login comum.
-  if (!v) return login(email, password);
+  if (!v) return { ...(await login(email, password)), loggedIn: true };
   await adopt(data.user.id, email, v.dk, v.dkId, auth);
   return { recKey: v.recKey };
 }

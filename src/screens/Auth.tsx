@@ -27,17 +27,12 @@ export function Auth() {
     if (!signup && !password) return fail('Digite sua senha.', 'password');
     setBusy(true); clear();
     try {
-      if (signup) {
-        const r = await signUp(email, password);
-        if (r.recKey) showKey(r.recKey);
-        else { setPassword(''); set({ authMode: 'login' }); setInfo('Enviamos um email de confirmação. Abra o link e depois entre aqui.'); }
-      } else {
-        const r = await login(email, password);
-        if (r.needKey) go('forgot', { fStep: 3, fEmail: email });
-        else if (r.recKey) showKey(r.recKey);
-        else if (s.authReturn === 'onboard') go('onboard', { onStep: 4 });
-        else { go('history'); toast('Conta conectada. Sincronizando…'); }
-      }
+      const r = signup ? await signUp(email, password) : await login(email, password);
+      if (r.needKey) go('forgot', { fStep: 3, fEmail: email });
+      else if (r.recKey) showKey(r.recKey);
+      else if (signup && !('loggedIn' in r && r.loggedIn)) { setPassword(''); set({ authMode: 'login' }); setInfo('Enviamos um email de confirmação. Abra o link e depois entre aqui.'); }
+      else if (s.authReturn === 'onboard') go('onboard', { onStep: 4 });
+      else { go('history'); toast('Conta conectada. Sincronizando…'); }
     } catch (x) { setErr(friendly(x)); }
     finally { setBusy(false); }
   };
