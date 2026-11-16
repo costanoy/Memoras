@@ -371,6 +371,11 @@ function Shelf({ s }: { s: State }) {
 function Settings({ s }: { s: State }) {
   const acc = s.cfg.account;
   const [busy, setBusy] = useState(false);
+  // "Sair da conta" pede confirmação aqui mesmo: Cancelar recebe o foco; Esc cancela e devolve o foco ao botão.
+  const [saindo, setSaindo] = useState(false);
+  const sairBtn = useRef<HTMLButtonElement>(null), cancelBtn = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (saindo) cancelBtn.current?.focus(); }, [saindo]);
+  const cancelaSair = () => { setSaindo(false); setTimeout(() => sairBtn.current?.focus(), 0); };
   // Digital: só no celular com leitor; sem digital cadastrada, explica onde cadastrar. Confere de novo
   // quando o app volta à tela (a pessoa pode ter ido cadastrar uma nas configurações do celular).
   const [bio, setBio] = useState<BioStatus>('no');
@@ -459,8 +464,18 @@ function Settings({ s }: { s: State }) {
             <div className="row" style={{ gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--ink3)' }}><SyncDot />{syncLabel(true, s.sync)}</div>
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
               <button className="soft press" onClick={() => void syncNow()}>Sincronizar agora</button>
-              <button className="soft press" onClick={() => { void logout(); toast('Você saiu. As anotações continuam neste aparelho.'); }}>Sair da conta</button>
+              {!saindo && <button ref={sairBtn} className="soft press" onClick={() => setSaindo(true)}>Sair da conta</button>}
             </div>
+            {saindo && (
+              <div className="col" role="group" aria-label="Confirmar saída da conta" style={{ gap: 10 }}
+                onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelaSair(); } }}>
+                <div className="small">Sair da conta neste aparelho? As anotações continuam aqui, mas param de sincronizar até você entrar de novo.</div>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <button ref={cancelBtn} className="soft press" onClick={cancelaSair}>Cancelar</button>
+                  <button className="soft press" onClick={() => { setSaindo(false); void logout(); toast('Você saiu. As anotações continuam neste aparelho.'); }}>Sair</button>
+                </div>
+              </div>
+            )}
           </> : <>
             <div className="small">Sem conta, suas anotações ficam só neste aparelho. Crie uma para sincronizar com seus outros aparelhos.</div>
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
