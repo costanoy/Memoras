@@ -666,7 +666,11 @@ export async function init() {
   if (!THEMES[cfg.theme]) cfg.theme = 'turquesa';
   // Fechado (pela pessoa ou pelo sistema) há menos tempo do que o escolhido nos Ajustes: abre sem pedir o PIN.
   const away = Date.now() - cfg.awayAt, grace = cfg.pinOn && cfg.awayAt > 0 && away >= 0 && away < relockMs(cfg);
-  cfg.awayAt = 0;
+  // Página que nasce escondida (recarga com a janela minimizada) não recebe nenhum visibilitychange:
+  // a ausência continua contando desde a saída de verdade, e o appBack trava se passou do tempo.
+  const hiddenGrace = grace && document.visibilityState === 'hidden';
+  if (hiddenGrace) awaySince = cfg.awayAt;
+  else cfg.awayAt = 0;
   // Anotações e cadernos gravados antes da cor por item chegam sem ela: "sem cor".
   const notes = stored.filter(n => {
     if (n.deleted || !isEmpty(n) || n.status !== 'active' || n.pushed) return true;
@@ -678,7 +682,7 @@ export async function init() {
   }).map(i => i.kind === 'doc' ? { ...i, color: i.color ?? '', colorTs: i.colorTs ?? 0, pinned: i.pinned ?? false, pinnedTs: i.pinnedTs ?? 0 } : i);
   applyTheme(cfg.theme);
   set({ cfg, notes, items });
-  if (saved?.awayAt) void kvSet('cfg', cfg);
+  if (saved?.awayAt && !hiddenGrace) void kvSet('cfg', cfg);
   const unlocked = !cfg.pinOn || grace;
   // Abre sem nenhuma anotação aberta: nada do diário aparece sem a pessoa escolher.
   if (hooks.recoveryPending) set({ unlocked, screen: 'forgot', fStep: 2 });
