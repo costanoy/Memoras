@@ -205,14 +205,18 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
   const [, tick] = useState(0);
   useEffect(() => { const iv = setInterval(() => tick(x => x + 1), 60000); return () => clearInterval(iv); }, []);
   // Tocar no espaço vazio da página continua o texto: o cursor vai para o fim do último trecho.
-  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'), el = a?.[a.length - 1]; if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
+  const focusLast = () => { const a = sheet.current?.querySelectorAll('textarea'), el = a?.[a.length - 1]; if (el) { el.focus({ preventScroll: true }); el.setSelectionRange(el.value.length, el.value.length); } };
   useEffect(() => { if (isEmpty(cur)) focusLast(); }, []);
 
   const segs = cur.segs.filter(g => g.text !== '' || touched.current.has(g.id));
   // Regra das 2 horas: depois desse tempo sem escrever, o próximo texto abre um trecho com horário novo.
   const needNew = !segs.length || Date.now() - cur.last >= 2 * H;
   const t0 = nd(cur), acc = s.cfg.account;
-  const date = dayLabel(t0) + (same(t0, Date.now()) || same(t0, Date.now() - DAY) ? ', ' + dayMonth(t0) : '');
+  // No celular, o mês vai abreviado ("Hoje, 16 nov") para a data caber inteira; a completa fica no title.
+  const shortDM = (t: number) => new Date(t).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace(/ de /g, ' ').replace(/\.$/, '');
+  const recent = same(t0, Date.now()) || same(t0, Date.now() - DAY);
+  const fullDate = dayLabel(t0) + (recent ? ', ' + dayMonth(t0) : '');
+  const date = s.mobile && recent ? dayLabel(t0) + ', ' + shortDM(t0) : fullDate;
   const sub = cur.status === 'archived' ? 'Arquivada' : !acc ? 'Salvo neste aparelho' : s.sync === 'offline' ? 'Salvo no aparelho · sincroniza quando voltar a internet' : s.sync === 'error' ? 'Salvo no aparelho' : 'Salvo';
   const archLabel = cur.status === 'archived' ? 'Desarquivar' : 'Arquivar';
 
@@ -220,7 +224,7 @@ function Editor({ s, cur }: { s: State; cur: Note }) {
     <div className="row ibar">
       {onePane(s) && <button className="round press" aria-label="Voltar" title={s.mini ? 'Voltar (Alt+←)' : 'Voltar'} onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
       <div className="ibar-txt">
-        <div className="ibar-t">{date}</div>
+        <div className="ibar-t" title={fullDate}>{date}</div>
         <div className="ibar-s">{sub}</div>
       </div>
       <ColorPick value={cur.color} onPick={c => setNoteColor(cur.id, c)} mobile={s.mobile} label="Cor da anotação" />
@@ -279,7 +283,7 @@ function Search({ s }: { s: State }) {
   return <>
     <div className="col vhead">
       <div className="row" style={{ gap: 10 }}>
-        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        {onePane(s) && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
         <div className="h1">Busca</div>
       </div>
       <label className="searchbox">
@@ -316,7 +320,7 @@ function Shelf({ s }: { s: State }) {
   return <>
     <div className="col vhead">
       <div className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
-        {s.mini && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={goBack}><Icon name="back" sw={2.6} /></button>}
+        {onePane(s) && <button className="round press" aria-label="Voltar" title="Voltar (Esc)" onClick={() => s.mini ? goBack() : go('history')}><Icon name="back" sw={2.6} /></button>}
         <div className="h1" style={{ flex: 1, minWidth: 0 }}>{isTrash ? 'Lixeira' : 'Arquivo'}</div>
         {isTrash && rows.length + docRows.length > 0 && <button className="glassbtn press danger" style={{ height: 40, padding: '0 16px', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }} onClick={() => set({ confirm: { all: true } })}>Esvaziar lixeira</button>}
       </div>
@@ -367,6 +371,11 @@ function Shelf({ s }: { s: State }) {
 function Settings({ s }: { s: State }) {
   const acc = s.cfg.account;
   const [busy, setBusy] = useState(false);
+  // "Sair da conta" pede confirmação aqui mesmo: Cancelar recebe o foco; Esc cancela e devolve o foco ao botão.
+  const [saindo, setSaindo] = useState(false);
+  const sairBtn = useRef<HTMLButtonElement>(null), cancelBtn = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (saindo) cancelBtn.current?.focus(); }, [saindo]);
+  const cancelaSair = () => { setSaindo(false); setTimeout(() => sairBtn.current?.focus(), 0); };
   // Digital: só no celular com leitor; sem digital cadastrada, explica onde cadastrar. Confere de novo
   // quando o app volta à tela (a pessoa pode ter ido cadastrar uma nas configurações do celular).
   const [bio, setBio] = useState<BioStatus>('no');
@@ -455,8 +464,18 @@ function Settings({ s }: { s: State }) {
             <div className="row" style={{ gap: 8, fontSize: 15, fontWeight: 600, color: 'var(--ink3)' }}><SyncDot />{syncLabel(true, s.sync)}</div>
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
               <button className="soft press" onClick={() => void syncNow()}>Sincronizar agora</button>
-              <button className="soft press" onClick={() => { void logout(); toast('Você saiu. As anotações continuam neste aparelho.'); }}>Sair da conta</button>
+              {!saindo && <button ref={sairBtn} className="soft press" onClick={() => setSaindo(true)}>Sair da conta</button>}
             </div>
+            {saindo && (
+              <div className="col" role="group" aria-label="Confirmar saída da conta" style={{ gap: 10 }}
+                onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelaSair(); } }}>
+                <div className="small">Sair da conta neste aparelho? As anotações continuam aqui, mas param de sincronizar até você entrar de novo.</div>
+                <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <button ref={cancelBtn} className="soft press" onClick={cancelaSair}>Cancelar</button>
+                  <button className="soft press" onClick={() => { setSaindo(false); void logout(); toast('Você saiu. As anotações continuam neste aparelho.'); }}>Sair</button>
+                </div>
+              </div>
+            )}
           </> : <>
             <div className="small">Sem conta, suas anotações ficam só neste aparelho. Crie uma para sincronizar com seus outros aparelhos.</div>
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -470,7 +489,7 @@ function Settings({ s }: { s: State }) {
           <div className="gcard setcard" style={{ gap: 10 }}>
             <div className="group">Chave de recuperação</div>
             <div className="small">Criada no cadastro e mostrada uma única vez. Se você perdeu a sua, gere uma nova. A anterior deixa de funcionar.</div>
-            <button className={'soft press' + (busy ? ' off' : '')} style={{ alignSelf: 'flex-start' }} onClick={regen}>Gerar nova chave</button>
+            <button className={'soft press' + (busy ? ' off' : '')} style={{ alignSelf: 'flex-start' }} aria-busy={busy} onClick={regen}>{busy ? 'Gerando…' : 'Gerar nova chave'}</button>
           </div>
         )}
 
@@ -512,7 +531,7 @@ function Updates() {
 // Abas do celular: as três partes do app, o + e os ajustes.
 const TABS = [['history', 'Diário'], ['docs', 'Cadernos'], ['new', ''], ['agenda', 'Agenda'], ['settings', 'Ajustes']] as const;
 const NEW_LABEL: Record<Section, string> = { diario: 'Nova anotação', cadernos: 'Novo caderno', agenda: 'Nova tarefa' };
-const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', summary: 'docs', agenda: 'agenda', settings: 'settings' };
+const TAB_OF: Partial<Record<State['screen'], string>> = { history: 'history', editor: 'history', docs: 'docs', doc: 'docs', summary: 'docs', agenda: 'agenda', settings: 'settings', search: 'history', archive: 'history' };
 
 // O "+" do celular: o botão gira e uma bolha de gel cresce a partir dele até
 // cobrir a tela; o item novo abre por baixo e a bolha se desfaz.
@@ -552,6 +571,18 @@ export function Shell() {
   // Enquanto escreve ou lê no celular (inclusive o Resumão), o menu inferior sai de cena.
   const tabbar = s.mobile && !showEditor && !showDoc && scr !== 'summary';
   const plus = usePlusBurst();
+  // Dicas de toque longo no celular: cada uma aparece uma vez por aparelho (localStorage, sem sincronizar).
+  const nDocs = docsOf(s).length, nTasks = tasksOn(s, s.agDay).filter(t => t.text.trim()).length;
+  useEffect(() => {
+    if (!s.mobile || s.toast || s.confirm || s.menu) return;
+    const dica = (key: string, text: string) => {
+      try { if (localStorage.getItem(key)) return; } catch { return; }
+      toast(text);
+      try { localStorage.setItem(key, '1'); } catch { /* sem armazenamento: a dica só some com o toast */ }
+    };
+    if (scr === 'history' && hasNotes || scr === 'docs' && nDocs > 0) dica('memoras:dicaToque', 'Segure um item para ver mais opções');
+    else if (scr === 'agenda' && nTasks > 0) dica('memoras:dicaToqueAgenda', 'Segure uma tarefa para ver mais opções');
+  }, [s.mobile, s.toast, scr, hasNotes, nDocs, nTasks]);
   const add = (btn: HTMLElement) => {
     if (s.section === 'cadernos') plus.start(btn, () => newDoc(true), () => newDoc());
     else if (s.section === 'agenda') { focusNewTask(); openDay(todayKey()); }
@@ -590,7 +621,7 @@ export function Shell() {
     {tabbar && (
       <div className="tabbar">
         {TABS.map(([k, label]) => (
-          <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label}
+          <button key={k} className={'press' + (TAB_OF[scr] === k ? ' on' : '') + (k === 'new' && plus.busy ? ' spin-plus' : '')} aria-label={k === 'new' ? NEW_LABEL[s.section] : label} aria-current={TAB_OF[scr] === k ? 'page' : undefined}
             onClick={e => k === 'new' ? !plus.busy && add(e.currentTarget.querySelector('.plus') ?? e.currentTarget) : k === 'docs' ? goSection('cadernos') : k === 'settings' ? openTool('settings') : go(k)}>
             {k === 'new' ? <span className="plus">+</span> : <><Icon name={k} size={24} /><span>{label}</span></>}
           </button>
