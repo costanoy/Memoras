@@ -1,0 +1,70 @@
+
+> memoras@1.1.4 build
+> tsc --noEmit && vite build
+
+[36mvite v8.3.5 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 101 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                                                    0.13 kB
+dist/manifest.webmanifest                                             0.31 kB
+dist/index.html                                                       0.67 kB │ gzip:   0.39 kB
+dist/assets/source-code-pro-cyrillic-ext-600-normal-Bk2yO1tA.woff2    4.52 kB
+dist/assets/source-code-pro-cyrillic-ext-500-normal-tqeAES4j.woff2    4.55 kB
+dist/assets/source-code-pro-vietnamese-600-normal-CWDSnRUT.woff2      4.70 kB
+dist/assets/source-code-pro-vietnamese-500-normal-9qef99rm.woff2      4.80 kB
+dist/assets/source-code-pro-greek-600-normal-D1ll-qYC.woff2           5.53 kB
+dist/assets/source-code-pro-greek-500-normal-C6-i8gwR.woff2           5.58 kB
+dist/assets/source-code-pro-cyrillic-ext-600-normal-Dlnx0AYk.woff     5.76 kB
+dist/assets/source-code-pro-cyrillic-ext-500-normal-Czknif28.woff     5.77 kB
+dist/assets/source-code-pro-vietnamese-600-normal-BG1XwByG.woff       6.39 kB
+dist/assets/source-code-pro-vietnamese-500-normal-Di6EYwJE.woff       6.40 kB
+dist/assets/source-code-pro-cyrillic-600-normal-BNz7v_mr.woff2        6.79 kB
+dist/assets/source-code-pro-cyrillic-500-normal-ByWPmmoj.woff2        6.83 kB
+dist/assets/source-code-pro-greek-600-normal-lDQpIXR8.woff            7.00 kB
+dist/assets/source-code-pro-greek-500-normal-TDi6g5fW.woff            7.00 kB
+dist/assets/source-code-pro-cyrillic-600-normal-DUFre9N-.woff         8.58 kB
+dist/assets/source-code-pro-cyrillic-500-normal-B11lr0U2.woff         8.61 kB
+dist/assets/source-sans-3-greek-ext-wght-normal-BWSLJLk6.woff2        9.78 kB
+dist/assets/source-sans-3-greek-ext-wght-italic-CsGuNfVR.woff2        9.88 kB
+dist/assets/source-sans-3-vietnamese-wght-normal-C1uRvKPU.woff2      10.32 kB
+dist/assets/source-sans-3-cyrillic-ext-wght-normal-DzyfIafT.woff2    10.67 kB
+dist/assets/source-sans-3-vietnamese-wght-italic-DnchwVcj.woff2      10.72 kB
+dist/assets/source-sans-3-cyrillic-ext-wght-italic-Bmy0yRBR.woff2    10.97 kB
+dist/assets/source-code-pro-latin-500-normal-DrRT_DWv.woff2          11.60 kB
+dist/assets/source-code-pro-latin-600-normal-DVVSlvOB.woff2          11.62 kB
+dist/assets/source-sans-3-greek-wght-normal-C9H9m1vD.woff2           14.60 kB
+dist/assets/source-sans-3-greek-wght-italic-BfAgiArQ.woff2           14.93 kB
+dist/assets/source-code-pro-latin-600-normal-B5rj6vMs.woff           15.14 kB
+dist/assets/source-code-pro-latin-500-normal-FgltuOLy.woff           15.18 kB
+dist/assets/source-code-pro-latin-ext-600-normal-kg67jYQv.woff2      17.64 kB
+dist/assets/source-code-pro-latin-ext-500-normal-DcnsLkKi.woff2      17.75 kB
+dist/assets/source-sans-3-cyrillic-wght-normal-BMDVbyM7.woff2        18.49 kB
+dist/assets/source-sans-3-cyrillic-wght-italic-BqzjwPnH.woff2        18.72 kB
+dist/assets/source-code-pro-latin-ext-600-normal-CdOS3fMr.woff       23.62 kB
+dist/assets/source-code-pro-latin-ext-500-normal-BCopTyd8.woff       23.68 kB
+dist/assets/source-sans-3-latin-wght-italic-Bg-PIjcQ.woff2           28.53 kB
+dist/assets/source-sans-3-latin-wght-normal-BqRLTx4X.woff2           28.74 kB
+dist/assets/source-sans-3-latin-ext-wght-italic-B1mMy0tD.woff2       59.49 kB
+dist/assets/source-sans-3-latin-ext-wght-normal-C8iNium2.woff2       60.08 kB
+dist/assets/index-CjL6Tu6F.css                                       61.00 kB │ gzip:  19.10 kB
+dist/assets/web-CnBKzQ2m.js                                           0.36 kB │ gzip:   0.24 kB
+dist/assets/web-LNGxQviM.js                                           0.84 kB │ gzip:   0.40 kB
+dist/assets/web-DsLClxmK.js                                           8.43 kB │ gzip:   2.80 kB
+dist/assets/index-CLadwVsK.js                                       590.59 kB │ gzip: 169.93 kB
+
+[32m✓ built in 628ms[39m
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+
+PWA v1.3.0
+mode      generateSW
+precache  42 entries (1537.68 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-9c191d2f.js
+EXIT 0
