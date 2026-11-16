@@ -448,6 +448,11 @@ input.doctitle{height:1.2em}
   .day.today{outline:1px dashed CanvasText}
   .cswatch,.sw,.cdot{forced-color-adjust:none}
   .tbtn,.mininav .round,.mininav .minisec button{border:1px solid ButtonText}
+  .gel,.soft,.pill{border:1px solid ButtonText}
+  .day.has::after,.sdot{forced-color-adjust:none;background:CanvasText}
+  .obar > *{border:1px solid CanvasText}
+  .obar > .on{forced-color-adjust:none;background:CanvasText !important}
+  .item.ctxon,.task.ctxon,.task:focus-within{outline:2px solid Highlight}
 }
 @media (prefers-reduced-transparency: reduce){
   .titlebar{background:#e2f1f8;backdrop-filter:none}
